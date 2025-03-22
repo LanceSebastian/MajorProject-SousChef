@@ -34,7 +34,7 @@ interface AccountDao{
     fun getAccountByEmail(email: String): LiveData<Account>
 
     @Query("SELECT * FROM accounts WHERE username = :username AND password = :password")
-    fun loginAccount(username:String, password:String): LiveData<Account>
+    fun login(username:String, password:String): Account
 }
 
 @Dao
