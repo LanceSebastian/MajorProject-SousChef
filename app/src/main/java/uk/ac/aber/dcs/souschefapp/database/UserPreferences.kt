@@ -8,73 +8,53 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.asLiveData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class UserPreferences(private val context: Context) {
+    private val dataStore = context.dataStore
 
-    private val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
-    val ACCOUNTID =  intPreferencesKey("account_id")
-    val USERNAME = stringPreferencesKey("username")
-    val EMAIL = stringPreferencesKey("email")
-    val PASSWORD = stringPreferencesKey("password")
+    companion object {
+        private val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
+        private val ACCOUNTID =  intPreferencesKey("account_id")
+        private val USERNAME = stringPreferencesKey("username")
+        private val EMAIL = stringPreferencesKey("email")
+    }
+
+    val isLoggedIn = dataStore.data.map { preferences ->
+        preferences[IS_LOGGED_IN] ?: false
+    }.asLiveData()
+
+    val accountId = dataStore.data.map { preferences ->
+        preferences[ACCOUNTID]
+    }.asLiveData()
+
+    val username = dataStore.data.map { preferences ->
+        preferences[USERNAME]
+    }.asLiveData()
+
+    val email = dataStore.data.map { preferences ->
+        preferences[EMAIL]
+    }.asLiveData()
 
     // Save login state and username
-    suspend fun saveLoggedInUser(context: Context, accountId: Int, username: String, email: String, password: String) {
-        context.dataStore.edit { prefs ->
+    suspend fun saveLoggedInUser(accountId: Int, username: String, email: String) {
+        dataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = true
             prefs[ACCOUNTID] = accountId
             prefs[USERNAME] = username
             prefs[EMAIL] = email
-            prefs[PASSWORD] = password
         }
     }
-
-    // Get login state as Flow<Boolean>
-    fun getLoginState(context: Context): Flow<Boolean> {
-        return context.dataStore.data.map { prefs ->
-            prefs[IS_LOGGED_IN] ?: false
-        }
-    }
-
-    // Get stored accountId as Flow<Int>
-    fun getLoggedInAccountId(context: Context): Flow<Int?> {
-        return context.dataStore.data.map { prefs ->
-            prefs[ACCOUNTID]
-        }
-    }
-
-    // Get stored username as Flow<String?>
-    fun getLoggedInUsername(context: Context): Flow<String?> {
-        return context.dataStore.data.map { prefs ->
-            prefs[USERNAME]
-        }
-    }
-
-    // Get stored username as Flow<String?>
-    fun getLoggedInEmail(context: Context): Flow<String?> {
-        return context.dataStore.data.map { prefs ->
-            prefs[EMAIL]
-        }
-    }
-
-    // Get stored username as Flow<String?>
-    fun getLoggedInPassword(context: Context): Flow<String?> {
-        return context.dataStore.data.map { prefs ->
-            prefs[PASSWORD]
-        }
-    }
-
-
 
     // ✅ Logout (clear data)
     suspend fun logout(context: Context) {
         context.dataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = false
             prefs.remove(USERNAME)
-            prefs.remove(PASSWORD)
             prefs.remove(EMAIL)
         }
     }
