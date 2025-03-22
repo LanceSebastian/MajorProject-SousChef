@@ -1,0 +1,37 @@
+Account - Currently Done:
+    * Login and Signup exists, but it's remembered in UserPreferences
+
+Home:
+    o Ratings -2 - 2 (Done)
+    o Need to store with JSON (Done: Made a type converter for the db)
+    o Still haven't worked out the date converter (Done:
+    o Bug: Notes get printed out twice - (Done: it was iterating from the amount of recipes, fixed by only using unique ids.)
+    * Calendar Bug: dialog is cut a bit. Not my fault, it's Material 3
+    o RecipeNotes aren't loading properly (Done: It was loading notes from recipes that weren't being used. Filtered them out.)
+
+History:
+    * Needs an empty screen
+
+RecipePage:
+    * Images need work
+    * Possible Feature: If user goes to another page, going back resumes progress
+    * I need a unit change system, there currently isn't one in the dialogue.
+    * Currently missing a notes and history expand bar.
+
+Profile:
+    * It's completely dysfunctional.
+
+Room Database
+    Issue for next prototype{
+    * fundamental issue with ingredient is that it is not separated properly
+    e.g. Multiple instances of Chicken Breast but different quantities.
+    * Need to separate tables into ingredient and ingredient instance for recipe. (need good names for each)
+    }
+
+P.S. Don't forget to clean code.
+
+First Test:
+1) Login needs feedback for failure
+2) email needs format checkers
+3) signup needs feedback for failure and weak passwords.
+4)
