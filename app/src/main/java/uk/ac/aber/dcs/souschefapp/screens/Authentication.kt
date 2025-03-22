@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -48,23 +49,12 @@ fun TopAuthScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel,
 ){
-    val loginState by authViewModel.loginState.observeAsState(LoginState.Idle)
+
     AuthScreen(
         navController = navController,
-        onLogin = { username, password ->  authViewModel.login(username, password)},
-        onSignup = { account -> authViewModel.insertAccount(account) }
+        onLogin = { username, password -> authViewModel.login(username, password)},
+        onSignup = { account -> authViewModel.register(account) }
     )
-
-    when (loginState) {
-        is LoginState.Success -> {
-            val account = (loginState as LoginState.Success).account
-            navController.navigate(Screen.Home.route)
-        }
-        is LoginState.Error -> {
-            Toast.makeText(LocalContext.current, (loginState as LoginState.Error).message, Toast.LENGTH_LONG).show()
-        }
-        else -> {}
-    }
 }
 @Composable
 fun AuthScreen(
