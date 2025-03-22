@@ -8,7 +8,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import uk.ac.aber.dcs.souschefapp.database.SousChefDatabase
 import uk.ac.aber.dcs.souschefapp.database.SousChefRepository
 import uk.ac.aber.dcs.souschefapp.database.UserPreferences
 import uk.ac.aber.dcs.souschefapp.database.models.Account
@@ -20,14 +23,26 @@ class AuthViewModel (
     private val repository: SousChefRepository = SousChefRepository(application)
     private val userPreferences = UserPreferences(application)
 
-    private val _loginState = MutableLiveData<LoginState>()
-    val loginState: LiveData<LoginState> = _loginState
+    val isAuthenticated = userPreferences.isLoggedIn
+    val userEmail = userPreferences.email
+    val userName = userPreferences.username
+    val userId = userPreferences.accountId
 
-    fun insertAccount(account: Account){
-        val email = account.email
+    fun login(username:String, password:String){
         viewModelScope.launch(Dispatchers.IO){
-            if (!repository.getAccountByEmail(email).equals(null)) return@launch
-            repository.insertAccount(account)
+            val account = repository.login(username, password)
+            if (account != null) {
+                userPreferences.saveLoggedInUser(account.accountId, account.username, account.email)
+            }
+        }
+    }
+
+    fun register(account: Account){
+        viewModelScope.launch(Dispatchers.IO){
+            val success = repository.register(account)
+            if (success) {
+                userPreferences.saveLoggedInUser(account.accountId, account.username, account.email)
+            }
         }
     }
 
@@ -53,31 +68,6 @@ class AuthViewModel (
 
     fun getAccountByUsername(username: String): LiveData<Account> {
         return repository.getAccountByUsername(username)
-    }
-
-    fun login(username:String, password:String){
-        viewModelScope.launch(Dispatchers.IO){
-            repository.login(username, password).observeForever { account ->
-                if (account != null){
-                    _loginState.value = LoginState.Success(account)
-
-                    viewModelScope.launch(Dispatchers.IO) {
-                        userPreferences.saveLoggedInUser(
-                            getApplication(),
-                            account.accountId,
-                            account.username,
-                            account.email,
-                            account.password
-                        )
-                    }
-                } else {
-                    _loginState.value = LoginState.Error("Username or Password is incorrect.")
-                }
-            }
-
-
-
-        }
     }
 }
 
