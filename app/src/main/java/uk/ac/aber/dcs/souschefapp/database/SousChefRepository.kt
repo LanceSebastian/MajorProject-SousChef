@@ -19,8 +19,13 @@ class SousChefRepository(application: Application) {
     private val noteDao = database.noteDao()
 
     /*      Account     */
-    suspend fun insertAccount(account: Account){
-        accountDao.insertAccount(account)
+    suspend fun register(account: Account): Boolean{
+        return try {
+            accountDao.insertAccount(account)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     suspend fun deactivateAccount(accountId: Int){
@@ -43,8 +48,8 @@ class SousChefRepository(application: Application) {
         return accountDao.getAccountByEmail(email)
     }
 
-    fun login(username: String, password: String): LiveData<Account> {
-        return accountDao.loginAccount(username, password)
+    fun login(username: String, password: String): Account {
+        return accountDao.login(username, password)
     }
 
     /*      Product     */
