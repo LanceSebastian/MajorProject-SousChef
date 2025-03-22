@@ -51,8 +51,8 @@ class UserPreferences(private val context: Context) {
     }
 
     // ✅ Logout (clear data)
-    suspend fun logout(context: Context) {
-        context.dataStore.edit { prefs ->
+    suspend fun logout() {
+        dataStore.edit { prefs ->
             prefs[IS_LOGGED_IN] = false
             prefs.remove(USERNAME)
             prefs.remove(EMAIL)

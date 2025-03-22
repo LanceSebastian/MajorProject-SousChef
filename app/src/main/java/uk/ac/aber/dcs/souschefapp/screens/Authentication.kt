@@ -49,12 +49,20 @@ fun TopAuthScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel,
 ){
+    val isAuthenticated by authViewModel.isAuthenticated.observeAsState(false)
+
+    LaunchedEffect (isAuthenticated){
+        if (isAuthenticated)
+            navController.navigate(Screen.Home.route)
+    }
 
     AuthScreen(
         navController = navController,
+
         onLogin = { username, password -> authViewModel.login(username, password)},
         onSignup = { account -> authViewModel.register(account) }
     )
+
 }
 @Composable
 fun AuthScreen(
