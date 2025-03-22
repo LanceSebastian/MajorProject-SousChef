@@ -95,20 +95,22 @@ fun TopHomeScreen(
     noteViewModel: NoteViewModel,
     userPreferences: UserPreferences
 ){
-    val accountId by userPreferences.getLoggedInAccountId(LocalContext.current).collectAsState(initial = null)
-    val logs by logViewModel.getAllLogsFromAccount(accountId!!).observeAsState(listOf())
-    val recipes by recipeViewModel.getAllRecipes().observeAsState(listOf())
+    val accountId by userPreferences.accountId.observeAsState()
+    if (accountId != null) {
+        val logs by logViewModel.getAllLogsFromAccount(accountId!!).observeAsState(listOf())
+        val recipes by recipeViewModel.getAllRecipes().observeAsState(listOf())
 
-    HomeScreen(
-        navController = navController,
-        mainState = MainState.HOME,
-        accountId = accountId!!,
-        logs = logs,
-        recipes = recipes,
-        getNotesFromRecipe = { recipeId ->
-            noteViewModel.getNotesFromRecipe(recipeId)
-        }
-    )
+        HomeScreen(
+            navController = navController,
+            mainState = MainState.HOME,
+            accountId = accountId!!,
+            logs = logs,
+            recipes = recipes,
+            getNotesFromRecipe = { recipeId ->
+                noteViewModel.getNotesFromRecipe(recipeId)
+            }
+        )
+    }
 }
 
 @Composable

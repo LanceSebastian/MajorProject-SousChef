@@ -41,7 +41,7 @@ fun TopHistoryScreen(
     recipeViewModel: RecipeViewModel,
     userPreferences: UserPreferences
 ){
-    val accountId by userPreferences.getLoggedInAccountId(LocalContext.current).collectAsState(initial = null)
+    val accountId by userPreferences.accountId.observeAsState()
     val logs by logViewModel.getAllLogsFromAccount(accountId!!).observeAsState(listOf())
     val recipes by recipeViewModel.getAllRecipes().observeAsState(listOf())
     HistoryScreen(
