@@ -45,4 +45,8 @@ class ProductViewModel(
         return repository.getAllProductsFromAccount(accountId)
     }
 
+    fun getProductFromId(productId: Int): LiveData<Product>{
+        return repository.getProductFromId(productId)
+    }
+
 }

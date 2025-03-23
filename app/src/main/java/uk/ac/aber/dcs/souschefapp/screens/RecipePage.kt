@@ -121,6 +121,7 @@ fun RecipePageScreen(
     var isInstructionDialog by remember { mutableStateOf(false) }
     var isIngredientDelete by remember { mutableStateOf(false) }
     var isInstructionDelete by remember { mutableStateOf(false) }
+    var isEdit by remember { mutableStateOf(false) }
 
     //      Mutable Data
     val mutableIngredientList = ingredients.toMutableList()
@@ -130,7 +131,7 @@ fun RecipePageScreen(
 
     BareRecipePageScreen(
         navController = navController,
-        isEdit = false,
+        isEdit = isEdit,
         saveFunction = {
             if (recipe != null){
                 val newRecipe = Recipe(
@@ -144,8 +145,8 @@ fun RecipePageScreen(
                     recipeName = nameText,
                     instructionList = mutableInstructionList.toList()
                 ))
-                navController.popBackStack()
             }
+            isEdit = false
                        },
         deleteFunction = {
             if (recipe != null) onRecipeDelete(recipe)

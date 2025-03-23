@@ -468,8 +468,13 @@ fun HomeScreen(
             if (addSelected){
                 HomeAddDialogue(
                     onDismissRequest = { addSelected = false },
-                    mainAction = { navController.navigate(Screen.Product.route) },
-                    secondAction = { navController.navigate(Screen.Recipes.route)}
+                    mainAction = { 
+                        navController.navigate(Screen.Product.route)
+                                 },
+                    secondAction = {
+                        navController.navigate(Screen.Recipes.route
+                        )
+                    }
                 )
             }
         }

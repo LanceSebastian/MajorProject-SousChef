@@ -144,10 +144,19 @@ fun Navigation(
         }
 
         /* Product */
-        composable(Screen.Product.route){
+        composable(
+            route = Screen.Product.route + "/productId={productId}",
+            arguments = listOf(navArgument("recipeId") {
+                type = NavType.IntType
+                nullable = false
+            })
+        ){ entry ->
             TopProductScreen(
                 navController,
-                productViewModel
+                productViewModel,
+                userPreferences,
+                productId = entry.arguments?.getInt("productId")!!
+
             )
         }
     }

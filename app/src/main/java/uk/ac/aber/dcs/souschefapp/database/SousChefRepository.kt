@@ -73,6 +73,10 @@ class SousChefRepository(application: Application) {
         return productDao.getAllProductsFromAccount(accountId)
     }
 
+    fun getProductFromId(productId: Int): LiveData<Product>{
+        return productDao.getProductFromId(productId)
+    }
+
     /*      Recipe     */
     suspend fun insertRecipe(recipe: Recipe){
         recipeDao.insertRecipe(recipe)

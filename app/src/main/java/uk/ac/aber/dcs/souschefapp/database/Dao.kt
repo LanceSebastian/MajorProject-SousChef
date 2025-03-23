@@ -54,6 +54,9 @@ interface ProductDao{
     @Query("SELECT * FROM products WHERE accountOwnerId = :accountOwnerId")
     fun getAllProductsFromAccount(accountOwnerId: Int): LiveData<List<Product>>
 
+    @Query("SELECT * FROM products WHERE productId = :productId")
+    fun getProductFromId(productId: Int): LiveData<Product>
+
 }
 
 @Dao

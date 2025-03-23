@@ -3,6 +3,7 @@ package uk.ac.aber.dcs.souschefapp.database.models
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import java.math.BigDecimal
 
 @Entity(
     tableName = "accounts"
@@ -27,8 +28,7 @@ data class Product(
     @PrimaryKey(autoGenerate = true) val productId: Int = 0,
     val accountOwnerId: Int,
     val name: String,
-    val price: Int,
-    val description: Int,
+    val price: BigDecimal,
 )
 
 @Entity(

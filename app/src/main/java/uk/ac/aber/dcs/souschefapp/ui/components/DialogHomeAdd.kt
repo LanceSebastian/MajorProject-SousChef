@@ -101,7 +101,7 @@ fun HomeAddDialogue(
                         }
                     ){
                         Text(
-                            text = "Next"
+                            text = "Continue"
                         )
                     }
                 }
