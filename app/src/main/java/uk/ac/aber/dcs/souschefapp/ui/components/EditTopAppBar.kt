@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
@@ -15,6 +16,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,6 +33,7 @@ fun EditTopAppBar(
     navController: NavHostController,
     title: String = "",
     isEdit: Boolean = false,
+    editFunction: () -> Unit,
     saveFunction: () -> Unit,
     deleteFunction: () -> Unit,
     moreVertFunction: () -> Unit
@@ -55,20 +61,22 @@ fun EditTopAppBar(
             },
             actions = {
                 IconButton(onClick = {
-                    saveFunction()
-                    navController.popBackStack()
+                    if (isEdit) saveFunction() else editFunction()
                 }
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Check,
+                        imageVector = if (isEdit) Icons.Outlined.Check else Icons.Default.Edit,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 IconButton(onClick = {
-                    if (isEdit) deleteFunction() else moreVertFunction()
-                    navController.popBackStack()
+                    if (isEdit) {
+                        deleteFunction()
+                    } else {
+                        moreVertFunction()
+                    }
                 }
                 ) {
                     Icon(
@@ -92,13 +100,32 @@ fun EditTopAppBar(
 
 @Preview(showBackground = true)
 @Composable
-fun EditTopAppBarPreview(){
+fun FalseEditTopAppBarPreview(){
     val navController = rememberNavController()
+    var isEdit by remember { mutableStateOf(false) }
     AppTheme {
         EditTopAppBar(
             navController = navController,
-            isEdit = false,
-            saveFunction = {},
+            isEdit = isEdit,
+            editFunction = { isEdit = true },
+            saveFunction = { isEdit = false },
+            deleteFunction = {},
+            moreVertFunction = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TrueEditTopAppBarPreview(){
+    val navController = rememberNavController()
+    var isEdit by remember { mutableStateOf(true)}
+    AppTheme {
+        EditTopAppBar(
+            navController = navController,
+            isEdit = isEdit,
+            editFunction = { isEdit = true },
+            saveFunction = { isEdit = false },
             deleteFunction = {},
             moreVertFunction = {}
         )

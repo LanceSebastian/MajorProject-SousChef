@@ -25,6 +25,7 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 @Composable
 fun BareRecipePageScreen(
     navController: NavHostController,
+    editFunction: () -> Unit = {},
     saveFunction: () -> Unit = {},
     deleteFunction: () -> Unit = {},
     moreVertFunction: () -> Unit = {},
@@ -32,7 +33,7 @@ fun BareRecipePageScreen(
     pageContent: @Composable (innerPadding: PaddingValues) -> Unit = {}
 ){
     Scaffold(
-        topBar = { EditTopAppBar(navController = navController, isEdit = isEdit, saveFunction = saveFunction, deleteFunction = deleteFunction, moreVertFunction = moreVertFunction) },
+        topBar = { EditTopAppBar(navController = navController, isEdit = isEdit, editFunction = editFunction, saveFunction = saveFunction, deleteFunction = deleteFunction, moreVertFunction = moreVertFunction) },
         content = { innerPadding -> pageContent(innerPadding) },
         bottomBar = { HomeNavigationBar(mainState = MainState.RECIPES, navController = navController) },
     )
