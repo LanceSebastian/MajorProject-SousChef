@@ -123,7 +123,7 @@ fun Navigation(
         composable(Screen.Profile.route){
             TopProfileScreen(
                 navController,
-                profileViewModel
+                authViewModel
             )
         }
 

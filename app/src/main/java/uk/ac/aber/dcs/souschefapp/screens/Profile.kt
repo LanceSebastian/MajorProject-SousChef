@@ -17,6 +17,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,20 +27,39 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import uk.ac.aber.dcs.souschefapp.database.MainState
+import uk.ac.aber.dcs.souschefapp.database.UserPreferences
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
+import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
+import uk.ac.aber.dcs.souschefapp.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.viewmodel.ProfileViewModel
 
 @Composable
 fun TopProfileScreen(
     navController: NavHostController,
-    profileViewModel: ProfileViewModel
+    authViewModel: AuthViewModel,
 ){
-    ProfileScreen(navController)
+    val accountId by authViewModel.userId.observeAsState()
+    val username by authViewModel.userName.observeAsState()
+    val email by authViewModel.userEmail.observeAsState()
+    val account = Triple(accountId?:0, username?:"Error", email?:"Error@Error")
+    ProfileScreen(
+        navController = navController,
+        logOff = {
+            authViewModel.logout()
+            navController.navigate(Screen.Auth.route)
+        },
+        account = account
+
+    )
 }
 
 @Composable
-fun ProfileScreen(navController: NavHostController){
+fun ProfileScreen(
+    navController: NavHostController,
+    logOff: () -> Unit = {},
+    account: Triple<Int, String, String>
+){
     BareMainScreen(
         navController = navController,
         mainState = MainState.PROFILE
@@ -69,7 +90,7 @@ fun ProfileScreen(navController: NavHostController){
                             contentDescription = null,
                             modifier = Modifier.size(50.dp)
                         )
-                        Text(text = "User Name", style = MaterialTheme.typography.bodyLarge)
+                        Text(text = account.second, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -83,7 +104,7 @@ fun ProfileScreen(navController: NavHostController){
                     modifier = Modifier
                         .fillMaxWidth()
                 ) {
-                    Text("Username: n/a")
+                    Text("Username: ${account.second}")
                 }
 
                 Button(
@@ -96,7 +117,7 @@ fun ProfileScreen(navController: NavHostController){
                     modifier = Modifier
                         .fillMaxWidth()
                 ) {
-                    Text("Password: n/a")
+                    Text("Password: ********")
                 }
 
                 Button(
@@ -109,7 +130,7 @@ fun ProfileScreen(navController: NavHostController){
                     modifier = Modifier
                         .fillMaxWidth()
                 ) {
-                    Text("Email: n/a")
+                    Text("Email: ${account.third}")
                 }
 
                 Button(
@@ -163,6 +184,21 @@ fun ProfileScreen(navController: NavHostController){
                 ) {
                     Text("Theme")
                 }
+
+                Button(
+                    onClick = {
+                        logOff()
+                              },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    shape = RoundedCornerShape(0.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    Text("Log off")
+                }
             }
         }
     }
@@ -172,5 +208,11 @@ fun ProfileScreen(navController: NavHostController){
 @Composable
 fun ProfileScreenPreview(){
     val navController = rememberNavController()
-    AppTheme { ProfileScreen(navController) }
+    AppTheme {
+        ProfileScreen(
+            navController = navController,
+            logOff = {},
+            account = Triple(0, "Lance", "lance@gmail")
+        )
+    }
 }

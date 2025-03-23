@@ -46,6 +46,12 @@ class AuthViewModel (
         }
     }
 
+    fun logout(){
+        viewModelScope.launch(Dispatchers.IO){
+            userPreferences.logout()
+        }
+    }
+
     fun updateAccount(account: Account){
         viewModelScope.launch(Dispatchers.IO){
             repository.updateAccount(account)
