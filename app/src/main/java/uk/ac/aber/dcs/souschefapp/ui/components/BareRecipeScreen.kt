@@ -25,17 +25,26 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 @Composable
 fun BareRecipePageScreen(
     navController: NavHostController,
-    editFunction: () -> Unit = {},
-    saveFunction: () -> Unit = {},
-    deleteFunction: () -> Unit = {},
-    moreVertFunction: () -> Unit = {},
+    editFunction: () -> Unit,
+    backFunction: () -> Unit,
+    saveFunction: () -> Unit,
+    deleteFunction: () -> Unit,
     isEdit: Boolean = false,
+    isBottomBar: Boolean = true,
     pageContent: @Composable (innerPadding: PaddingValues) -> Unit = {}
 ){
     Scaffold(
-        topBar = { EditTopAppBar(navController = navController, isEdit = isEdit, editFunction = editFunction, saveFunction = saveFunction, deleteFunction = deleteFunction, moreVertFunction = moreVertFunction) },
+        topBar = {
+            EditTopAppBar(
+                navController = navController,
+                isEdit = isEdit,
+                editFunction = editFunction,
+                backFunction = backFunction,
+                saveFunction = saveFunction,
+                deleteFunction = deleteFunction,
+            ) },
         content = { innerPadding -> pageContent(innerPadding) },
-        bottomBar = { HomeNavigationBar(mainState = MainState.RECIPES, navController = navController) },
+        bottomBar = { if (isBottomBar) HomeNavigationBar(mainState = MainState.RECIPES, navController = navController) },
     )
 }
 
@@ -46,6 +55,10 @@ fun BareRecipePageView(){
     AppTheme {
         BareRecipePageScreen(
             navController = navController,
+            editFunction = {},
+            backFunction = {},
+            saveFunction = {},
+            deleteFunction = {},
         )
     }
 }

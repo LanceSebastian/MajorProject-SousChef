@@ -32,8 +32,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import okhttp3.internal.toImmutableList
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.database.UserPreferences
+import uk.ac.aber.dcs.souschefapp.database.models.Log
 import uk.ac.aber.dcs.souschefapp.database.models.Product
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.BareRecipePageScreen
@@ -46,16 +48,28 @@ import uk.ac.aber.dcs.souschefapp.viewmodel.ProductViewModel
 fun TopProductScreen(
     navController: NavHostController,
     productViewModel: ProductViewModel,
+    logViewModel: LogViewModel,
     userPreferences: UserPreferences,
-    productId: Int
+    productId: Int,
+    logDate: Long
 ){
     val accountId by userPreferences.accountId.observeAsState()
+    android.util.Log.d("RoomDB", "Fetched data: " + accountId.toString())
     val product by productViewModel.getProductFromId(productId).observeAsState()
+    val log by logViewModel.getLogFromDate(logDate).observeAsState()
     if (accountId != null) {
         ProductScreen(
             navController = navController,
             product = product,
             accountId = accountId!!,
+            log = log,
+            date = logDate,
+            addLog = { newLog ->
+                logViewModel.insertLog(newLog)
+            },
+            updateLog = { newLog ->
+                logViewModel.updateLog(newLog)
+            },
             addProduct = { newProduct ->
                 productViewModel.insertProduct(newProduct)
             },
@@ -74,6 +88,10 @@ fun ProductScreen(
     navController: NavHostController,
     product: Product? = null,
     accountId: Int,
+    log: Log?,
+    date: Long,
+    addLog: (Log) -> Unit,
+    updateLog: (Log) -> Unit,
     addProduct: (Product) -> Unit,
     updateProduct: (Product) -> Unit,
     deleteProduct: (Product) -> Unit
@@ -83,32 +101,44 @@ fun ProductScreen(
     var isEdit by remember { mutableStateOf(false) }
     BareRecipePageScreen(
         navController = navController,
-        saveFunction = {
-            if (product != null) {
-                updateProduct(
-                    Product(
-                        productId = product.productId,
-                        accountOwnerId = product.accountOwnerId,
-                        name = nameText,
-                        price = priceText.toBigDecimal()
-                    )
+        isEdit = isEdit,
+        isBottomBar = false,
+        editFunction = { isEdit = !isEdit },
+        backFunction = {
+            if (nameText.isNotEmpty() || priceText.isNotEmpty()) {
+                val newProduct = Product(
+                    accountOwnerId = accountId,
+                    name = nameText,
+                    price = priceText.toBigDecimal()
                 )
-            } else {
-                addProduct(
-                    Product(
-                        accountOwnerId = accountId,
-                        name = nameText,
-                        price = priceText.toBigDecimal()
-                    )
+                val newLog = log?.let {
+                    it.copy(productIdList = it.productIdList + newProduct.productId)
+                } ?: Log(
+                    accountOwnerId = accountId,
+                    date = date,
+                    productIdList = listOf(newProduct.productId)
                 )
+
+                if (log != null) updateLog(newLog) else addLog(newLog)
             }
+        },
+        saveFunction = {
+            val newProduct = product?.copy(
+                name = nameText,
+                price = priceText.toBigDecimal()
+            ) ?: Product(
+                accountOwnerId = accountId,
+                name = nameText,
+                price = priceText.toBigDecimal()
+            )
+
+            if (product != null) updateProduct(newProduct) else addProduct(newProduct)
             isEdit = false
                        },
         deleteFunction = {
             if(product != null) deleteProduct(product)
             navController.popBackStack()
         },
-        isEdit = isEdit
     ){ innerPadding ->
         Surface(
             modifier = Modifier
@@ -150,6 +180,7 @@ fun ProductScreen(
                     value = nameText,
                     onValueChange = { nameText = it },
                     label = { Text("Name") },
+                    enabled = isEdit,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
@@ -162,6 +193,7 @@ fun ProductScreen(
                     value = priceText,
                     onValueChange = { priceText = it },
                     label = { Text("Price") },
+                    enabled = isEdit,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
@@ -179,9 +211,13 @@ fun ProductScreenPreview(){
         ProductScreen(
             navController = navController,
             accountId = 0,
+            log = null,
+            date = 0,
             addProduct = {},
             updateProduct = {},
-            deleteProduct = {}
+            deleteProduct = {},
+            addLog = {},
+            updateLog = {}
         )
     }
 }

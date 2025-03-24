@@ -69,10 +69,10 @@ import uk.ac.aber.dcs.souschefapp.viewmodel.RecipeViewModel
 
 @Composable
 fun TopRecipePageScreen(
+    recipeId: Int,
     navController: NavHostController,
     recipeViewModel: RecipeViewModel,
     ingredientViewModel: IngredientViewModel,
-    recipeId: Int
 ){
     val ingredients by ingredientViewModel.getIngredientsFromRecipe(recipeId).observeAsState(listOf())
     val recipe by recipeViewModel.getRecipeById(recipeId).observeAsState()
@@ -121,6 +121,7 @@ fun RecipePageScreen(
     var isInstructionDialog by remember { mutableStateOf(false) }
     var isIngredientDelete by remember { mutableStateOf(false) }
     var isInstructionDelete by remember { mutableStateOf(false) }
+    var isBackConfirm by remember { mutableStateOf(false) }
     var isEdit by remember { mutableStateOf(false) }
 
     //      Mutable Data
@@ -132,6 +133,8 @@ fun RecipePageScreen(
     BareRecipePageScreen(
         navController = navController,
         isEdit = isEdit,
+        isBottomBar = false,
+        editFunction = { isEdit = !isEdit },
         saveFunction = {
             if (recipe != null){
                 val newRecipe = Recipe(
@@ -152,7 +155,10 @@ fun RecipePageScreen(
             if (recipe != null) onRecipeDelete(recipe)
             navController.popBackStack()
                          },
-        moreVertFunction = { TODO("DropDownMenu: Notes, History") }
+        backFunction = {
+            isBackConfirm = true
+        },
+
 
     ){ innerPadding ->
         Surface(
@@ -415,6 +421,16 @@ fun RecipePageScreen(
                     mainAction = { mutableInstructionList.remove(editInstruction) },
                     supportingText = "Deleting an instruction is permanent.",
                     mainButtonText = "Delete"
+                )
+            }
+
+            if (isBackConfirm){
+                ConfirmDialogue(
+                    onDismissRequest = { isIngredientDelete = false },
+                    mainAction = { navController.popBackStack() },
+                    title = "Ready to go?",
+                    supportingText = "Any unsaved data will be forgotten!",
+                    mainButtonText = "Continue"
                 )
             }
 

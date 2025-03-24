@@ -118,7 +118,7 @@ fun RecipesScreen(
                         item {
                             CardRecipe(
                                 text = recipe.recipeName,
-                                onClick = { navController.navigate(Screen.RecipePage.route + "?recipeId = ${recipe.recipeId}") }
+                                onClick = { navController.navigate(Screen.RecipePage.route + "/recipeId=${recipe.recipeId}") }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -130,37 +130,44 @@ fun RecipesScreen(
                 Dialog(
                     onDismissRequest = { isFloatClick = false }
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.background,
                         modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth()
+                            .height(220.dp)
                     ) {
-                        Text(
-                            text = "Add a Recipe",
-                        )
-                        TextField(
-                            value = recipeNameText,
-                            onValueChange = { recipeNameText = it },
-                            label = { Text("Name")}
-                        )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                            modifier = Modifier.fillMaxWidth(),
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth()
                         ) {
-                            TextButton(onClick = {
-                                isFloatClick = false
-                                recipeNameText = ""
-                            }) {
-                                Text("Cancel")
-                            }
-                            Button(onClick = {
-                                val newRecipe = Recipe(recipeName = recipeNameText)
-                                addRecipe(newRecipe)
-                                recipeNameText = ""
-                                navController.navigate(Screen.RecipePage.route + "?recipeId = ${newRecipe.recipeId}")
-                            }){
-                                Text("Continue")
+                            Text(
+                                text = "Add a Recipe",
+                            )
+                            TextField(
+                                value = recipeNameText,
+                                onValueChange = { recipeNameText = it },
+                                label = { Text("Name") }
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                TextButton(onClick = {
+                                    isFloatClick = false
+                                    recipeNameText = ""
+                                }) {
+                                    Text("Cancel")
+                                }
+                                Button(onClick = {
+                                    val newRecipe = Recipe(recipeName = recipeNameText)
+                                    addRecipe(newRecipe)
+                                    recipeNameText = ""
+                                    navController.navigate(Screen.RecipePage.route + "/recipeId = ${newRecipe.recipeId}")
+                                }) {
+                                    Text("Continue")
+                                }
                             }
                         }
                     }

@@ -131,31 +131,39 @@ fun Navigation(
         composable(
             route = Screen.RecipePage.route + "/recipeId={recipeId}",
             arguments = listOf(navArgument("recipeId") {
-                type = NavType.IntType
+                type = NavType.StringType
                 nullable = false
             })
         ){ entry ->
             TopRecipePageScreen(
-                navController,
-                recipeViewModel,
-                ingredientViewModel,
-                recipeId = entry.arguments?.getInt("topicId")!!
+                navController = navController,
+                recipeViewModel = recipeViewModel,
+                ingredientViewModel = ingredientViewModel,
+                recipeId = entry.arguments?.getString("recipeId")!!.toInt()
             )
         }
 
         /* Product */
         composable(
-            route = Screen.Product.route + "/productId={productId}",
-            arguments = listOf(navArgument("recipeId") {
-                type = NavType.IntType
-                nullable = false
-            })
+            route = Screen.Product.route + "/productId={productId}" + "/logDate={logDate}",
+            arguments = listOf(
+                navArgument("productId") {
+                    type = NavType.StringType
+                    nullable = false
+                },
+                navArgument("logDate"){
+                    type = NavType.StringType
+                    nullable = false
+                }
+                )
         ){ entry ->
             TopProductScreen(
-                navController,
-                productViewModel,
-                userPreferences,
-                productId = entry.arguments?.getInt("productId")!!
+                navController = navController,
+                productViewModel = productViewModel,
+                logViewModel = logViewModel,
+                userPreferences = userPreferences,
+                productId = entry.arguments?.getString("productId")!!.toInt(),
+                logDate = entry.arguments?.getString("logDate")!!.toLong()
 
             )
         }

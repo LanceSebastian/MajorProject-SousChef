@@ -70,6 +70,7 @@ import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.database.UserPreferences
 import uk.ac.aber.dcs.souschefapp.database.models.Log
 import uk.ac.aber.dcs.souschefapp.database.models.Note
+import uk.ac.aber.dcs.souschefapp.database.models.Product
 import uk.ac.aber.dcs.souschefapp.database.models.Recipe
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
@@ -82,6 +83,7 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import uk.ac.aber.dcs.souschefapp.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.viewmodel.NoteViewModel
 import uk.ac.aber.dcs.souschefapp.viewmodel.RecipeViewModel
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -468,12 +470,16 @@ fun HomeScreen(
             if (addSelected){
                 HomeAddDialogue(
                     onDismissRequest = { addSelected = false },
-                    mainAction = { 
-                        navController.navigate(Screen.Product.route)
+                    mainAction = {
+                        val newProduct = Product(
+                            accountOwnerId = accountId,
+                            name = "",
+                            price = BigDecimal(0)
+                        )
+                        navController.navigate(Screen.Product.route + "/productId=${newProduct.productId}" + "/logDate=${datePickedEpoch}")
                                  },
                     secondAction = {
-                        navController.navigate(Screen.Recipes.route
-                        )
+                        navController.navigate(Screen.Recipes.route)
                     }
                 )
             }

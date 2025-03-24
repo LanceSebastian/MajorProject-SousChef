@@ -27,8 +27,8 @@ data class Account(
 data class Product(
     @PrimaryKey(autoGenerate = true) val productId: Int = 0,
     val accountOwnerId: Int,
-    val name: String,
-    val price: BigDecimal,
+    val name: String = "",
+    val price: BigDecimal = BigDecimal(0),
 )
 
 @Entity(

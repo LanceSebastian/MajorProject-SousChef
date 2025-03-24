@@ -39,4 +39,8 @@ class LogViewModel(
     fun getAllLogsFromAccount(accountOwnerId: Int): LiveData<List<Log>> {
         return repository.getAllLogsFromAccount(accountOwnerId)
     }
+
+    fun getLogFromDate(date: Long): LiveData<Log> {
+        return repository.getLogFromDate(date)
+    }
 }

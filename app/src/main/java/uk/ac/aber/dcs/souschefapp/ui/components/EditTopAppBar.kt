@@ -34,11 +34,11 @@ fun EditTopAppBar(
     title: String = "",
     isEdit: Boolean = false,
     editFunction: () -> Unit,
+    backFunction: () -> Unit,
     saveFunction: () -> Unit,
     deleteFunction: () -> Unit,
-    moreVertFunction: () -> Unit
 ){
-
+    var isMutableExpanded by remember { mutableStateOf(false) }
     Column {
         CenterAlignedTopAppBar(
             title = {
@@ -50,8 +50,7 @@ fun EditTopAppBar(
                 ) },
             navigationIcon = {
                 IconButton(onClick = {
-                    saveFunction()
-                    navController.popBackStack()
+                    backFunction()
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -75,7 +74,7 @@ fun EditTopAppBar(
                     if (isEdit) {
                         deleteFunction()
                     } else {
-                        moreVertFunction()
+                        isMutableExpanded = !isMutableExpanded
                     }
                 }
                 ) {
@@ -108,9 +107,9 @@ fun FalseEditTopAppBarPreview(){
             navController = navController,
             isEdit = isEdit,
             editFunction = { isEdit = true },
+            backFunction = {},
             saveFunction = { isEdit = false },
             deleteFunction = {},
-            moreVertFunction = {}
         )
     }
 }
@@ -125,9 +124,9 @@ fun TrueEditTopAppBarPreview(){
             navController = navController,
             isEdit = isEdit,
             editFunction = { isEdit = true },
+            backFunction = {},
             saveFunction = { isEdit = false },
             deleteFunction = {},
-            moreVertFunction = {}
         )
     }
 }
