@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -73,6 +74,28 @@ dependencies {
     implementation (libs.androidx.lifecycle.viewmodel.ktx.v287)  // ViewModel KTX for better LiveData handling
     implementation(libs.androidx.room.runtime)
     kapt(libs.androidx.room.compiler)
+    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+
+    // Firebase Firestore
+    implementation("com.google.firebase:firebase-firestore")
+
+    // Firebase Authentication (optional)
+    implementation("com.google.firebase:firebase-auth")
+
+    // Firebase Storage (optional)
+    implementation("com.google.firebase:firebase-storage")
+
+    // Google Play Services Base
+    implementation("com.google.android.gms:play-services-base")
+
+    // ViewModel and LiveData (for MVVM)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
+
+    // Kotlin Coroutines (recommended for Firestore)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+
     implementation(libs.gson)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)
