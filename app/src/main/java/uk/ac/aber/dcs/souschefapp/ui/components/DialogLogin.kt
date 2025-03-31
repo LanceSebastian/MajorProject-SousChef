@@ -40,7 +40,6 @@ fun LoginDialogue(
     var emptyFieldsError by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
-    var radioSelected by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismissRequest
@@ -82,12 +81,6 @@ fun LoginDialogue(
                     isError = passwordError,
                     singleLine = true
                 )
-
-                // Remember Me
-                Row (verticalAlignment = Alignment.CenterVertically){
-                    RadioButton( selected = radioSelected, onClick = { radioSelected = !radioSelected })
-                    Text(text = "Remember me", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
 
                 if (emptyFieldsError) {
                     Text(
@@ -134,7 +127,7 @@ fun LoginDialoguePreview(){
     AppTheme(dynamicColor = false){
         LoginDialogue(
             onDismissRequest = {},
-            mainAction = {_, _ -> {}}
+            mainAction = {_, _ -> }
         )
     }
 }
