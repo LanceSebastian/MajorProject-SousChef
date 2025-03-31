@@ -26,29 +26,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseUser
 import uk.ac.aber.dcs.souschefapp.database.MainState
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.AuthViewModel
 
 @Composable
 fun TopProfileScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel,
 ){
-    val accountId by authViewModel.userId.observeAsState()
-    val username by authViewModel.userName.observeAsState()
-    val email by authViewModel.userEmail.observeAsState()
-    val account = Triple(accountId?:0, username?:"Error", email?:"Error@Error")
+    val user by authViewModel.user.observeAsState()
+    val username by authViewModel.username.observeAsState()
     ProfileScreen(
         navController = navController,
         logOff = {
             authViewModel.logout()
-            navController.navigate(Screen.Auth.route)
         },
-        account = account
-
+        user = user,
+        username = username
     )
 }
 
@@ -56,7 +54,8 @@ fun TopProfileScreen(
 fun ProfileScreen(
     navController: NavHostController,
     logOff: () -> Unit = {},
-    account: Triple<Int, String, String>
+    user: FirebaseUser? = null,
+    username: String?
 ){
     BareMainScreen(
         navController = navController,
@@ -88,7 +87,7 @@ fun ProfileScreen(
                             contentDescription = null,
                             modifier = Modifier.size(50.dp)
                         )
-                        Text(text = account.second, style = MaterialTheme.typography.bodyLarge)
+                        Text(text = username ?: "Anon", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -102,7 +101,7 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                 ) {
-                    Text("Username: ${account.second}")
+                    Text("Username: ${username ?: "Anon"}")
                 }
 
                 Button(
@@ -128,7 +127,7 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                 ) {
-                    Text("Email: ${account.third}")
+                    Text("Email: ${user?.email ?: "n/a"}")
                 }
 
                 Button(
@@ -210,7 +209,7 @@ fun ProfileScreenPreview(){
         ProfileScreen(
             navController = navController,
             logOff = {},
-            account = Triple(0, "Lance", "lance@gmail")
+            username = ""
         )
     }
 }
