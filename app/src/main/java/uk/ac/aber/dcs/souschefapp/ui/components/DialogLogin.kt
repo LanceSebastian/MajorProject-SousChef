@@ -6,14 +6,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonColors
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,11 +34,11 @@ fun LoginDialogue(
     mainAction: (String, String) -> Unit,
 ){
 
-    var usernameText by remember { mutableStateOf("") }
+    var emailText by remember { mutableStateOf("") }
     var passwordText by remember { mutableStateOf("") }
 
     var emptyFieldsError by remember { mutableStateOf(false) }
-    var usernameError by remember { mutableStateOf(false) }
+    var emailError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
     var radioSelected by remember { mutableStateOf(false) }
 
@@ -65,12 +62,12 @@ fun LoginDialogue(
 
                 // Username
                 TextField(
-                    value = usernameText,
+                    value = emailText,
                     onValueChange = {
-                        usernameText = it
+                        emailText = it
                     },
-                    label = { Text("Username") },
-                    isError = usernameError,
+                    label = { Text("Email") },
+                    isError = emailError,
                     singleLine = true
                 )
 
@@ -104,7 +101,7 @@ fun LoginDialogue(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     TextButton(onClick = {
-                        usernameText = ""
+                        emailText = ""
                         passwordText = ""
                         onDismissRequest()
                     }) {
@@ -114,11 +111,11 @@ fun LoginDialogue(
                     Button(
                         onClick = {
 
-                            usernameError = usernameText.isEmpty()
+                            emailError = emailText.isEmpty()
                             passwordError = passwordText.isEmpty()
-                            emptyFieldsError = usernameError || passwordError
+                            emptyFieldsError = emailError || passwordError
 
-                            if (emptyFieldsError) mainAction(usernameText, passwordText)
+                            if (emptyFieldsError) mainAction(emailText, passwordText)
                         }
                     ){
                         Text(

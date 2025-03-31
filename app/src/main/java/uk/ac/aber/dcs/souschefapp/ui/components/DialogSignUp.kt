@@ -30,7 +30,7 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 @Composable
 fun SignUpDialogue(
     onDismissRequest: () -> Unit,
-    mainAction: (Account) -> Unit
+    mainAction: (String, String, String) -> Unit
 ) {
 
     var usernameText by remember { mutableStateOf("") }
@@ -147,13 +147,7 @@ fun SignUpDialogue(
                             emptyFieldsError = usernameError || passwordError || passwordRepeatError || emailError
 
                             if (!differentPasswordsError && !emptyFieldsError) {
-                                mainAction(
-                                    Account(
-                                        username = usernameText,
-                                        email = emailText,
-                                        password = passwordText
-                                    )
-                                )
+                                mainAction(emailText, passwordText, usernameText)
                             }
                         }
                     ){
@@ -173,7 +167,7 @@ fun SignUpDialoguePreview(){
     AppTheme(dynamicColor = false){
         SignUpDialogue(
             onDismissRequest = {},
-            mainAction = {}
+            mainAction = {_,_,_ -> }
         )
     }
 }
