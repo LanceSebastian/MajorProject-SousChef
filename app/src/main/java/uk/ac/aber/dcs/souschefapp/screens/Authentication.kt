@@ -38,25 +38,24 @@ import uk.ac.aber.dcs.souschefapp.ui.components.LoginDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.SignUpDialogue
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 
 @Composable
 fun TopAuthScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel,
 ){
-    val isAuthenticated by authViewModel.isAuthenticated.observeAsState(false)
 
-    LaunchedEffect (isAuthenticated){
-        if (isAuthenticated)
-            navController.navigate(Screen.Home.route)
-    }
 
     AuthScreen(
         navController = navController,
 
-        onLogin = { username, password -> authViewModel.login(username, password)},
-        onSignup = { account -> authViewModel.register(account) }
+        onLogin = { email, password ->
+            authViewModel.login(email, password)
+                  },
+        onRegister = { email, password, username ->
+            authViewModel.register(email, password, username)
+        }
     )
 
 }
@@ -64,7 +63,7 @@ fun TopAuthScreen(
 fun AuthScreen(
     navController: NavHostController,
     onLogin: (String, String) -> Unit,
-    onSignup: (Account) -> Unit
+    onRegister: (String, String, String) -> Unit
 ){
     val colorStops = arrayOf(
         0.14f to MaterialTheme.colorScheme.primary,
@@ -148,8 +147,8 @@ fun AuthScreen(
         if (loginSelected) {
             LoginDialogue(
                 onDismissRequest = { loginSelected = false },
-                mainAction = {username, password ->
-                    onLogin(username, password)
+                mainAction = {email, password ->
+                    onLogin(email, password)
                 }
             )
         }
@@ -157,8 +156,8 @@ fun AuthScreen(
         if (signupSelected) {
             SignUpDialogue(
                 onDismissRequest = { signupSelected = false },
-                mainAction = { account ->
-                    onSignup(account)
+                mainAction = { email, password, username ->
+                    onRegister(email, password, username)
                     navController.navigate(Screen.Home.route)
                 }
             )
@@ -174,8 +173,8 @@ fun AuthScreenPreview(){
     AppTheme(){
         AuthScreen(
             navController,
-            onLogin = {_,_ -> {}},
-            onSignup = {}
+            onLogin = {_,_ -> },
+            onRegister = {_,_,_ -> }
         )
     }
 }
