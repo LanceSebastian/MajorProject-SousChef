@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "396306221597",
+    "firebase_url": "https://major-project-f5a95-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "major-project-f5a95",
+    "storage_bucket": "major-project-f5a95.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:396306221597:android:e65c0f6d862f5476d454f4",
+        "android_client_info": {
+          "package_name": "uk.ac.aber.dcs.souschefapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6qwqGYBOo5IBJTtKQoJdBt7oBR7V-UMw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
