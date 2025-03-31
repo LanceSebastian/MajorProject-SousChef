@@ -1,4 +1,4 @@
-package uk.ac.aber.dcs.souschefapp.firebase
+package uk.ac.aber.dcs.souschefapp.firebase.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
