@@ -1,15 +1,12 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -32,17 +29,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import okhttp3.internal.toImmutableList
-import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.database.UserPreferences
 import uk.ac.aber.dcs.souschefapp.database.models.Log
 import uk.ac.aber.dcs.souschefapp.database.models.Product
-import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.BareRecipePageScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.viewmodel.LogViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.ProductViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.LogViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.ProductViewModel
 
 @Composable
 fun TopProductScreen(

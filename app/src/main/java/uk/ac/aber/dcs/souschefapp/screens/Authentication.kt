@@ -1,6 +1,5 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,11 +27,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import uk.ac.aber.dcs.souschefapp.R
@@ -41,8 +38,7 @@ import uk.ac.aber.dcs.souschefapp.ui.components.LoginDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.SignUpDialogue
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.viewmodel.AuthViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.LoginState
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.AuthViewModel
 
 @Composable
 fun TopAuthScreen(

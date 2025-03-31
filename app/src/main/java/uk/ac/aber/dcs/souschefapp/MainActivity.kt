@@ -1,31 +1,19 @@
 package uk.ac.aber.dcs.souschefapp
 
-import android.app.Application
-import android.content.Context
 import android.os.Bundle
-import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.datastore.core.DataStore
-import androidx.datastore.dataStore
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import uk.ac.aber.dcs.souschefapp.database.SousChefRepository
 import uk.ac.aber.dcs.souschefapp.database.UserPreferences
 import uk.ac.aber.dcs.souschefapp.screens.TopAuthScreen
 import uk.ac.aber.dcs.souschefapp.screens.TopHistoryScreen
@@ -36,14 +24,14 @@ import uk.ac.aber.dcs.souschefapp.screens.TopRecipePageScreen
 import uk.ac.aber.dcs.souschefapp.screens.TopRecipesScreen
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.viewmodel.AuthViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.HomeViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.IngredientViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.LogViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.NoteViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.ProductViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.ProfileViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.RecipeViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.HomeViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.IngredientViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.LogViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.NoteViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.ProductViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.ProfileViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.RecipeViewModel
 
 class MainActivity : ComponentActivity() {
 

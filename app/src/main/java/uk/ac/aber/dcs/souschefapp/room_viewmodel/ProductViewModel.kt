@@ -1,15 +1,13 @@
-package uk.ac.aber.dcs.souschefapp.viewmodel
+package uk.ac.aber.dcs.souschefapp.room_viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
-import androidx.room.Query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.database.SousChefRepository
 import uk.ac.aber.dcs.souschefapp.database.models.Product
-import uk.ac.aber.dcs.souschefapp.database.models.Recipe
 
 /*      Handles Product Manipulation       */
 class ProductViewModel(

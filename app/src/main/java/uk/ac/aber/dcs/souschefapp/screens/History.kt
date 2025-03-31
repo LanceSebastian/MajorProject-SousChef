@@ -1,22 +1,15 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -24,13 +17,12 @@ import androidx.navigation.compose.rememberNavController
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.database.UserPreferences
 import uk.ac.aber.dcs.souschefapp.database.models.Log
-import uk.ac.aber.dcs.souschefapp.database.models.Note
 import uk.ac.aber.dcs.souschefapp.database.models.Recipe
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardHistory
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.viewmodel.LogViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.RecipeViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.LogViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.RecipeViewModel
 import java.time.Instant
 import java.time.ZoneId
 

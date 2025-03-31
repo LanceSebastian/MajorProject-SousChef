@@ -1,15 +1,12 @@
-package uk.ac.aber.dcs.souschefapp.viewmodel
+package uk.ac.aber.dcs.souschefapp.room_viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.database.SousChefRepository
-import uk.ac.aber.dcs.souschefapp.database.UserPreferences
-import uk.ac.aber.dcs.souschefapp.database.models.Account
 import uk.ac.aber.dcs.souschefapp.database.models.Log
 
 /*      Handles Logs       */

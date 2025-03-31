@@ -27,12 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import uk.ac.aber.dcs.souschefapp.database.MainState
-import uk.ac.aber.dcs.souschefapp.database.UserPreferences
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.viewmodel.AuthViewModel
-import uk.ac.aber.dcs.souschefapp.viewmodel.ProfileViewModel
+import uk.ac.aber.dcs.souschefapp.room_viewmodel.AuthViewModel
 
 @Composable
 fun TopProfileScreen(

@@ -1,10 +1,10 @@
-package uk.ac.aber.dcs.souschefapp.viewmodel
+package uk.ac.aber.dcs.souschefapp.room_viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 
-/*      Handles Account Settings       */
-class ProfileViewModel(
+/*      Handles Receipts and budget tracking       */
+class BudgetViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 }
