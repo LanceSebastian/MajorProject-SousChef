@@ -32,6 +32,7 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 fun LoginDialogue(
     onDismissRequest: () -> Unit,
     mainAction: (String, String) -> Unit,
+    authStatus: String? = null
 ){
 
     var emailText by remember { mutableStateOf("") }
@@ -82,11 +83,8 @@ fun LoginDialogue(
                     singleLine = true
                 )
 
-                if (emptyFieldsError) {
-                    Text(
-                        text = "Please fill in the fields.",
-                        color = MaterialTheme.colorScheme.error
-                    )
+                authStatus?.let {
+                    Text(text = it)
                 }
 
                 Row(
@@ -108,7 +106,7 @@ fun LoginDialogue(
                             passwordError = passwordText.isEmpty()
                             emptyFieldsError = emailError || passwordError
 
-                            if (emptyFieldsError) mainAction(emailText, passwordText)
+                            if (!emptyFieldsError) mainAction(emailText, passwordText)
                         }
                     ){
                         Text(

@@ -32,8 +32,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseUser
 import uk.ac.aber.dcs.souschefapp.R
-import uk.ac.aber.dcs.souschefapp.database.models.Account
 import uk.ac.aber.dcs.souschefapp.ui.components.LoginDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.SignUpDialogue
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
@@ -45,25 +45,29 @@ fun TopAuthScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel,
 ){
-
+    val user by authViewModel.user.observeAsState()
+    val authStatus by authViewModel.authStatus.observeAsState()
 
     AuthScreen(
-        navController = navController,
-
+        user = user,
+        authStatus = authStatus,
         onLogin = { email, password ->
             authViewModel.login(email, password)
                   },
         onRegister = { email, password, username ->
             authViewModel.register(email, password, username)
-        }
+        },
+        goToMain = { navController.navigate(Screen.Profile.route) }
     )
 
 }
 @Composable
 fun AuthScreen(
-    navController: NavHostController,
+    user: FirebaseUser? = null,
+    authStatus: String? = null,
     onLogin: (String, String) -> Unit,
-    onRegister: (String, String, String) -> Unit
+    onRegister: (String, String, String) -> Unit,
+    goToMain: () -> Unit
 ){
     val colorStops = arrayOf(
         0.14f to MaterialTheme.colorScheme.primary,
@@ -73,6 +77,13 @@ fun AuthScreen(
     val brush =  Brush.verticalGradient(colorStops = colorStops)
     var loginSelected by remember { mutableStateOf(false) }
     var signupSelected by remember { mutableStateOf(false) }
+
+    // Automatically navigate when auth state changes
+    LaunchedEffect(user) {
+        if (user != null) {
+            goToMain()
+        }
+    }
 
     Surface(
         modifier = Modifier
@@ -149,7 +160,8 @@ fun AuthScreen(
                 onDismissRequest = { loginSelected = false },
                 mainAction = {email, password ->
                     onLogin(email, password)
-                }
+                },
+                authStatus = authStatus
             )
         }
 
@@ -158,7 +170,6 @@ fun AuthScreen(
                 onDismissRequest = { signupSelected = false },
                 mainAction = { email, password, username ->
                     onRegister(email, password, username)
-                    navController.navigate(Screen.Home.route)
                 }
             )
         }
@@ -169,12 +180,11 @@ fun AuthScreen(
 @Composable
 @Preview
 fun AuthScreenPreview(){
-    val navController = rememberNavController()
     AppTheme(){
         AuthScreen(
-            navController,
             onLogin = {_,_ -> },
-            onRegister = {_,_,_ -> }
+            onRegister = {_,_,_ -> },
+            goToMain = {}
         )
     }
 }
