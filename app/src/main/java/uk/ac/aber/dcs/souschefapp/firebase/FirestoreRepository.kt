@@ -26,7 +26,7 @@ class FirestoreRepository {
     }
 
     // Function to listen for logs in real-time for a specific user
-    fun listenForPosts(userId: String, onResult: (List<Log>) -> Unit): ListenerRegistration {
+    fun listenForLogs(userId: String, onResult: (List<Log>) -> Unit): ListenerRegistration {
         return db.collection("users")
             .document(userId)
             .collection("logs")
