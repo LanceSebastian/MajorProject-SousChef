@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.firebase.FirestoreRepository
 import uk.ac.aber.dcs.souschefapp.firebase.Log
@@ -14,6 +15,8 @@ import java.time.ZoneOffset
 
 class LogViewModel: ViewModel() {
     private val firestoreRepository = FirestoreRepository()
+
+    private var logListener: ListenerRegistration? = null
 
     private var _logs = MutableLiveData<List<Log>>()
     var logs: LiveData<List<Log>> = _logs
@@ -41,10 +44,18 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun createLog(userId: String, millis: Long,  log: Log){
-        val standardLog = log.copy(
+    fun createLog(userId: String?, millis: Long,  log: Log? = null){
+        if (userId == null) {
+            android.util.Log.e("LogViewModel", "Failed to create log due to null userId")
+            return
+        }
+
+        val standardLog = log?.copy(
             date = standardDate(millis),
             createdBy = userId
+        ) ?: Log(  // Create a new Log if log is null
+            createdBy = userId,
+            date = standardDate(millis)
         )
         viewModelScope.launch {
             val isSuccess = firestoreRepository.addLog(
@@ -60,10 +71,19 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun readLogs(userId: String) {
-        firestoreRepository.listenForPosts(userId) { logs ->
+    fun readLogs(userId: String?) {
+        if (userId == null) return
+
+        logListener?.remove() // Stop previous listener if it exists
+
+        logListener = firestoreRepository.listenForLogs(userId) { logs ->
             _logs.postValue(logs)
         }
+    }
+
+    fun stopListening(){
+        logListener?.remove()
+        logListener = null
     }
 
     fun addRecipeToLog(userId: String, millis: Long, recipeId: String, context: Context){
@@ -125,18 +145,26 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun updateRating(userId: String, logId: String, rating: Int){
+    fun updateRating(userId: String, logId: Long, rating: Int){
         firestoreRepository.updateLogRating(
             userId = userId,
-            logId = logId,
+            logId = logId.toString(),
             rating = rating
         )
     }
 
-    fun updateNote(userId: String, logId: String, note: String){
+//    fun updateNote(userId: String, logId: String, note: String){
+//        firestoreRepository.updateLogNote(
+//            userId = userId,
+//            logId = logId,
+//            note = note
+//        )
+//    }
+
+    fun updateNote(userId: String, logId: Long, note: String) {
         firestoreRepository.updateLogNote(
             userId = userId,
-            logId = logId,
+            logId = logId.toString(),
             note = note
         )
     }
