@@ -39,6 +39,7 @@ data class Note(
 
 // Subcollection to users
 data class Log(
+    val date: Long,
     val createdBy: String,
     val rating: Int = 0,
     val note: String? = null,
