@@ -8,13 +8,12 @@ import kotlinx.coroutines.tasks.await
 class LogRepository {
     private val db = FirebaseFirestore.getInstance()
 
-
-    suspend fun addLog(userId: String, log: Log, logId: String): Boolean{
+    suspend fun addLog(userId: String, log: Log): Boolean{
         return try {
             db.collection("users")
                 .document(userId)
                 .collection("logs")
-                .document(logId) // LogId is timestamp
+                .document(log.date.toString()) // LogId is timestamp
                 .set(log)
                 .await()
             android.util.Log.d("Firestore", "Log added successfully")
