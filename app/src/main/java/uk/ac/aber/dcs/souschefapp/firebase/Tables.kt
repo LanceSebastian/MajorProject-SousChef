@@ -9,9 +9,8 @@ data class Product(
 )
 
 data class Recipe(
-    val recipeName: String,
-    val instructionList: List<String> = emptyList<String>(),
-    val tags: List<String> = emptyList<String>(), // Will need to think about this further
+    val name: String = "",
+    val tags: List<String>? = null, // Will need to think about this further
     val isActive: Boolean = true
 )
 
