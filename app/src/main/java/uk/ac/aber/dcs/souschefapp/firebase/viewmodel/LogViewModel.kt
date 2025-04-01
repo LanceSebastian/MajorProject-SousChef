@@ -41,13 +41,13 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun createLog(username: String, millis: Long,  log: Log){
+    fun createLog(userId: String, millis: Long,  log: Log){
         val standardLog = log.copy(
             date = standardDate(millis)
         )
         viewModelScope.launch {
             val isSuccess = firestoreRepository.addLog(
-                username = username,
+                userId = userId,
                 logId = standardDate(millis).toString(),
                 log = standardLog
             )
@@ -59,15 +59,15 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun readLogs(username: String) {
-        firestoreRepository.listenForPosts(username) { logs ->
+    fun readLogs(userId: String) {
+        firestoreRepository.listenForPosts(userId) { logs ->
             _logs.postValue(logs)
         }
     }
 
-    fun addRecipeToLog(username: String, millis: Long, recipeId: String, context: Context){
+    fun addRecipeToLog(userId: String, millis: Long, recipeId: String, context: Context){
         firestoreRepository.addRecipeToLog(
-            username = username,
+            userId = userId,
             logId = standardDate(millis).toString(),
             recipeId = recipeId
         ){  success ->
@@ -80,9 +80,9 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun removeRecipeToLog(username: String, millis: Long, recipeId: String, context: Context){
+    fun removeRecipeToLog(userId: String, millis: Long, recipeId: String, context: Context){
         firestoreRepository.removeRecipeFromLog(
-            username = username,
+            userId = userId,
             logId = standardDate(millis).toString(),
             recipeId = recipeId
         ){  success ->
@@ -91,13 +91,13 @@ class LogViewModel: ViewModel() {
             } else {
                 Toast.makeText(context, "Failed to add recipe.", Toast.LENGTH_SHORT).show()
             }
-            deleteLogIfNeeded(username, millis)
+            deleteLogIfNeeded(userId, millis)
         }
     }
 
-    fun addProductToLog(username: String, millis: Long, productId: String, context: Context){
+    fun addProductToLog(userId: String, millis: Long, productId: String, context: Context){
         firestoreRepository.addProductToLog(
-            username = username,
+            userId = userId,
             logId = standardDate(millis).toString(),
             productId = productId
         ){  success ->
@@ -111,7 +111,7 @@ class LogViewModel: ViewModel() {
 
     fun removeProductToLog(username: String, millis: Long, productId: String, context: Context){
         firestoreRepository.removeProductFromLog(
-            username = username,
+            userId = userId,
             logId = standardDate(millis).toString(),
             productId = productId
         ){  success ->
@@ -124,17 +124,17 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun updateRating(username: String, logId: String, rating: Int){
+    fun updateRating(userId: String, logId: String, rating: Int){
         firestoreRepository.updateLogRating(
-            username = username,
+            userId = userId,
             logId = logId,
             rating = rating
         )
     }
 
-    fun updateNote(username: String, logId: String, note: String){
+    fun updateNote(userId: String, logId: String, note: String){
         firestoreRepository.updateLogNote(
-            username = username,
+            userId = userId,
             logId = logId,
             note = note
         )

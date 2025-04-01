@@ -9,10 +9,10 @@ class FirestoreRepository {
     private val db = FirebaseFirestore.getInstance()
 
     /*      Log     */
-    suspend fun addLog(username: String, log: Log, logId: String): Boolean{
+    suspend fun addLog(userId: String, log: Log, logId: String): Boolean{
         return try {
             db.collection("users")
-                .document(username)
+                .document(userId)
                 .collection("logs")
                 .document(logId) // LogId is timestamp
                 .set(log)
@@ -26,9 +26,9 @@ class FirestoreRepository {
     }
 
     // Function to listen for logs in real-time for a specific user
-    fun listenForPosts(username: String, onResult: (List<Log>) -> Unit): ListenerRegistration {
+    fun listenForPosts(userId: String, onResult: (List<Log>) -> Unit): ListenerRegistration {
         return db.collection("users")
-            .document(username)
+            .document(userId)
             .collection("logs")
             .addSnapshotListener { snapshot, exception ->
                 if (exception != null) {
@@ -45,9 +45,9 @@ class FirestoreRepository {
             }
     }
 
-    fun addRecipeToLog(username: String, logId: String, recipeId: String, callback: (Boolean) -> Unit) {
+    fun addRecipeToLog(userId: String, logId: String, recipeId: String, callback: (Boolean) -> Unit) {
         val logRef = db.collection("users")
-            .document(username)
+            .document(userId)
             .collection("logs")
             .document(logId)
 
@@ -62,9 +62,9 @@ class FirestoreRepository {
             }
     }
 
-    fun removeRecipeFromLog(username:String, logId: String, recipeId: String, callback: (Boolean) -> Unit){
+    fun removeRecipeFromLog(userId:String, logId: String, recipeId: String, callback: (Boolean) -> Unit){
         val logRef = db.collection("users")
-            .document(username)
+            .document(userId)
             .collection("logs")
             .document(logId)
 
@@ -79,9 +79,9 @@ class FirestoreRepository {
             }
     }
 
-    fun addProductToLog(username: String, logId: String, productId: String, callback: (Boolean) -> Unit) {
+    fun addProductToLog(userId: String, logId: String, productId: String, callback: (Boolean) -> Unit) {
         val logRef = db.collection("users")
-            .document(username)
+            .document(userId)
             .collection("logs")
             .document(logId)
 
@@ -96,9 +96,9 @@ class FirestoreRepository {
             }
     }
 
-    fun removeProductFromLog(username:String, logId: String, productId: String, callback: (Boolean) -> Unit){
+    fun removeProductFromLog(userId: String, logId: String, productId: String, callback: (Boolean) -> Unit){
         val logRef = db.collection("users")
-            .document(username)
+            .document(userId)
             .collection("logs")
             .document(logId)
 
@@ -113,9 +113,9 @@ class FirestoreRepository {
             }
     }
 
-    fun updateLogRating(username:String, logId: String, rating: Int){
+    fun updateLogRating(userId:String, logId: String, rating: Int){
         val logRef = db.collection("users")
-            .document(username)
+            .document(userId)
             .collection("logs")
             .document(logId)
 
@@ -128,9 +128,9 @@ class FirestoreRepository {
             }
     }
 
-    fun updateLogNote(username: String, logId: String, note: String){
+    fun updateLogNote(userId: String, logId: String, note: String){
         val logRef = db.collection("users")
-            .document(username)
+            .document(userId)
             .collection("logs")
             .document(logId)
 
@@ -143,9 +143,9 @@ class FirestoreRepository {
             }
     }
 
-    fun deleteLog(username: String, logId: String, callback: (Boolean) -> Unit){
+    fun deleteLog(userId: String, logId: String, callback: (Boolean) -> Unit){
         val logRef = db.collection("users")
-            .document(username)
+            .document(userId)
             .collection("logs")
             .document(logId)
 
