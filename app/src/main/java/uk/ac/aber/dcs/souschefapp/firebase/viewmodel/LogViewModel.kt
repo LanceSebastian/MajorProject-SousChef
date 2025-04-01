@@ -42,11 +42,14 @@ class LogViewModel: ViewModel() {
     }
 
     fun createLog(username: String, millis: Long,  log: Log){
+        val standardLog = log.copy(
+            date = standardDate(millis)
+        )
         viewModelScope.launch {
             val isSuccess = firestoreRepository.addLog(
                 username = username,
                 logId = standardDate(millis).toString(),
-                log = log
+                log = standardLog
             )
             if (isSuccess) {
                 // Optionally log success or update UI in another way
@@ -56,7 +59,7 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun readLog(username: String) {
+    fun readLogs(username: String) {
         firestoreRepository.listenForPosts(username) { logs ->
             _logs.postValue(logs)
         }
@@ -135,5 +138,10 @@ class LogViewModel: ViewModel() {
             logId = logId,
             note = note
         )
+    }
+
+    fun findLog(millis: Long): Log?{
+        val date = standardDate(millis)
+        return _logs.value?.find{ it.date == date }
     }
 }
