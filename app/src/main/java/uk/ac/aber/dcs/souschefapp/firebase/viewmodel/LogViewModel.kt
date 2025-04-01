@@ -62,7 +62,6 @@ class LogViewModel: ViewModel() {
         viewModelScope.launch {
             val isSuccess = logRepository.addLog(
                 userId = userId,
-                logId = standardDate(millis).toString(),
                 log = standardLog
             )
             if (!isSuccess) {
