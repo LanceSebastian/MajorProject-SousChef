@@ -1,5 +1,7 @@
 package uk.ac.aber.dcs.souschefapp.firebase
 
+import com.google.firebase.Timestamp
+
 data class Product(
     val createdBy: String,
     val name: String = "",
@@ -35,11 +37,11 @@ data class Note(
     val timestamp: Long
 )
 
+// Subcollection to users
 data class Log(
     val createdBy: String,
-    val timestamp: Long,
     val rating: Int = 0,
-    val note: String = "",
+    val note: String? = null,
     val recipeIdList: List<Int> = emptyList(),
     val productIdList: List<Int> = emptyList()
 )
