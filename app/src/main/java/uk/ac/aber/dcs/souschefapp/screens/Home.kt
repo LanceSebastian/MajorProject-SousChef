@@ -1,5 +1,7 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
+import androidx.activity.ComponentActivity
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -7,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -58,11 +61,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.database.MainState
-import uk.ac.aber.dcs.souschefapp.database.UserPreferences
-import uk.ac.aber.dcs.souschefapp.database.models.Log
 import uk.ac.aber.dcs.souschefapp.database.models.Note
 import uk.ac.aber.dcs.souschefapp.database.models.Product
 import uk.ac.aber.dcs.souschefapp.database.models.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.Log
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.components.DateNavigationBar
@@ -71,9 +75,6 @@ import uk.ac.aber.dcs.souschefapp.ui.components.MyCalendar
 import uk.ac.aber.dcs.souschefapp.ui.components.RecipeNote
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.LogViewModel
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.NoteViewModel
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.RecipeViewModel
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -82,52 +83,80 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun TopHomeScreen(
+    context: ComponentActivity,
     navController: NavHostController,
-    logViewModel: LogViewModel,
-    recipeViewModel: RecipeViewModel,
-    noteViewModel: NoteViewModel,
-    userPreferences: UserPreferences
+    authViewModel: AuthViewModel,
+    logViewModel: LogViewModel
 ){
-    val accountId by userPreferences.accountId.observeAsState()
-    if (accountId != null) {
-        val logs by logViewModel.getAllLogsFromAccount(accountId!!).observeAsState(listOf())
-        val recipes by recipeViewModel.getAllRecipes().observeAsState(listOf())
+    val user by authViewModel.user.observeAsState()
+    val userId = user?.uid
 
-        HomeScreen(
-            navController = navController,
-            mainState = MainState.HOME,
-            accountId = accountId!!,
-            logs = logs,
-            recipes = recipes,
-            getNotesFromRecipe = { recipeId ->
-                noteViewModel.getNotesFromRecipe(recipeId)
-            }
-        )
+    if (userId != null) logViewModel.readLogs(userId)
+    val logs by logViewModel.logs.observeAsState(emptyList())
+
+    // Listen for logs in real-time when the user exists
+    DisposableEffect(userId) {
+        if(userId != null){
+            logViewModel.readLogs(userId)
+        }
+
+        onDispose {
+            logViewModel.stopListening()
+        }
     }
+
+    HomeScreen(
+        navController = navController,
+        mainState = MainState.HOME,
+        logs = logs,
+        recipes = emptyList(),
+        findLog = { millis ->
+            logViewModel.findLog(millis)
+        },
+        createLog = { dateMillis ->
+            logViewModel.createLog(userId, dateMillis)
+        }
+    )
 }
 
 @Composable
 fun HomeScreen(
     navController: NavHostController,
     mainState: MainState = MainState.HOME,
-    accountId: Int,
-    logs: List<Log>,
+    logs: List<Log>, // This will be used for the calendar
     recipes: List<Recipe>,
-    getNotesFromRecipe: (Int) -> LiveData<List<Note>>
+    findLog: (Long) -> Log?,
+    createLog: (Long) -> Unit,
 ){
     // Ratings
-    val satisfied = ImageVector.vectorResource(id = R.drawable.satisfied)
-    val happy = ImageVector.vectorResource(id = R.drawable.happy)
-    val neutral = ImageVector.vectorResource(id = R.drawable.neutral)
-    val unhappy = ImageVector.vectorResource(id = R.drawable.unhappy)
-    val disappointed = ImageVector.vectorResource(id = R.drawable.disappointed)
-
+    // val ratingMap = ratings.associateBy { it.value }
+    // val satisfiedRating = ratingMap[2]
     val ratings = listOf(
-        Triple(-2,disappointed, Color(0xFFF33B3B)),
-        Triple(-1,unhappy,Color(0xFFFFB001)),
-        Triple(0,neutral,Color(0xFFCACA04)),
-        Triple(1,happy,Color(0xFF02C801)),
-        Triple(2,satisfied,Color(0xFF0095FF))
+        Rating(
+            value = -2,
+            image = ImageVector.vectorResource(id = R.drawable.disappointed),
+            color = Color(0xFFF33B3B)
+        ),
+        Rating(
+            value = -1,
+            image = ImageVector.vectorResource(id = R.drawable.unhappy),
+            color = Color(0xFFFFB001)
+        ),
+        Rating(
+            value = 0,
+            image = ImageVector.vectorResource(id = R.drawable.neutral),
+            color = Color(0xFFCACA04)
+        ),
+        Rating(
+            value = 1,
+            image = ImageVector.vectorResource(id = R.drawable.happy),
+            color = Color(0xFF02C801)
+        ),
+        Rating(
+            value = 2,
+            image = ImageVector.vectorResource(id = R.drawable.satisfied),
+            color = Color(0xFF0095FF)
+        )
     )
 
     // Buttons
@@ -159,65 +188,28 @@ fun HomeScreen(
         }
     }
 
-    // Get any Log Data
-    val log = logs.find {
-        Instant.ofEpochMilli(it.date)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate() == Instant.ofEpochMilli(datePickedEpoch)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
-    }
+    // Get Log Data
+    val log = findLog(datePickedEpoch)
     val isLogRecipes = log?.recipeIdList.isNullOrEmpty()
     var logRating by remember { mutableIntStateOf(log?.rating ?: 0) }
     var logNote by remember { mutableStateOf(log?.note ?: "") }
+
     LaunchedEffect (log){
         logRating = log?.rating ?: 0
         logNote = log?.note ?: ""
     }
     val logRecipes = recipes.filter{ log?.recipeIdList?.contains(it.recipeId) == true }
     val notesList = remember { mutableStateListOf<Note>() }
-    val observers = remember { mutableMapOf<Int, Observer<List<Note>>>() }
-
-    LaunchedEffect(logRecipes) {
-
-        notesList.clear()
-
-        logRecipes.forEach { recipe ->
-            val observer = Observer<List<Note>> { notes ->
-                if (notes.isNotEmpty()) {
-                    val uniqueNotes = notes.filterNot { it in notesList }
-                    val logRecipeNotes = uniqueNotes.filter { it.recipeOwnerId == recipe.recipeId }
-                    notesList.addAll(logRecipeNotes) // Add all notes directly
-                }
-            }
-
-            getNotesFromRecipe(recipe.recipeId).observeForever(observer)
-            observers[recipe.recipeId] = observer // Store observer reference
-        }
-    }
-
-    // Cleanup observers when Composable is destroyed
-    DisposableEffect(Unit) {
-        onDispose {
-            logRecipes.forEach { recipe ->
-                observers[recipe.recipeId]?.let { observer ->
-                    getNotesFromRecipe(recipe.recipeId).removeObserver(observer)
-                }
-            }
-            observers.clear() // Clear stored observers
-        }
-    }
 
 
     BareMainScreen(
         mainState = mainState,
         navController = navController
-    ){
-        innerPadding ->
+    ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .padding(innerPadding)
-        ){
+        ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -230,7 +222,6 @@ fun HomeScreen(
                 )
 
                 // Show Calendar
-
                 MyCalendar(
                     showDialog = dateDialogState,
                     onDismiss = { dateDialogState = false },
@@ -238,217 +229,265 @@ fun HomeScreen(
                     dateEpoch = datePickedEpoch
                 )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                ){
-                    Text(text = "Today's Menu", style = MaterialTheme.typography.titleLarge)
-                    Button(
-                        onClick = { addSelected = true },
-                        contentPadding = PaddingValues(top = 0.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)
+                if (log == null) {
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Text(text = "Add")
+                        Image(
+                            painter = painterResource(R.drawable.chef),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(72.dp)
+                                .alpha(0.75f)
+                        )
+                        Text(
+                            text = "Looking Empty!",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(onClick = { createLog(datePickedEpoch) }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null
+                            )
+                            Text("Create a Log")
+                        }
+                        Spacer(modifier = Modifier.height(48.dp))
                     }
-                }
-                if(isLogRecipes){
+                } else {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    ) {
+                        Text(text = "Today's Menu", style = MaterialTheme.typography.titleLarge)
+                        Button(
+                            onClick = { addSelected = true },
+                            contentPadding = PaddingValues(
+                                top = 0.dp,
+                                bottom = 0.dp,
+                                start = 16.dp,
+                                end = 16.dp
+                            )
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Text(text = "Add")
+                        }
+                    }
+
+                    if (isLogRecipes) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                                .height(150.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Looking a bit empty...",
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+                        }
+
+                    } else {
+                        LazyRow(
+                            modifier = Modifier
+                                .background(color = MaterialTheme.colorScheme.surfaceContainer)
+                                .height(150.dp)
+                                .fillMaxWidth()
+                        ) {
+                            logRecipes.forEach { recipe ->
+                                item {
+                                    CardRecipe(
+                                        text = recipe.recipeName,
+                                        onClick = {
+                                            navController.navigate(
+                                                Screen.RecipePage.route + "/recipeId=${recipe.recipeId}"
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Row(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier
-                        .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                        .height(150.dp)
-                        .fillMaxWidth()
-                    ){ Text(text = "Looking a bit empty...", style = MaterialTheme.typography.headlineSmall) }
-
-                } else {
-                    LazyRow(
-                        modifier = Modifier
-                            .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                            .height(150.dp)
-                            .fillMaxWidth()
+                            .align(Alignment.CenterHorizontally)
                     ) {
-                        logRecipes.forEach { recipe ->
-                            item {
-                                CardRecipe(
-                                    text = recipe.recipeName,
-                                    onClick = {
-                                        navController.navigate(
-                                            Screen.RecipePage.route + "/recipeId=${recipe.recipeId}"
+                        ratings.forEach { (value, icon, color) ->
+                            IconButton(onClick = { logRating = value }) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = color,
+                                    modifier = Modifier
+                                        .background(
+                                            color = MaterialTheme.colorScheme.surfaceContainer,
+                                            shape = CircleShape
                                         )
-                                    }
+                                        .size(if (logRating == value) 50.dp else 25.dp)
                                 )
                             }
                         }
                     }
-                }
 
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                ){
-                    ratings.forEach { (value, icon, color) ->
-                        IconButton( onClick = { logRating = value }) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = color,
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    /*      Log Notes        */
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 8.dp, end = 8.dp)
+                            .clickable { personalExpanded = true },
+                        shape = RoundedCornerShape(25.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier
-                                    .background(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        shape = CircleShape
+                                    .fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Personal Note",
+                                    style = MaterialTheme.typography.headlineSmall,
+
                                     )
-                                    .size(if (logRating == value) 50.dp else 25.dp)
-                            )
+                                if (!personalExpanded) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = null
+                                    )
+                                } else {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (!editNoteSelected) Icons.Default.Edit else Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .clickable {
+                                                    if (editNoteSelected) {
+
+                                                    } else {
+                                                        editNoteSelected = !editNoteSelected
+                                                    }
+                                                }
+                                        )
+                                        Icon(
+                                            painter = painterResource(R.drawable.arrow_drop_up),
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .clickable {
+                                                    personalExpanded = false
+                                                    editNoteSelected = false
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+                            Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                if (personalExpanded) {
+                                    if (logNote.isEmpty()) {
+                                        Text(
+                                            text = "What did you think of today?",
+                                            modifier = Modifier.alpha(0.7f)
+                                        )
+                                    }
+                                    BasicTextField(
+                                        value = logNote,
+                                        onValueChange = {
+                                            logNote = it
+                                        },
+                                        enabled = editNoteSelected,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .heightIn(min = 40.dp, max = 120.dp)
+                                    )
+                                }
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                /*      Log Notes        */
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, end = 8.dp)
-                        .clickable { personalExpanded = true },
-                    shape = RoundedCornerShape(25.dp)
-                ) {
-                    Column (
+                    /*      Recipe Notes        */
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
                         modifier = Modifier
-                            .padding(16.dp)
-                    ){
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            .fillMaxWidth()
+                            .padding(start = 8.dp, end = 8.dp)
+                            .clickable(
+                                enabled = !isLogRecipes,
+                                onClick = { recipeExpanded = true }
+                            )
+                            .alpha(if (isLogRecipes) 0.5f else 1f),
+                        shape = RoundedCornerShape(25.dp)
+                    ) {
+                        Column(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .padding(16.dp)
                         ) {
-                            Text(
-                                text = "Personal Note",
-                                style = MaterialTheme.typography.headlineSmall,
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Recipe Notes",
+                                    style = MaterialTheme.typography.headlineSmall,
 
-                                )
-                            if (!personalExpanded){
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = null
-                                )
-                            } else {
-                                Row (
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ){
-                                    Icon(
-                                        imageVector = if (!editNoteSelected) Icons.Default.Edit else Icons.Default.Check,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .clickable { editNoteSelected = !editNoteSelected }
                                     )
+                                if (!recipeExpanded) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = null
+                                    )
+                                } else {
                                     Icon(
                                         painter = painterResource(R.drawable.arrow_drop_up),
                                         contentDescription = null,
                                         modifier = Modifier
-                                            .clickable {
-                                                personalExpanded = false
-                                                editNoteSelected = false
+                                            .clickable { recipeExpanded = false }
+                                    )
+                                }
+                            }
+                            if (recipeExpanded) {
+                                if (notesList.isNotEmpty()) {
+                                    LazyColumn(
+                                        modifier = Modifier
+                                            .padding(horizontal = 8.dp)
+                                    ) {
+                                        notesList.forEach() { note ->
+                                            item {
+                                                RecipeNote(
+                                                    recipeName = logRecipes.find { it.recipeId == note.recipeOwnerId }?.recipeName
+                                                        ?: "Unknown Recipe",
+                                                    noteContent = note.content,
+                                                    dateEpoch = note.date
+                                                )
+                                                HorizontalDivider(
+                                                    modifier = Modifier
+                                                        .padding(vertical = 2.dp)
+                                                )
                                             }
-                                    )
-                                }
-                            }
-                        }
-                        Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                            if (personalExpanded) {
-                                if (logNote.isEmpty()) {
-                                    Text(
-                                        text = "What did you think of today?",
-                                        modifier = Modifier.alpha(0.7f)
-                                    )
-                                }
-                                BasicTextField(
-                                    value = logNote,
-                                    onValueChange = {
-                                        logNote = it
-                                    },
-                                    enabled = editNoteSelected,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .heightIn(min = 40.dp, max = 120.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                /*      Recipe Notes        */
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, end = 8.dp)
-                        .clickable(
-                            enabled = !isLogRecipes,
-                            onClick = {recipeExpanded = true}
-                        )
-                        .alpha(if (isLogRecipes) 0.5f else 1f),
-                    shape = RoundedCornerShape(25.dp)
-                ) {
-                    Column (
-                        modifier = Modifier
-                            .padding(16.dp)
-                    ){
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Recipe Notes",
-                                style = MaterialTheme.typography.headlineSmall,
-
-                                )
-                            if (!recipeExpanded) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = null
-                                )
-                            } else {
-                                Icon(
-                                    painter = painterResource(R.drawable.arrow_drop_up),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .clickable { recipeExpanded = false }
-                                )
-                            }
-                        }
-                        if (recipeExpanded) {
-                            if (notesList.isNotEmpty()){
-                                LazyColumn (
-                                    modifier = Modifier
-                                        .padding(horizontal = 8.dp)
-                                ){
-                                    notesList.forEach(){ note ->
-                                        item {
-                                            RecipeNote(
-                                                recipeName = logRecipes.find{ it.recipeId == note.recipeOwnerId }?.recipeName ?: "Unknown Recipe",
-                                                noteContent = note.content,
-                                                dateEpoch = note.date
-                                            )
-                                            HorizontalDivider(
-                                                modifier = Modifier
-                                                    .padding(vertical = 2.dp)
-                                            )
                                         }
                                     }
                                 }
@@ -456,52 +495,43 @@ fun HomeScreen(
                         }
                     }
                 }
-            }
 
-            if (addSelected){
-                HomeAddDialogue(
-                    onDismissRequest = { addSelected = false },
-                    mainAction = {
-                        val newProduct = Product(
-                            accountOwnerId = accountId,
-                            name = "",
-                            price = BigDecimal(0)
-                        )
-                        navController.navigate(Screen.Product.route + "/productId=${newProduct.productId}" + "/logDate=${datePickedEpoch}")
-                                 },
-                    secondAction = {
-                        navController.navigate(Screen.Recipes.route)
-                    }
-                )
+                if (addSelected) {
+                    HomeAddDialogue(
+                        onDismissRequest = { addSelected = false },
+                        mainAction = {
+                            TODO()
+                        },
+                        secondAction = {
+                            navController.navigate(Screen.Recipes.route)
+                        }
+                    )
+                }
             }
         }
     }
 }
+
+// Grouping Rating data into a single class
+data class Rating(
+    val value: Int,
+    val image: ImageVector,
+    val color: Color
+)
 
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenEmptyView(){
     val navController = rememberNavController()
 
-    // Mock ViewModel or Data
-    val mockNotes = mutableListOf(
-        Note(1, 1, "Hello", 0),
-        Note(2, 1, "Hello", 0)
-    )
-
-    // Simulate the getNotesFromRecipe function
-    val getNotesFromRecipe: (Int) -> LiveData<List<Note>> = {
-        MutableLiveData(mockNotes)
-    }
-
     AppTheme {
         HomeScreen(
             navController = navController,
             mainState = MainState.HOME,
-            accountId = 0,
             logs = emptyList(),
             recipes = emptyList(),
-            getNotesFromRecipe = getNotesFromRecipe
+            findLog = {_ -> null},
+            createLog = {}
         )
     }
 }
@@ -514,8 +544,7 @@ fun HomeScreenView(){
     // Mock ViewModel or Data
     val sampleLogs = listOf(
         Log(
-            logId = 1,
-            accountOwnerId = 0,
+            createdBy = "",
             date = System.currentTimeMillis(),
             rating = 2,
             recipeIdList = listOf(1, 2),
@@ -523,8 +552,7 @@ fun HomeScreenView(){
             note = "Tried a new recipe, turned out great!"
         ),
         Log(
-            logId = 2,
-            accountOwnerId = 0,
+            createdBy = "",
             date = System.currentTimeMillis() - 86_400_000, // 1 day ago
             rating = -1,
             recipeIdList = listOf(3),
@@ -532,8 +560,7 @@ fun HomeScreenView(){
             note = "Didn't like the taste, will try adjusting ingredients."
         ),
         Log(
-            logId = 3,
-            accountOwnerId = 0,
+            createdBy = "",
             date = System.currentTimeMillis() - 172_800_000, // 2 days ago
             rating = 1,
             recipeIdList = listOf(6, 5),
@@ -541,8 +568,7 @@ fun HomeScreenView(){
             note = "A decent meal, but could use more seasoning."
         ),
         Log(
-            logId = 4,
-            accountOwnerId = 0,
+            createdBy = "",
             date = System.currentTimeMillis() - 259_200_000, // 3 days ago
             rating = 0,
             recipeIdList = emptyList(),
@@ -550,8 +576,7 @@ fun HomeScreenView(){
             note = "Tried a new product, unsure about it yet."
         ),
         Log(
-            logId = 5,
-            accountOwnerId = 0,
+            createdBy = "",
             date = System.currentTimeMillis() - 345_600_000, // 4 days ago
             rating = -2,
             recipeIdList = listOf(4),
@@ -585,19 +610,14 @@ fun HomeScreenView(){
         Recipe(6, "Margherita Pizza", "")
     )
 
-    // Simulate the getNotesFromRecipe function
-    val getNotesFromRecipe: (Int) -> LiveData<List<Note>> = {
-        MutableLiveData(mockNotes)
-    }
-
     AppTheme {
         HomeScreen(
             navController = navController,
             mainState = MainState.HOME,
-            accountId = 0,
             logs = sampleLogs,
             recipes = mockRecipes,
-            getNotesFromRecipe = getNotesFromRecipe
+            findLog = {_ -> null},
+            createLog = {}
         )
     }
 }
