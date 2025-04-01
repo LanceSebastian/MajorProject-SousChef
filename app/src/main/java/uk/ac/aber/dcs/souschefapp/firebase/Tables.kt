@@ -39,11 +39,13 @@ data class Note(
 
 // Subcollection to users
 data class Log(
-    val date: Long,
-    val createdBy: String,
+    val date: Long = 0L,
+    val createdBy: String = "",
     val rating: Int = 0,
     val note: String? = null,
     val recipeIdList: List<Int> = emptyList(),
     val productIdList: List<Int> = emptyList()
-)
+){
+    constructor() : this(0L, "",0, null, emptyList(), emptyList())
+}
 
