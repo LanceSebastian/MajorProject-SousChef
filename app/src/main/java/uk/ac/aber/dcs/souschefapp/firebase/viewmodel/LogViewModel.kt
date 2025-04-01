@@ -24,13 +24,13 @@ class LogViewModel: ViewModel() {
         return startOfDay.toInstant().toEpochMilli()
     }
 
-    private fun deleteLogIfNeeded(username: String, millis: Long){
+    private fun deleteLogIfNeeded(userId: String, millis: Long){
         val logId = standardDate(millis).toString()
-        val log = _logs.value?.find { it.createdBy == username && it.productIdList.isNotEmpty() || it.recipeIdList.isNotEmpty() }
+        val log = _logs.value?.find { it.createdBy == userId && it.productIdList.isNotEmpty() || it.recipeIdList.isNotEmpty() }
 
         if (log?.recipeIdList.isNullOrEmpty() && log?.productIdList.isNullOrEmpty()){
             viewModelScope.launch {
-                firestoreRepository.deleteLog(username = username, logId = logId) { success ->
+                firestoreRepository.deleteLog(userId = userId, logId = logId) { success ->
                     if (success) {
                         android.util.Log.d("LogViewModel", "Log deleted successfully")
                     } else {
@@ -43,7 +43,8 @@ class LogViewModel: ViewModel() {
 
     fun createLog(userId: String, millis: Long,  log: Log){
         val standardLog = log.copy(
-            date = standardDate(millis)
+            date = standardDate(millis),
+            createdBy = userId
         )
         viewModelScope.launch {
             val isSuccess = firestoreRepository.addLog(
@@ -109,7 +110,7 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun removeProductToLog(username: String, millis: Long, productId: String, context: Context){
+    fun removeProductToLog(userId: String, millis: Long, productId: String, context: Context){
         firestoreRepository.removeProductFromLog(
             userId = userId,
             logId = standardDate(millis).toString(),
@@ -120,7 +121,7 @@ class LogViewModel: ViewModel() {
             } else {
                 Toast.makeText(context, "Failed to add product.", Toast.LENGTH_SHORT).show()
             }
-            deleteLogIfNeeded(username, millis)
+            deleteLogIfNeeded(userId, millis)
         }
     }
 
