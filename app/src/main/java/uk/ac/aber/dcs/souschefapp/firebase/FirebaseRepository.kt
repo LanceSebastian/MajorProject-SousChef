@@ -216,6 +216,42 @@ class RecipeRepository {
             }
     }
 
+    suspend fun findRecipesByTag(userId: String, tag: String): List<Recipe> {
+        return try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .whereArrayContains("tags", tag)
+                .get()
+                .await()
+
+            val recipes = snapshot.documents.mapNotNull { it.toObject(Recipe::class.java) }
+            android.util.Log.d("Firestore", "Recipes found: ${recipes.size}")
+            recipes
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error finding recipes by tag: ${e.message}", e)
+            emptyList()
+        }
+    }
+
+    suspend fun findRecipesByName(userId: String, name: String): List<Recipe> {
+        return try {
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .whereArrayContains("name", name)
+                .get()
+                .await()
+
+            val recipes = snapshot.documents.mapNotNull { it.toObject(Recipe::class.java) }
+            android.util.Log.d("Firestore", "Recipes found: ${recipes.size}")
+            recipes
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error finding recipes by tag: ${e.message}", e)
+            emptyList()
+        }
+    }
+
     suspend fun addTag(userId: String, recipeId: String, tag: String): Boolean {
         return try {
             val logRef = db.collection("users")
