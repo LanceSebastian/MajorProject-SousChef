@@ -3,37 +3,40 @@ package uk.ac.aber.dcs.souschefapp.firebase
 import com.google.firebase.Timestamp
 
 data class Product(
-    val createdBy: String,
+    val productId: String = "",
+    val createdBy: String = "",
     val name: String = "",
     val price: Double = 1.0,
 )
 
 data class Recipe(
+    val recipeId: String = "",
     val name: String = "",
-    val tags: List<String>? = null, // Will need to think about this further
-    val isActive: Boolean = true
+    val createdBy: String = "",
+    val tags: List<String>? = null,
+    val isArchive: Boolean = false
 )
 
 // Subcollection to Recipe
 data class Instruction(
-    val content: String,
+    val instructionId: String = "",
+    val content: String = "",
     val placement: Int = 0,
 )
 
 // Subcollection to Recipe
 data class Ingredient(
-    val ingredientId: Int = 0,
-    val recipeOwnerId: Int,
-    val name: String,
-    val description: String,
-    val quantity: Int,
-    val unit: String
+    val ingredientId: String = "",
+    val name: String = "",
+    val description: String? = null,
+    val quantity: Int = 0,
+    val unit: String = "",
 )
 
 // Subcollection to Recipe
 data class Note(
     val content: String,
-    val timestamp: Long
+    val createdAt: Timestamp
 )
 
 // Subcollection to users
