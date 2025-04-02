@@ -6,17 +6,23 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.firebase.LogRepository
 import uk.ac.aber.dcs.souschefapp.firebase.Log
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.Date
 
 class LogViewModel: ViewModel() {
     private val logRepository = LogRepository()
 
     private var logListener: ListenerRegistration? = null
+    private var logListenerSelected: ListenerRegistration? = null
+
+    private var _selectedLogs = MutableLiveData<List<Log>>()
+    var selectedLogs: LiveData<List<Log>> = _selectedLogs
 
     private var _logs = MutableLiveData<List<Log>>()
     var logs: LiveData<List<Log>> = _logs
@@ -33,7 +39,7 @@ class LogViewModel: ViewModel() {
         val logId = standardDate(millis).toString()
         val log = _logs.value?.find { it.createdBy == userId }
 
-        if (log != null && log.recipeIdList.isNullOrEmpty() && log.productIdList.isNullOrEmpty()) {
+        if (log != null && log.recipeIdList.isEmpty() && log.productIdList.isEmpty()) {
             viewModelScope.launch {
                 val success = logRepository.deleteLog(userId, logId)
                 if (success) {
@@ -52,17 +58,20 @@ class LogViewModel: ViewModel() {
         }
 
         val standardLog = log?.copy(
-            date = standardDate(millis),
+            logId = standardDate(millis).toString(),
+            createdAt = Timestamp(Date(millis)),
             createdBy = userId
         ) ?: Log(
+            logId = standardDate(millis).toString(),
+            createdAt = Timestamp(Date(millis)),
             createdBy = userId,
-            date = standardDate(millis)
         )
 
         viewModelScope.launch {
             val isSuccess = logRepository.addLog(
                 userId = userId,
-                log = standardLog
+                log = standardLog,
+                logId = standardDate(millis).toString(),
             )
             if (!isSuccess) {
                 android.util.Log.e("LogViewModel", "Failed to create log")
@@ -80,9 +89,29 @@ class LogViewModel: ViewModel() {
         }
     }
 
+    fun readLogsByDate(userId: String?, startDate: Timestamp, endDate: Timestamp){
+        if (userId == null) return
+
+        logListenerSelected?.remove() // Stop previous listener if it exists
+
+        logListenerSelected = logRepository.listenForSelectedLogs(userId, startDate, endDate) { logs ->
+            _selectedLogs.postValue(logs)
+        }
+    }
+
+    fun getLog(millis: Long): Log?{
+        val date = standardDate(millis)
+        return _logs.value?.find{ it.logId == date.toString() }
+    }
+
     fun stopListening(){
         logListener?.remove()
         logListener = null
+    }
+
+    fun stopListeningSelected(){
+        logListenerSelected?.remove()
+        logListenerSelected = null
     }
 
     fun addRecipeToLog(userId: String, millis: Long, recipeId: String, context: Context){
@@ -141,22 +170,9 @@ class LogViewModel: ViewModel() {
         }
     }
 
-//    fun updateNote(userId: String, logId: String, note: String){
-//        firestoreRepository.updateLogNote(
-//            userId = userId,
-//            logId = logId,
-//            note = note
-//        )
-//    }
-
     fun updateNote(userId: String, millis: Long, note: String) {
         viewModelScope.launch {
             logRepository.updateLogNote(userId, standardDate(millis).toString(), note)
         }
-    }
-
-    fun findLog(millis: Long): Log?{
-        val date = standardDate(millis)
-        return _logs.value?.find{ it.date == date }
     }
 }
