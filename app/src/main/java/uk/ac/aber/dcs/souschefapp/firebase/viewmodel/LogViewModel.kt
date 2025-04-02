@@ -36,22 +36,6 @@ class LogViewModel: ViewModel() {
             .toInstant()
             .toEpochMilli()
 
-    private fun deleteLogIfNeeded(userId: String, millis: Long){
-        val logId = standardDate(millis).toString()
-        val log = _logs.value?.find { it.createdBy == userId }
-
-        if (log != null && log.recipeIdList.isNullOrEmpty() && log.productIdList.isNullOrEmpty()) {
-            viewModelScope.launch {
-                val success = logRepository.deleteLog(userId, logId)
-                if (success) {
-                    android.util.Log.d("LogViewModel", "Log deleted successfully")
-                } else {
-                    android.util.Log.e("LogViewModel", "Failed to delete log")
-                }
-            }
-        }
-    }
-
     fun createLog(userId: String?, millis: Long,  log: Log? = null){
         if (userId == null) {
             android.util.Log.e("LogViewModel", "Failed to create log due to null userId")
@@ -130,7 +114,6 @@ class LogViewModel: ViewModel() {
             )
             val message = if (isSuccess) "Recipe removed successfully!" else "Failed to remove recipe."
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            deleteLogIfNeeded(userId, millis)
         }
     }
 
@@ -155,7 +138,6 @@ class LogViewModel: ViewModel() {
             )
             val message = if (isSuccess) "Product removed successfully!" else "Failed to remove product."
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            deleteLogIfNeeded(userId, millis)
         }
     }
 
@@ -168,6 +150,19 @@ class LogViewModel: ViewModel() {
     fun updateNote(userId: String, millis: Long, note: String) {
         viewModelScope.launch {
             logRepository.updateLogNote(userId, standardDate(millis).toString(), note)
+        }
+    }
+
+    fun deleteLog(userId: String, millis: Long){
+        val logId = standardDate(millis).toString()
+
+        viewModelScope.launch {
+            val success = logRepository.deleteLog(userId, logId)
+            if (success) {
+                android.util.Log.d("LogViewModel", "Log deleted successfully")
+            } else {
+                android.util.Log.e("LogViewModel", "Failed to delete log")
+            }
         }
     }
 }
