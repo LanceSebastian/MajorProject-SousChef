@@ -94,7 +94,7 @@ class LogViewModel: ViewModel() {
 
         logListenerSelected?.remove() // Stop previous listener if it exists
 
-        logListenerSelected = logRepository.listenForLogs(userId) { logs ->
+        logListenerSelected = logRepository.listenForSelectedLogs(userId, start, end) { logs ->
             _selectedLogs.postValue(logs)
         }
     }
