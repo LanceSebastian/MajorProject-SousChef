@@ -5,19 +5,16 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
-import java.sql.Time
-import java.util.Calendar
 
 class LogRepository {
     private val db = FirebaseFirestore.getInstance()
 
-    suspend fun addLog(userId: String, log: Log, logId: String): Boolean{
-
+    suspend fun addLog(userId: String, log: Log): Boolean{
         return try {
             db.collection("users")
                 .document(userId)
                 .collection("logs")
-                .document(logId) // LogId is midnight of the date input.
+                .document(log.logId)
                 .set(log)
                 .await()
             android.util.Log.d("Firestore", "Log added successfully")
@@ -28,7 +25,6 @@ class LogRepository {
         }
     }
 
-    // Function to listen for logs in real-time for a specific user
     fun listenForLogs(userId: String, onResult: (List<Log>) -> Unit): ListenerRegistration {
         return db.collection("users")
             .document(userId)
@@ -48,12 +44,12 @@ class LogRepository {
             }
     }
 
-    fun listenForSelectedLogs(userId: String, startOfRange: Timestamp, endOfRange:Timestamp, onResult: (List<Log>) -> Unit): ListenerRegistration {
+    fun listenForSelectedLogs(userId: String, startDate: Timestamp, endDate: Timestamp, onResult: (List<Log>) -> Unit): ListenerRegistration {
         return db.collection("users")
             .document(userId)
             .collection("logs")
-            .whereGreaterThanOrEqualTo("timestamp", startOfRange)
-            .whereLessThan("timestamp", endOfRange)
+            .whereGreaterThanOrEqualTo("createdBy", startDate)
+            .whereLessThan("createdBy", endDate)
             .addSnapshotListener { snapshot, exception ->
                 if (exception != null) {
                     android.util.Log.e("Firestore", "Error fetching logs: ${exception.message}")
@@ -180,136 +176,4 @@ class LogRepository {
             false
         }
     }
-}
-
-class RecipeRepository {
-    private val db = FirebaseFirestore.getInstance()
-
-    suspend fun addRecipe(userId: String, recipe: Recipe): Boolean{
-        return try {
-            db.collection("users")
-                .document(userId)
-                .collection("recipes")
-                .add(recipe)
-                .await()
-            android.util.Log.d("Firestore", "Recipe added successfully")
-            true
-        } catch(e: Exception){
-            android.util.Log.e("Firestore", "Error adding recipe: ${e.message}", e)
-            false
-        }
-    }
-
-    fun listenForRecipes(userId: String, onResult: (List<Recipe>) -> Unit): ListenerRegistration {
-        return db.collection("users")
-            .document(userId)
-            .collection("recipes")
-            .addSnapshotListener { snapshot, exception ->
-                if (exception != null) {
-                    android.util.Log.e("Firestore", "Error fetching recipes: ${exception.message}")
-                    return@addSnapshotListener
-                }
-
-                // Convert Firestore documents to Post objects
-                val recipes = snapshot?.documents?.mapNotNull { document ->
-                    document.toObject(Recipe::class.java)  // This returns a nullable Post? object
-                } ?: emptyList()
-
-                onResult(recipes)  // Send the filtered posts back to the caller via the callback
-            }
-    }
-
-    suspend fun addTag(userId: String, recipeId: String, tag: String): Boolean {
-        return try {
-            val logRef = db.collection("users")
-                .document(userId)
-                .collection("recipes")
-                .document(recipeId)
-
-            logRef.update("tags", FieldValue.arrayUnion(tag)).await()
-            android.util.Log.d("Firestore", "Tag added successfully")
-            true
-        } catch (e: Exception) {
-            android.util.Log.e("Firestore", "Error adding tag: ${e.message}", e)
-            false
-        }
-    }
-
-    suspend fun readTag(userId: String, recipeId: String, tag: String): Boolean {
-        return try {
-            val logRef = db.collection("users")
-                .document(userId)
-                .collection("recipes")
-                .document(recipeId)
-
-            val snapshot = logRef.get().await()
-
-            if (snapshot.exists()) {
-                val tags = snapshot.get("tags")
-                if (tags is List<*>) {
-                    tags.filterIsInstance<String>().contains(tag)
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("Firestore", "Error finding tag: ${e.message}", e)
-            false
-        }
-    }
-
-    suspend fun updateTag(userId: String, recipeId: String,  oldTag: String, newTag: String): Boolean {
-        return try {
-            val logRef = db.collection("users")
-                .document(userId)
-                .collection("recipes")
-                .document(recipeId)
-
-            // Firestore doesn't support direct updates to array elements, so we have to remove the old tag and add the new one
-            logRef.update("tags", FieldValue.arrayRemove(oldTag)).await()
-            logRef.update("tags", FieldValue.arrayUnion(newTag)).await()
-
-            android.util.Log.d("Firestore", "Tag updated successfully")
-            true
-        } catch (e: Exception) {
-            android.util.Log.e("Firestore", "Error updating tag: ${e.message}", e)
-            false
-        }
-    }
-
-    suspend fun deleteTag(userId: String, recipeId: String, tag: String): Boolean {
-        return try {
-            val logRef = db.collection("users")
-                .document(userId)
-                .collection("recipes")
-                .document(recipeId)
-
-            logRef.update("tags", FieldValue.arrayRemove(tag)).await()
-            android.util.Log.d("Firestore", "Tag removed successfully")
-            true
-        } catch (e: Exception) {
-            android.util.Log.e("Firestore", "Error removing tag: ${e.message}", e)
-            false
-        }
-    }
-
-    suspend fun deleteRecipe(userId: String, recipeId: String): Boolean {
-        return try {
-            db.collection("users")
-                .document(userId)
-                .collection("recipes")
-                .document(recipeId)
-                .delete()
-                .await()
-            android.util.Log.d("Firestore", "Log deleted successfully")
-            true
-        } catch (e: Exception) {
-            android.util.Log.e("Firestore", "Error deleting log: ${e.message}", e)
-            false
-        }
-    }
-
-
 }

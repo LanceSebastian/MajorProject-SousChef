@@ -14,6 +14,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.Log
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.Date
+import kotlin.math.log
 
 class LogViewModel: ViewModel() {
     private val logRepository = LogRepository()
@@ -39,7 +40,7 @@ class LogViewModel: ViewModel() {
         val logId = standardDate(millis).toString()
         val log = _logs.value?.find { it.createdBy == userId }
 
-        if (log != null && log.recipeIdList.isEmpty() && log.productIdList.isEmpty()) {
+        if (log != null && log.recipeIdList.isNullOrEmpty() && log.productIdList.isNullOrEmpty()) {
             viewModelScope.launch {
                 val success = logRepository.deleteLog(userId, logId)
                 if (success) {
@@ -64,14 +65,13 @@ class LogViewModel: ViewModel() {
         ) ?: Log(
             logId = standardDate(millis).toString(),
             createdAt = Timestamp(Date(millis)),
-            createdBy = userId,
+            createdBy = userId
         )
 
         viewModelScope.launch {
             val isSuccess = logRepository.addLog(
                 userId = userId,
-                log = standardLog,
-                logId = standardDate(millis).toString(),
+                log = standardLog
             )
             if (!isSuccess) {
                 android.util.Log.e("LogViewModel", "Failed to create log")
@@ -89,12 +89,12 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun readLogsByDate(userId: String?, startDate: Timestamp, endDate: Timestamp){
+    fun readLogByDates(userId: String?, start: Timestamp, end: Timestamp){
         if (userId == null) return
 
         logListenerSelected?.remove() // Stop previous listener if it exists
 
-        logListenerSelected = logRepository.listenForSelectedLogs(userId, startDate, endDate) { logs ->
+        logListenerSelected = logRepository.listenForLogs(userId) { logs ->
             _selectedLogs.postValue(logs)
         }
     }
@@ -107,11 +107,6 @@ class LogViewModel: ViewModel() {
     fun stopListening(){
         logListener?.remove()
         logListener = null
-    }
-
-    fun stopListeningSelected(){
-        logListenerSelected?.remove()
-        logListenerSelected = null
     }
 
     fun addRecipeToLog(userId: String, millis: Long, recipeId: String, context: Context){
