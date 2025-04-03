@@ -152,11 +152,14 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun updateNote(userId: String?, millis: Long, note: String) {
+    fun updateNote(userId: String?, millis: Long, note: String, context: Context) {
         if (userId == null) return
 
         viewModelScope.launch {
-            logRepository.updateLogNote(userId, standardDate(millis).toString(), note)
+            val isSuccess = logRepository.updateLogNote(userId, standardDate(millis).toString(), note)
+
+            val message = if (isSuccess) "Note saved successfully!" else "Failed to save note."
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
