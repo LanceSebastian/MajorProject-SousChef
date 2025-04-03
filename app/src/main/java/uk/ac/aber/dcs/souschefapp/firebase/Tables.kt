@@ -7,6 +7,7 @@ data class Product(
     val createdBy: String = "",
     val name: String = "",
     val price: Double = 1.0,
+    val isArchive: Boolean = false
 )
 
 data class Recipe(
