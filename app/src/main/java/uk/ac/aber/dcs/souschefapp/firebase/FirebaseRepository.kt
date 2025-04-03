@@ -447,3 +447,60 @@ class RecipeRepository {
         }
     }
 }
+
+class NoteRepository {
+    private val db = FirebaseFirestore.getInstance()
+
+    suspend fun addNote(userId: String, recipeId: String, note: Note): Boolean {
+        TODO()
+    }
+
+    fun listenForNotes(userId: String, recipeId: String){
+        TODO()
+    }
+
+    suspend fun updateNote(userId: String, recipeId: String, note: Note): Boolean {
+        TODO()
+    }
+
+    suspend fun deleteNote(userId: String, recipeId: String, noteId: String): Boolean {
+        TODO()
+    }
+}
+
+class IngredientRepository {
+    suspend fun addIngredient(userId: String, recipeId: String, ingredient: Ingredient): Boolean {
+        TODO()
+    }
+
+    fun listenForIngredients(userId: String, recipeId: String){
+        TODO()
+    }
+
+    // Check how updating whole documents works with accesses.
+    suspend fun updateIngredient(userId: String, recipeId: String, ingredient: Ingredient): Boolean {
+        TODO()
+    }
+
+    suspend fun deleteIngredient(userId: String, recipeId: String, ingredientId: String): Boolean {
+        TODO()
+    }
+}
+
+class InstructionRepository {
+    suspend fun addInstruction(userId: String, recipeId: String, instruction: Instruction): Boolean {
+        TODO()
+    }
+
+    fun listenForInstructions(userId: String, recipeId: String){
+        TODO()
+    }
+
+    suspend fun updateInstruction(userId: String, recipeId: String, instruction: Instruction): Boolean {
+        TODO()
+    }
+
+    suspend fun deleteInstruction(userId: String, recipeId: String, instructionId: String): Boolean {
+        TODO()
+    }
+}
