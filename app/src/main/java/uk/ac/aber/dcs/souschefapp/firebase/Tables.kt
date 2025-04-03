@@ -46,8 +46,8 @@ data class Log(
     val createdBy: String = "",
     val rating: Int = 0,
     val note: String? = null,
-    val recipeIdList: List<Int> = emptyList(),
-    val productIdList: List<Int> = emptyList()
+    val recipeIdList: List<String> = emptyList(),
+    val productIdList: List<String> = emptyList()
 ){
     constructor() : this("",Timestamp.now(), "",0, null, emptyList(), emptyList())
 }
