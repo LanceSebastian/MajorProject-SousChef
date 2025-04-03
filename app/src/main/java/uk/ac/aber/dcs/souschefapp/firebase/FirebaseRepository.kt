@@ -179,6 +179,61 @@ class LogRepository {
     }
 }
 
+class ProductRepository {
+    private val db = FirebaseFirestore.getInstance()
+
+    suspend fun addProduct(userId: String, product: Product): Boolean {
+        return try {
+            db.collection("users")
+                .document(userId)
+                .collection("products")
+                .add(product)
+                .await()
+            android.util.Log.d("Firestore", "Product added successfully")
+            true
+        } catch(e: Exception){
+            android.util.Log.e("Firestore", "Error adding product: ${e.message}", e)
+            false
+        }
+    }
+
+    fun listenForProducts(userId: String, onResult: (List<Product>) -> Unit): ListenerRegistration {
+        return db.collection("users")
+            .document(userId)
+            .collection("products")
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    android.util.Log.e("Firestore", "Error fetching products: ${exception.message}")
+                    return@addSnapshotListener
+                }
+
+                // Convert Firestore documents to Post objects
+                val products = snapshot?.documents?.mapNotNull { document ->
+                    document.toObject(Product::class.java)  // This returns a nullable Post? object
+                } ?: emptyList()
+
+                onResult(products)  // Send the filtered posts back to the caller via the callback
+            }
+    }
+
+    suspend fun updateProduct(userId: String, product: Product): Boolean {
+        TODO()
+    }
+
+    suspend fun archiveProduct(userId: String, productId: String): Boolean {
+        TODO()
+    }
+
+    suspend fun restoreProduct(userId: String, productId: String): Boolean {
+        TODO()
+    }
+
+    suspend fun deleteProduct(userId: String, productId: String): Boolean {
+        TODO()
+    }
+
+}
+
 class RecipeRepository {
     private val db = FirebaseFirestore.getInstance()
 
