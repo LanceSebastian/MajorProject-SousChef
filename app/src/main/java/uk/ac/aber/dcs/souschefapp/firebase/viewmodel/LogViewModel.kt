@@ -22,6 +22,9 @@ class LogViewModel: ViewModel() {
     private var logListener: ListenerRegistration? = null
     private var logListenerSelected: ListenerRegistration? = null
 
+    private var _singleLog = MutableLiveData<Log>()
+    var singleLog: LiveData<Log> = _singleLog
+
     private var _selectedLogs = MutableLiveData<List<Log>>()
     var selectedLogs: LiveData<List<Log>> = _selectedLogs
 
@@ -83,9 +86,9 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun getLog(millis: Long): Log?{
+    fun readLogFromDate(millis: Long){
         val date = standardDate(millis)
-        return _logs.value?.find{ it.logId == date.toString() }
+        _singleLog.postValue(_logs.value?.find{ it.logId == date.toString() })
     }
 
     fun stopListening(){
@@ -141,19 +144,28 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun updateRating(userId: String, millis: Long, rating: Int){
+    fun updateRating(userId: String?, millis: Long, rating: Int){
+        if (userId == null) return
+
         viewModelScope.launch {
             logRepository.updateLogRating(userId, standardDate(millis).toString(), rating)
         }
     }
 
-    fun updateNote(userId: String, millis: Long, note: String) {
+    fun updateNote(userId: String?, millis: Long, note: String, context: Context) {
+        if (userId == null) return
+
         viewModelScope.launch {
-            logRepository.updateLogNote(userId, standardDate(millis).toString(), note)
+            val isSuccess = logRepository.updateLogNote(userId, standardDate(millis).toString(), note)
+
+            val message = if (isSuccess) "Note saved successfully!" else "Failed to save note."
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
-    fun deleteLog(userId: String, millis: Long){
+    fun deleteLog(userId: String?, millis: Long){
+        if (userId == null) return
+
         val logId = standardDate(millis).toString()
 
         viewModelScope.launch {
