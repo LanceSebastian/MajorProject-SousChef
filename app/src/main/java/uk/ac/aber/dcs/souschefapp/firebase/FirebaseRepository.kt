@@ -751,6 +751,19 @@ class InstructionRepository {
         }
     }
 
+    suspend fun updatePlacement(userId: String, recipeId: String, instructionId: String, placement: Int): Boolean {
+        TODO("""
+            I need to also update the rest of the instructions. I should think about how I'm going to structure this for 
+            effective server calls.
+            Should I:
+                1) place instruction: recursively update the placements of the other instructions - #instructions calls)
+                2) use an array for instructions and update the array - one call (I think)
+            |
+        """)
+
+    }
+
+
     suspend fun deleteInstruction(userId: String, recipeId: String, instructionId: String): Boolean {
         return try{
             val instructionRef = db.collection("users")
