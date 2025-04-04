@@ -209,27 +209,99 @@ class ProductRepository {
 
                 // Convert Firestore documents to Post objects
                 val products = snapshot?.documents?.mapNotNull { document ->
-                    document.toObject(Product::class.java)  // This returns a nullable Post? object
+                    document.toObject(Product::class.java)  // This returns a nullable Product? object
                 } ?: emptyList()
 
-                onResult(products)  // Send the filtered posts back to the caller via the callback
+                onResult(products)  // Send the filtered products back to the caller via the callback
             }
     }
 
     suspend fun updateProduct(userId: String, product: Product): Boolean {
-        TODO()
+        return try {
+            val productRef = db.collection("users")
+                .document(userId)
+                .collection("products")
+                .document(product.productId)
+
+            val updates = mapOf(
+                "name" to product.name,
+                "price" to product.price
+            )
+
+            productRef.update(updates).await()
+
+            android.util.Log.d("Firestore", "Product updated successfully")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error updating product ${e.message}", e)
+            false
+        }
     }
 
     suspend fun archiveProduct(userId: String, productId: String): Boolean {
-        TODO()
+        return try {
+            val productRef = db.collection("users")
+                .document(userId)
+                .collection("products")
+                .document(productId)
+            // Firestore doesn't support direct updates to array elements, so we have to remove the old tag and add the new one
+            productRef.update("isArchive", true).await()
+
+            android.util.Log.d("Firestore", "Product archived successfully")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error archiving product: ${e.message}", e)
+            false
+        }
     }
 
     suspend fun restoreProduct(userId: String, productId: String): Boolean {
-        TODO()
+        return try {
+            val productRef = db.collection("users")
+                .document(userId)
+                .collection("products")
+                .document(productId)
+            // Firestore doesn't support direct updates to array elements, so we have to remove the old tag and add the new one
+            productRef.update("isArchive", false).await()
+
+            android.util.Log.d("Firestore", "Product archived successfully")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error archiving product: ${e.message}", e)
+            false
+        }
     }
 
     suspend fun deleteProduct(userId: String, productId: String): Boolean {
-        TODO()
+        return try {
+            val productRef = db.collection("users")
+                .document(userId)
+                .collection("products")
+                .document(productId)
+
+            // Get the document snapshot
+            val snapshot = productRef.get().await()
+
+            if (snapshot.exists()) {
+                val isArchived = snapshot.getBoolean("isArchive") ?: false
+
+                if (isArchived) {
+                    // Delete the document if isArchived is true
+                    productRef.delete().await()
+                    android.util.Log.d("Firestore", "Recipe deleted successfully")
+                    true
+                } else {
+                    android.util.Log.d("Firestore", "Recipe is not archived, cannot be deleted")
+                    false
+                }
+            } else {
+                android.util.Log.d("Firestore", "Recipe does not exist")
+                false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error deleting recipe: ${e.message}", e)
+            false
+        }
     }
 
 }
