@@ -524,19 +524,78 @@ class NoteRepository {
     private val db = FirebaseFirestore.getInstance()
 
     suspend fun addNote(userId: String, recipeId: String, note: Note): Boolean {
-        TODO()
+        return try{
+            db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .collection("notes")
+                .document(note.noteId)
+                .set(note)
+                .await()
+            android.util.Log.d("Firestore", "Note added successfully")
+            true
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error adding note: ${e.message}", e)
+            false
+        }
     }
 
-    fun listenForNotes(userId: String, recipeId: String){
-        TODO()
+    fun listenForNotes(userId: String, recipeId: String, onResult: (List<Note>) -> Unit): ListenerRegistration {
+        return db.collection("users")
+            .document(userId)
+            .collection("recipes")
+            .document(recipeId)
+            .collection("notes")
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    android.util.Log.e("Firestore", "Error fetching notes: ${exception.message}")
+                    return@addSnapshotListener
+                }
+
+                // Convert Firestore documents to Post objects
+                val notes = snapshot?.documents?.mapNotNull { document ->
+                    document.toObject(Note::class.java)  // This returns a nullable Note? object
+                } ?: emptyList()
+
+                onResult(notes)  // Send the filtered notes back to the caller via the callback
+            }
     }
 
     suspend fun updateNote(userId: String, recipeId: String, note: Note): Boolean {
-        TODO()
+        return try{
+            db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .collection("notes")
+                .document(note.noteId)
+                .update("content", note.content)
+                .await()
+            android.util.Log.d("Firestore", "Note updated successfully")
+            true
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error updating note: ${e.message}", e)
+            false
+        }
     }
 
     suspend fun deleteNote(userId: String, recipeId: String, noteId: String): Boolean {
-        TODO()
+        return try {
+            db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .collection("notes")
+                .document(noteId)
+                .delete()
+                .await()
+            android.util.Log.d("Firestore", "Note deleted successfully")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error deleting note: ${e.message}", e)
+            false
+        }
     }
 }
 
