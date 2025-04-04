@@ -7,6 +7,7 @@ data class Product(
     val createdBy: String = "",
     val name: String = "",
     val price: Double = 1.0,
+    val isArchive: Boolean = false
 )
 
 data class Recipe(
@@ -35,8 +36,9 @@ data class Ingredient(
 
 // Subcollection to Recipe
 data class Note(
-    val content: String,
-    val createdAt: Timestamp
+    val noteId: String = "",
+    val content: String = "",
+    val createdAt: Timestamp = Timestamp.now()
 )
 
 // Subcollection to users
