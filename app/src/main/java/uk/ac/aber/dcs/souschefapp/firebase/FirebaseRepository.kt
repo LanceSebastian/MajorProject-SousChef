@@ -600,21 +600,92 @@ class NoteRepository {
 }
 
 class IngredientRepository {
+    private val db = FirebaseFirestore.getInstance()
+
     suspend fun addIngredient(userId: String, recipeId: String, ingredient: Ingredient): Boolean {
-        TODO()
+        return try{
+            val ingredientRef = db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .collection("ingredients")
+                .document()
+            val newId = ingredientRef.id
+
+            val newIngredient = ingredient.copy(ingredientId = newId)
+
+            ingredientRef.set(newIngredient).await()
+            android.util.Log.d("Firestore", "Ingredient added successfully")
+            true
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error adding ingredient: ${e.message}", e)
+            false
+        }
     }
 
-    fun listenForIngredients(userId: String, recipeId: String){
-        TODO()
+    fun listenForIngredients(userId: String, recipeId: String, onResult: (List<Ingredient>) -> Unit): ListenerRegistration {
+        return db.collection("users")
+            .document(userId)
+            .collection("recipes")
+            .document(recipeId)
+            .collection("ingredients")
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    android.util.Log.e("Firestore", "Error fetching ingredients: ${exception.message}")
+                    return@addSnapshotListener
+                }
+
+                // Convert Firestore documents to Post objects
+                val ingredients = snapshot?.documents?.mapNotNull { document ->
+                    document.toObject(Ingredient::class.java)  // This returns a nullable Ingredient? object
+                } ?: emptyList()
+
+                onResult(ingredients)  // Send the filtered ingredients back to the caller via the callback
+            }
     }
 
-    // Check how updating whole documents works with accesses.
     suspend fun updateIngredient(userId: String, recipeId: String, ingredient: Ingredient): Boolean {
-        TODO()
+        return try {
+            val ingredientRef = db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .collection("ingredients")
+                .document()
+
+            val updates = mapOf(
+                "name" to ingredient.name,
+                "description" to ingredient.description,
+                "quanitity" to ingredient.quantity,
+                "unit" to ingredient.unit
+            )
+
+            ingredientRef.update(updates).await()
+
+            android.util.Log.d("Firestore", "Ingredient updated successfully")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error updating ingredient ${e.message}", e)
+            false
+        }
     }
 
     suspend fun deleteIngredient(userId: String, recipeId: String, ingredientId: String): Boolean {
-        TODO()
+        return try {
+            db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .collection("ingredients")
+                .document(ingredientId)
+                .delete()
+                .await()
+            android.util.Log.d("Firestore", "Ingredient deleted successfully")
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error deleting ingredient: ${e.message}", e)
+            false
+        }
     }
 }
 
