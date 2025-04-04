@@ -330,16 +330,16 @@ class RecipeRepository {
             .collection("recipes")
             .addSnapshotListener { snapshot, exception ->
                 if (exception != null) {
-                    android.util.Log.e("Firestore", "Error fetching logs: ${exception.message}")
+                    android.util.Log.e("Firestore", "Error fetching recipes: ${exception.message}")
                     return@addSnapshotListener
                 }
 
                 // Convert Firestore documents to Post objects
                 val recipes = snapshot?.documents?.mapNotNull { document ->
-                    document.toObject(Recipe::class.java)  // This returns a nullable Post? object
+                    document.toObject(Recipe::class.java)  // This returns a nullable Recipe? object
                 } ?: emptyList()
 
-                onResult(recipes)  // Send the filtered posts back to the caller via the callback
+                onResult(recipes)  // Send the filtered recipes back to the caller via the callback
             }
     }
 
@@ -498,7 +498,7 @@ class RecipeRepository {
             val snapshot = recipeRef.get().await()
 
             if (snapshot.exists()) {
-                val isArchived = snapshot.getBoolean("isArchived") ?: false
+                val isArchived = snapshot.getBoolean("isArchive") ?: false
 
                 if (isArchived) {
                     // Delete the document if isArchived is true
