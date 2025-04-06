@@ -524,18 +524,32 @@ class NoteRepository {
     private val db = FirebaseFirestore.getInstance()
 
     suspend fun addNote(userId: String, recipeId: String, note: Note): Boolean {
-        return try{
+        return try {
+            // Fetch the recipe name
+            val recipeSnapshot = db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .get()
+                .await()
+
+            val recipeName = recipeSnapshot.getString("recipeName") ?: "Unknown Recipe"  // Default if not found
+
+            // Create a new Note with recipeName
+            val newNote = note.copy(recipeName = recipeName)
+
+            // Save the note to the "notes" subcollection
             db.collection("users")
                 .document(userId)
                 .collection("recipes")
                 .document(recipeId)
                 .collection("notes")
-                .document(note.noteId)
-                .set(note)
+                .add(newNote)
                 .await()
-            android.util.Log.d("Firestore", "Note added successfully")
+
+            android.util.Log.d("Firestore", "Note added successfully with recipe name: $recipeName")
             true
-        } catch (e: Exception){
+        } catch (e: Exception) {
             android.util.Log.e("Firestore", "Error adding note: ${e.message}", e)
             false
         }
