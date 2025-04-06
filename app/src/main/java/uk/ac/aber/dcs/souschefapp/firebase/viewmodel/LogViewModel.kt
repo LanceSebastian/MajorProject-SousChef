@@ -14,7 +14,6 @@ import uk.ac.aber.dcs.souschefapp.firebase.Log
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.Date
-import kotlin.math.log
 
 class LogViewModel: ViewModel() {
     private val logRepository = LogRepository()
