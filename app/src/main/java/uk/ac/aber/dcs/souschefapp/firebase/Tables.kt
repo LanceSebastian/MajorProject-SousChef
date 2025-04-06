@@ -37,6 +37,7 @@ data class Ingredient(
 // Subcollection to Recipe
 data class Note(
     val noteId: String = "",
+    val recipeName: String = "",
     val content: String = "",
     val createdAt: Timestamp = Timestamp.now()
 )
