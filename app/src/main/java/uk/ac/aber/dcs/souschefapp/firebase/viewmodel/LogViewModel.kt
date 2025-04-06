@@ -22,10 +22,10 @@ class LogViewModel: ViewModel() {
     private var logListener: ListenerRegistration? = null
     private var logListenerSelected: ListenerRegistration? = null
 
-    private var _singleLog = MutableLiveData<Log>()
+    private var _singleLog = MutableLiveData<Log>() // Single-view Log.
     var singleLog: LiveData<Log> = _singleLog
 
-    private var _selectedLogs = MutableLiveData<List<Log>>()
+    private var _selectedLogs = MutableLiveData<List<Log>>() // For Shopping List
     var selectedLogs: LiveData<List<Log>> = _selectedLogs
 
     private var _logs = MutableLiveData<List<Log>>()
@@ -60,8 +60,12 @@ class LogViewModel: ViewModel() {
                 userId = userId,
                 log = standardLog
             )
-            if (!isSuccess) {
-                android.util.Log.e("LogViewModel", "Failed to create log")
+            if (isSuccess) {
+                _singleLog.postValue(standardLog) // Update
+                android.util.Log.d("LogViewModel", "Log successfully created!")
+
+            } else {
+                android.util.Log.e("LogViewModel", "Failed to create log.")
             }
         }
     }
