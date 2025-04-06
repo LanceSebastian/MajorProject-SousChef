@@ -576,6 +576,28 @@ class NoteRepository {
             }
     }
 
+    suspend fun getNotes(userId: String, recipeId: String): List<Note> {
+        return try {
+            // Get all the notes from the subcollection
+            val notesSnapshot = db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .collection("notes")
+                .get()
+                .await()
+
+            // Map the snapshot to Note data class, now that each Note has a recipeName
+            val notes = notesSnapshot.documents.mapNotNull { it.toObject(Note::class.java) }
+
+            android.util.Log.d("Firestore", "Notes found: ${notes.size}")
+            notes
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error finding notes: ${e.message}", e)
+            emptyList() // Return a default name with empty notes if error
+        }
+    }
+
     suspend fun updateNote(userId: String, recipeId: String, note: Note): Boolean {
         return try{
             db.collection("users")
