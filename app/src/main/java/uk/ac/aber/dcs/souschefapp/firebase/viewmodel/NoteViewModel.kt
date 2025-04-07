@@ -48,7 +48,12 @@ class NoteViewModel : ViewModel() {
         }
     }
 
-    fun compileNotesFromRecipes(userId: String, listOfRecipeIds: List<String>){
+    fun compileNotesFromRecipes(userId: String?, listOfRecipeIds: List<String>?){
+        if (userId == null) return
+        if (listOfRecipeIds == null) return
+
+        emptyCompiledNotes()
+
         val notesDeferred  = mutableListOf<Deferred<List<Note>>>()
         listOfRecipeIds.forEach{ recipeId ->
             val deferred = viewModelScope.async {

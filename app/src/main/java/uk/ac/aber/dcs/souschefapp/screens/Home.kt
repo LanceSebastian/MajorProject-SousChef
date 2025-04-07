@@ -40,7 +40,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,9 +53,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Timestamp
@@ -67,6 +63,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.Note
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.components.DateNavigationBar
@@ -75,8 +72,6 @@ import uk.ac.aber.dcs.souschefapp.ui.components.MyCalendar
 import uk.ac.aber.dcs.souschefapp.ui.components.RecipeNote
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import java.math.BigDecimal
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -87,7 +82,8 @@ fun TopHomeScreen(
     context: ComponentActivity,
     navController: NavHostController,
     authViewModel: AuthViewModel,
-    logViewModel: LogViewModel
+    logViewModel: LogViewModel,
+    noteViewModel: NoteViewModel
 ){
     val user by authViewModel.user.observeAsState()
     val userId = user?.uid
@@ -96,6 +92,7 @@ fun TopHomeScreen(
     val logs by logViewModel.logs.observeAsState(emptyList())
 
     val log by logViewModel.singleLog.observeAsState(null)
+    val compiledNotes by noteViewModel.compiledNotes.observeAsState(null)
 
     // Listen for logs in real-time when the user exists
     DisposableEffect(userId) {
@@ -114,6 +111,7 @@ fun TopHomeScreen(
         logs = logs,
         log = log,
         recipes = emptyList(),
+        compiledNotes = compiledNotes,
         createLog = { dateMillis ->
             logViewModel.createLog(userId, dateMillis)
         },
@@ -123,13 +121,15 @@ fun TopHomeScreen(
         updateRating = {millis, rating ->
             logViewModel.updateRating(userId, millis, rating)
         },
-        updateNote = { millis, content ->
+        updatePNote = { millis, content ->
             logViewModel.updateNote(userId, millis, content, context)
         },
         deleteLog = { millis ->
             logViewModel.deleteLog(userId, millis)
+        },
+        updateRNotes = { recipeIdList ->
+            noteViewModel.compileNotesFromRecipes(userId, recipeIdList)
         }
-
     )
 }
 
@@ -140,15 +140,15 @@ fun HomeScreen(
     logs: List<Log>, // This will be used for the calendar
     log: Log? = null,
     recipes: List<Recipe>,
+    compiledNotes: List<Note>?,
     createLog: (Long) -> Unit,
     readLogFromDate: (Long) -> Unit,
     updateRating: (Long, Int) -> Unit,
-    updateNote: (Long, String) -> Unit,
-    deleteLog: (Long) -> Unit
+    updatePNote: (Long, String) -> Unit,
+    deleteLog: (Long) -> Unit,
+    updateRNotes: (List<String>?) -> Unit
 ){
     // Ratings
-    // val ratingMap = ratings.associateBy { it.value }
-    // val satisfiedRating = ratingMap[2]
     val ratings = listOf(
         Rating(
             value = -2,
@@ -189,7 +189,6 @@ fun HomeScreen(
         mutableStateOf(LocalDate.now())
     }
     val datePickedEpoch: Long = datePicked.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
     // toString
     val monthFormat by remember {
         derivedStateOf {
@@ -214,32 +213,33 @@ fun HomeScreen(
     var logRating by remember { mutableStateOf(0) }
 
     val logRecipes = recipes.filter{ log?.recipeIdList?.contains(it.recipeId) == true }
-    val notesList = remember { mutableStateListOf<Note>() }
+    var notesList = remember { mutableListOf<Note>() }
+    if (compiledNotes != null) notesList = compiledNotes.toMutableList()
 
+    // When new log, save previous log's rating.
     LaunchedEffect(log) {
-        // Save previous log before switching
         previousLog?.let {
             updateRating(previousLog!!.logId.toLong(), logRating)
         }
 
-        // Update state for new log
         logRating = log?.rating ?: 0
         previousLog = log
+        updateRNotes(log?.recipeIdList)
     }
 
+    // Update NoteViewModel: singleLog
     LaunchedEffect(datePickedEpoch) {
         readLogFromDate(datePickedEpoch)
     }
 
+    // Save current log if disposed.
     DisposableEffect(Unit) {
         onDispose {
-            // Save the current log when leaving the screen
             log?.let {
                 updateRating(datePickedEpoch, logRating)
             }
         }
     }
-
 
     BareMainScreen(
         mainState = mainState,
@@ -422,7 +422,7 @@ fun HomeScreen(
                                             modifier = Modifier
                                                 .clickable {
                                                     if (editNoteSelected) {
-                                                        updateNote(datePickedEpoch, logNote)
+                                                        updatePNote(datePickedEpoch, logNote) // Save note on check.
                                                         editNoteSelected = false
                                                     } else {
                                                         editNoteSelected = true
@@ -518,7 +518,7 @@ fun HomeScreen(
                                         notesList.forEach() { note ->
                                             item {
                                                 RecipeNote(
-                                                    recipeName = TODO("return the name of the recipe"),
+                                                    recipeName = note.recipeName,
                                                     noteContent = note.content,
                                                     dateEpoch = note.createdAt.seconds
                                                 )
@@ -569,11 +569,13 @@ fun HomeScreenEmptyView(){
             mainState = MainState.HOME,
             logs = emptyList(),
             recipes = emptyList(),
+            compiledNotes = emptyList(),
             createLog = {},
             readLogFromDate = {},
             deleteLog = {},
             updateRating = {_,_ -> },
-            updateNote = {_,_ -> }
+            updatePNote = { _, _ -> },
+            updateRNotes = {_ -> }
         )
     }
 }
@@ -628,19 +630,19 @@ fun HomeScreenView(){
     )
 
     val mockNotes = mutableListOf(
-        Note("Add more sausages!", Timestamp(Date(System.currentTimeMillis()))),
-        Note("Cook eggs on lower heat.", Timestamp(Date(System.currentTimeMillis()))),
-        Note("Add more breading", Timestamp(Date(System.currentTimeMillis()))),
-        Note("Stir the sauce frequently for better consistency.", Timestamp(Date(System.currentTimeMillis() - 1_800_000))), // 30 minutes ago
-        Note("Use fresh basil for better flavor.", Timestamp(Date(System.currentTimeMillis() - 3_600_000))), // 1 hour ago
-        Note("Marinate the chicken overnight.", Timestamp(Date(System.currentTimeMillis() - 7_200_000))), // 2 hours ago
-        Note("Don't overcook the shrimp.", Timestamp(Date(System.currentTimeMillis() - 12_000_000))), // 3 hours ago
-        Note("Top with extra parmesan before serving.", Timestamp(Date(System.currentTimeMillis() - 21_600_000))), // 6 hours ago
-        Note("Slice tomatoes thinly for the salad.", Timestamp(Date(System.currentTimeMillis() - 43_200_000))), // 12 hours ago
-        Note("Make sure to use chilled dough for better texture.", Timestamp(Date(System.currentTimeMillis() - 86_400_000))), // 1 day ago
-        Note("Use a non-stick pan to avoid sticking.", Timestamp(Date(System.currentTimeMillis() - 172_800_000))), // 2 days ago
-        Note("Ensure even cooking by rotating the pan.", Timestamp(Date(System.currentTimeMillis() - 259_200_000))), // 3 days ago
-        Note("Prepare ingredients ahead of time for a smoother process.", Timestamp(Date(System.currentTimeMillis() - 345_600_000))) // 4 days ago
+        Note("1","English Breakfast", "Add more sausages!", Timestamp(Date(System.currentTimeMillis()))),
+        Note("2","English Breakfast","Cook eggs on lower heat.", Timestamp(Date(System.currentTimeMillis()))),
+        Note("3","Chicken Sandwich","Add more breading", Timestamp(Date(System.currentTimeMillis()))),
+        Note("4","Spaghetti Bolognese","Stir the sauce frequently for better consistency.", Timestamp(Date(System.currentTimeMillis() - 1_800_000))), // 30 minutes ago
+        Note("5","Spaghetti Bolognese","Use fresh basil for better flavor.", Timestamp(Date(System.currentTimeMillis() - 3_600_000))), // 1 hour ago
+        Note("6","Chicken Sandwich","Marinate the chicken overnight.", Timestamp(Date(System.currentTimeMillis() - 7_200_000))), // 2 hours ago
+        Note("7","Beef Tacos","Don't overcook the shrimp.", Timestamp(Date(System.currentTimeMillis() - 12_000_000))), // 3 hours ago
+        Note("8","Spaghetti Bolognese","Top with extra parmesan before serving.", Timestamp(Date(System.currentTimeMillis() - 21_600_000))), // 6 hours ago
+        Note("9","Vegetable Stir Fry","Slice tomatoes thinly for the salad.", Timestamp(Date(System.currentTimeMillis() - 43_200_000))), // 12 hours ago
+        Note("10","Margherita Pizza","Make sure to use chilled dough for better texture.", Timestamp(Date(System.currentTimeMillis() - 86_400_000))), // 1 day ago
+        Note("11","Margherita Pizza","Use a non-stick pan to avoid sticking.", Timestamp(Date(System.currentTimeMillis() - 172_800_000))), // 2 days ago
+        Note("12","Margherita Pizza","Ensure even cooking by rotating the pan.", Timestamp(Date(System.currentTimeMillis() - 259_200_000))), // 3 days ago
+        Note("13","Beef Tacos","Prepare ingredients ahead of time for a smoother process.", Timestamp(Date(System.currentTimeMillis() - 345_600_000))) // 4 days ago
     )
 
     val mockRecipes = mutableListOf(
@@ -659,11 +661,13 @@ fun HomeScreenView(){
             logs = sampleLogs,
             log = sampleLogs[0],
             recipes = mockRecipes,
+            compiledNotes = mockNotes,
             createLog = {},
             readLogFromDate = {},
             deleteLog = {},
             updateRating = {_,_ -> },
-            updateNote = {_,_ -> }
+            updatePNote = { _, _ -> },
+            updateRNotes = {_ -> },
         )
     }
 }
