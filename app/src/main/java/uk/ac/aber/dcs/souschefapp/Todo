@@ -1,5 +1,15 @@
+
+First Test:
+1) Login needs feedback for failure
+2) email needs format checkers
+3) signup needs feedback for failure and weak passwords.
+4)
+
+Archive:
+
+-- 07/04/25 --
 Account - Currently Done:
-    * Login and Signup exists, but it's remembered in UserPreferences
+    o Login and Signup exists, but it's remembered in UserPreferences (Finished by using Firebase Authentication.)
 
 Home:
     o Ratings -2 - 2 (Done)
@@ -21,7 +31,7 @@ RecipePage:
 Profile:
     * It's completely dysfunctional.
 
-Room Database
+Room Database* Switched to Firestore
     Issue for next prototype{
     * fundamental issue with ingredient is that it is not separated properly
     e.g. Multiple instances of Chicken Breast but different quantities.
@@ -29,9 +39,3 @@ Room Database
     }
 
 P.S. Don't forget to clean code.
-
-First Test:
-1) Login needs feedback for failure
-2) email needs format checkers
-3) signup needs feedback for failure and weak passwords.
-4)

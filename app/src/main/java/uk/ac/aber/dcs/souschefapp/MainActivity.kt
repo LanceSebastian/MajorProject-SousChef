@@ -32,10 +32,12 @@ import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
 
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
     private val logViewModel: LogViewModel by viewModels()
+    private val noteViewModel: NoteViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,7 +48,8 @@ class MainActivity : ComponentActivity() {
                 Navigation(
                     context = this,
                     authViewModel = authViewModel,
-                    logViewModel = logViewModel
+                    logViewModel = logViewModel,
+                    noteViewModel = noteViewModel
                 )
             }
         }
@@ -57,7 +60,8 @@ class MainActivity : ComponentActivity() {
 fun Navigation(
     context: ComponentActivity,
     authViewModel: AuthViewModel,
-    logViewModel: LogViewModel
+    logViewModel: LogViewModel,
+    noteViewModel: NoteViewModel
 ) {
     val navController = rememberNavController()
     val user by authViewModel.user.observeAsState()
@@ -87,7 +91,7 @@ fun Navigation(
                 navController = navController,
                 authViewModel = authViewModel,
                 logViewModel = logViewModel,
-
+                noteViewModel = noteViewModel
             )
         }
 
