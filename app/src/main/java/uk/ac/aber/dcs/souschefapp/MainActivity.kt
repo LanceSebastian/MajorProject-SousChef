@@ -89,6 +89,7 @@ fun Navigation(
             )
         }
 
+        /* Home */
         composable(Screen.Home.route){
             TopHomeScreen(
                 context = context,
@@ -97,6 +98,16 @@ fun Navigation(
                 logViewModel = logViewModel,
                 recipeViewModel = recipeViewModel,
                 noteViewModel = noteViewModel
+            )
+        }
+
+        /* Recipes */
+        composable(Screen.Recipes.route){
+            TopRecipesScreen(
+                context = context,
+                navController = navController,
+                authViewModel = authViewModel,
+                recipeViewModel = recipeViewModel
             )
         }
 
