@@ -49,16 +49,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun CardHistory(
     navController: NavHostController,
-    date: LocalDate = LocalDate.now(),
+    date: Timestamp = Timestamp.now(),
     recipes: List<Recipe> = emptyList(),
     rating: Int = 0,
 ) {
@@ -69,18 +72,21 @@ fun CardHistory(
     val disappointed = ImageVector.vectorResource(id = R.drawable.disappointed)
     val unknown = ImageVector.vectorResource(id = R.drawable.unknown)
 
+    val localDateTime = Instant
+        .ofEpochSecond(date.seconds, date.nanoseconds.toLong())
+        .atZone(ZoneId.systemDefault())
     val topFormat by remember {
         derivedStateOf{
             DateTimeFormatter
                 .ofPattern("yyyy EEEE")
-                .format(date)
+                .format(localDateTime)
         }
     }
     val mainFormat by remember {
         derivedStateOf{
             DateTimeFormatter
                 .ofPattern("dd MMM")
-                .format(date)
+                .format(localDateTime)
         }
     }
 
