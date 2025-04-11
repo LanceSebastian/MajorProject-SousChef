@@ -36,10 +36,11 @@ fun TopHistoryScreen(
 ){
     val logs by logViewModel.logs.observeAsState(emptyList())
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
+
     HistoryScreen(
-        navController,
-        logs,
-        recipes
+        navController = navController,
+        logs = logs,
+        recipes = recipes
     )
 }
 
@@ -68,9 +69,7 @@ fun HistoryScreen(
                         CardHistory(
                             navController = navController,
                             recipes = logRecipes,
-                            date = Instant.ofEpochMilli(log.logId.toLong())
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
+                            date = log.createdAt
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
