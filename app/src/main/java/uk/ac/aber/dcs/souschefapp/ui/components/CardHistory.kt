@@ -49,7 +49,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import uk.ac.aber.dcs.souschefapp.database.models.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.time.LocalDate
@@ -159,7 +159,7 @@ fun CardHistory(
                 )
             } else {
                 Text(
-                    text = "Recipes: ${recipes.joinToString(", "){it.recipeName}}",
+                    text = "Recipes: ${recipes.joinToString(", "){it.name}}",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall
@@ -176,7 +176,7 @@ fun CardHistory(
                     recipes.forEach { recipe ->
                         item {
                             CardRecipe(
-                                text = recipe.recipeName,
+                                text = recipe.name,
                                 onClick = {
                                     navController.navigate(
                                         Screen.RecipePage.route + "/recipeId=${recipe.recipeId}"
@@ -196,12 +196,12 @@ fun CardHistory(
 fun CardHistoryView(){
     val navController = rememberNavController()
     val mockRecipes = mutableListOf(
-        Recipe(1, "English Breakfast", ""),
-        Recipe(2, "Chicken Sandwich", ""),
-        Recipe(3, "Spaghetti Bolognese", ""),
-        Recipe(4, "Vegetable Stir Fry", ""),
-        Recipe(5, "Beef Tacos", ""),
-        Recipe(6, "Margherita Pizza", "")
+        Recipe("1", "English Breakfast", ""),
+        Recipe("2", "Chicken Sandwich", ""),
+        Recipe("3", "Spaghetti Bolognese", ""),
+        Recipe("4", "Vegetable Stir Fry", ""),
+        Recipe("5", "Beef Tacos", ""),
+        Recipe("6", "Margherita Pizza", "")
     )
     AppTheme {
         CardHistory(

@@ -33,11 +33,13 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
     private val logViewModel: LogViewModel by viewModels()
     private val noteViewModel: NoteViewModel by viewModels()
+    private val recipeViewModel: RecipeViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +51,7 @@ class MainActivity : ComponentActivity() {
                     context = this,
                     authViewModel = authViewModel,
                     logViewModel = logViewModel,
+                    recipeViewModel = recipeViewModel,
                     noteViewModel = noteViewModel
                 )
             }
@@ -61,6 +64,7 @@ fun Navigation(
     context: ComponentActivity,
     authViewModel: AuthViewModel,
     logViewModel: LogViewModel,
+    recipeViewModel: RecipeViewModel,
     noteViewModel: NoteViewModel
 ) {
     val navController = rememberNavController()
@@ -85,13 +89,25 @@ fun Navigation(
             )
         }
 
+        /* Home */
         composable(Screen.Home.route){
             TopHomeScreen(
                 context = context,
                 navController = navController,
                 authViewModel = authViewModel,
                 logViewModel = logViewModel,
+                recipeViewModel = recipeViewModel,
                 noteViewModel = noteViewModel
+            )
+        }
+
+        /* Recipes */
+        composable(Screen.Recipes.route){
+            TopRecipesScreen(
+                context = context,
+                navController = navController,
+                authViewModel = authViewModel,
+                recipeViewModel = recipeViewModel
             )
         }
 

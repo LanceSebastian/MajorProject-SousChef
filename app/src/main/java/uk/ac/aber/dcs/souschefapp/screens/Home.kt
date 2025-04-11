@@ -64,6 +64,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.components.DateNavigationBar
@@ -77,22 +78,26 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
 
+// Add Product
+// Add Recipe
 @Composable
 fun TopHomeScreen(
     context: ComponentActivity,
     navController: NavHostController,
     authViewModel: AuthViewModel,
     logViewModel: LogViewModel,
+    recipeViewModel: RecipeViewModel,
     noteViewModel: NoteViewModel
 ){
     val user by authViewModel.user.observeAsState()
     val userId = user?.uid
 
-    if (userId != null) logViewModel.readLogs(userId)
     val logs by logViewModel.logs.observeAsState(emptyList())
 
     val log by logViewModel.singleLog.observeAsState(null)
+    val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
     val compiledNotes by noteViewModel.compiledNotes.observeAsState(null)
+
 
     // Listen for logs in real-time when the user exists
     DisposableEffect(userId) {
@@ -110,7 +115,7 @@ fun TopHomeScreen(
         mainState = MainState.HOME,
         logs = logs,
         log = log,
-        recipes = emptyList(),
+        recipes = recipes,
         compiledNotes = compiledNotes,
         createLog = { dateMillis ->
             logViewModel.createLog(userId, dateMillis)

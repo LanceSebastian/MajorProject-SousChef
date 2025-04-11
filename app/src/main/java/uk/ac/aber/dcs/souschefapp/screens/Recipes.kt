@@ -1,5 +1,6 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -36,24 +38,42 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import uk.ac.aber.dcs.souschefapp.database.MainState
-import uk.ac.aber.dcs.souschefapp.database.models.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.RecipeViewModel
 
 @Composable
 fun TopRecipesScreen(
+    context: ComponentActivity,
     navController: NavHostController,
+    authViewModel: AuthViewModel,
     recipeViewModel: RecipeViewModel
 ){
-    val recipes by recipeViewModel.getAllRecipes().observeAsState(listOf())
+    val user by authViewModel.user.observeAsState()
+    val userId = user?.uid
+
+    val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
+
+    // Listen for logs in real-time when the user exists
+    DisposableEffect(userId) {
+        if(userId != null){
+            recipeViewModel.readRecipes(userId)
+        }
+
+        onDispose {
+            recipeViewModel.stopListening()
+        }
+    }
+
     RecipesScreen(
         navController = navController,
         recipes = recipes,
         addRecipe = { recipe ->
-            recipeViewModel.insertRecipe(recipe)
+            recipeViewModel.createRecipe(user?.uid, recipe)
         }
     )
 }
@@ -66,7 +86,7 @@ fun RecipesScreen(
 ){
     var isSearch by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
-    val filteredRecipes = recipes.filter { it.recipeName.contains(searchText, ignoreCase = true) }
+    val filteredRecipes = recipes.filter { it.name.contains(searchText, ignoreCase = true) }
     var isFloatClick by remember { mutableStateOf(false) }
     var recipeNameText by remember { mutableStateOf("") }
 
@@ -114,7 +134,7 @@ fun RecipesScreen(
                     filteredRecipes.forEach { recipe ->
                         item {
                             CardRecipe(
-                                text = recipe.recipeName,
+                                text = recipe.name,
                                 onClick = { navController.navigate(Screen.RecipePage.route + "/recipeId=${recipe.recipeId}") }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -158,7 +178,7 @@ fun RecipesScreen(
                                     Text("Cancel")
                                 }
                                 Button(onClick = {
-                                    val newRecipe = Recipe(recipeName = recipeNameText)
+                                    val newRecipe = Recipe(name = recipeNameText)
                                     addRecipe(newRecipe)
                                     recipeNameText = ""
                                     navController.navigate(Screen.RecipePage.route + "/recipeId = ${newRecipe.recipeId}")
@@ -180,13 +200,14 @@ fun RecipesScreen(
 fun RecipesScreenPreview(){
     val navController = rememberNavController()
     val sampleRecipes = mutableListOf(
-        Recipe(1, "English Breakfast", ""),
-        Recipe(2, "Chicken Sandwich", ""),
-        Recipe(3, "Spaghetti Bolognese", ""),
-        Recipe(4, "Vegetable Stir Fry", ""),
-        Recipe(5, "Beef Tacos", ""),
-        Recipe(6, "Margherita Pizza", "")
+        Recipe("1", "English Breakfast", ""),
+        Recipe("2", "Chicken Sandwich", ""),
+        Recipe("3", "Spaghetti Bolognese", ""),
+        Recipe("4", "Vegetable Stir Fry", ""),
+        Recipe("5", "Beef Tacos", ""),
+        Recipe("6", "Margherita Pizza", "")
     )
+
     AppTheme {
         RecipesScreen(
             navController = navController,
