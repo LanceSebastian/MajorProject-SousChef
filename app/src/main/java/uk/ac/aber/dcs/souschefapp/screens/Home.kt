@@ -78,6 +78,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
 
+// Add Product
+// Add Recipe
 @Composable
 fun TopHomeScreen(
     context: ComponentActivity,
@@ -90,7 +92,6 @@ fun TopHomeScreen(
     val user by authViewModel.user.observeAsState()
     val userId = user?.uid
 
-    if (userId != null) logViewModel.readLogs(userId)
     val logs by logViewModel.logs.observeAsState(emptyList())
 
     val log by logViewModel.singleLog.observeAsState(null)
