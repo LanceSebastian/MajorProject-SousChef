@@ -41,7 +41,7 @@ fun TopHistoryScreen(
     val user by authViewModel.user.observeAsState()
     val userId = user?.uid
 
-    val logs by logViewModel.logs.observeAsState(null)
+    val logs by logViewModel.logs.observeAsState(emptyList())
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
 
     // Listen for logs in real-time when the user exists
@@ -68,10 +68,11 @@ fun TopHistoryScreen(
 @Composable
 fun HistoryScreen(
     navController: NavHostController,
-    logs: List<Log>? = null,
+    logs: List<Log>,
     recipes: List<Recipe>,
     setLog: (Long) -> Unit,
 ){
+    val sortedLogs = logs.sortedByDescending { it.createdAt }
     BareMainScreen(
         navController = navController,
         mainState = MainState.HISTORY
@@ -85,7 +86,7 @@ fun HistoryScreen(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                logs?.forEach { log ->
+                sortedLogs.forEach { log ->
                     val logRecipes = recipes.filter { log.recipeIdList.contains(it.recipeId) }
                     item {
                         CardHistory(
@@ -115,6 +116,7 @@ fun EmptyHistoryScreenPreview(){
             navController,
             logs = emptyList(),
             recipes = emptyList(),
+            selectRecipe = {},
             setLog = {}
         )
     }
@@ -155,6 +157,15 @@ fun HistoryScreenPreview(){
             note = "A decent meal, but could use more seasoning."
         ),
         Log(
+            logId = "5",
+            createdAt = Timestamp(Date(System.currentTimeMillis() - 345_600_000)), // 4 days ago
+            createdBy = "0",
+            rating = -2,
+            recipeIdList = listOf("4"),
+            productIdList = listOf("808", "909"),
+            note = "Had a bad experience with this recipe."
+        ),
+        Log(
             logId = "4",
             createdAt = Timestamp(Date(System.currentTimeMillis() - 259_200_000)), // 3 days ago
             createdBy = "0",
@@ -163,15 +174,6 @@ fun HistoryScreenPreview(){
             productIdList = listOf("606", "707"),
             note = "Tried a new product, unsure about it yet."
         ),
-        Log(
-            logId = "5",
-            createdAt = Timestamp(Date(System.currentTimeMillis() - 345_600_000)), // 4 days ago
-            createdBy = "0",
-            rating = -2,
-            recipeIdList = listOf("4"),
-            productIdList = listOf("808", "909"),
-            note = "Had a bad experience with this recipe."
-        )
     )
 
     val sampleRecipes = mutableListOf(
@@ -188,6 +190,7 @@ fun HistoryScreenPreview(){
             navController,
             logs = sampleLogs,
             recipes = sampleRecipes,
+            selectRecipe = {},
             setLog = {}
         )
     }
