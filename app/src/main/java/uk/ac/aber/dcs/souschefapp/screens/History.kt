@@ -96,9 +96,7 @@ fun HistoryScreen(
                         CardHistory(
                             navController = navController,
                             recipes = logRecipes,
-                            date = Instant.ofEpochMilli(log.logId.toLong())
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate(),
+                            rating = log.rating,
                             date = log.createdAt,
                             selectRecipe = { recipeId ->
                                 selectRecipe(recipeId)
