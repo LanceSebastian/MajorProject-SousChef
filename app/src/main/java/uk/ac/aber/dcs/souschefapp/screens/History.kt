@@ -59,6 +59,9 @@ fun TopHistoryScreen(
         navController = navController,
         logs = logs,
         recipes = recipes,
+        selectRecipe = { recipeId ->
+            recipeViewModel.selectRecipe(recipeId)
+        },
         setLog = { dateMillis ->
             logViewModel.readLogFromDate(dateMillis)
         }
@@ -70,6 +73,7 @@ fun HistoryScreen(
     navController: NavHostController,
     logs: List<Log>,
     recipes: List<Recipe>,
+    selectRecipe: (String) -> Unit,
     setLog: (Long) -> Unit,
 ){
     val sortedLogs = logs.sortedByDescending { it.createdAt }
@@ -95,6 +99,10 @@ fun HistoryScreen(
                             date = Instant.ofEpochMilli(log.logId.toLong())
                                 .atZone(ZoneId.systemDefault())
                                 .toLocalDate(),
+                            date = log.createdAt,
+                            selectRecipe = { recipeId ->
+                                selectRecipe(recipeId)
+                            },
                             setLog = { dateMillis ->
                                 setLog(dateMillis)
                             }
