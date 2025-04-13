@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
@@ -18,6 +19,7 @@ import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.firebase.Log
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
@@ -27,26 +29,44 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Date
+import kotlin.math.log
 
 @Composable
 fun TopHistoryScreen(
     navController: NavHostController,
+    authViewModel: AuthViewModel,
     logViewModel: LogViewModel,
     recipeViewModel: RecipeViewModel
 ){
-    val logs by logViewModel.logs.observeAsState(emptyList())
+
+    val user by authViewModel.user.observeAsState()
+    val userId = user?.uid
+
+    val logs by logViewModel.logs.observeAsState(null)
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
+
+    // Listen for logs in real-time when the user exists
+    DisposableEffect(userId) {
+        if(userId != null){
+            logViewModel.readLogs(userId)
+        }
+
+        onDispose {
+            logViewModel.stopListening()
+        }
+    }
+
     HistoryScreen(
-        navController,
-        logs,
-        recipes
+        navController = navController,
+        logs = logs,
+        recipes = recipes
     )
 }
 
 @Composable
 fun HistoryScreen(
     navController: NavHostController,
-    logs: List<Log>,
+    logs: List<Log>? = null,
     recipes: List<Recipe>
 ){
     BareMainScreen(
@@ -62,7 +82,7 @@ fun HistoryScreen(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                logs.forEach { log ->
+                logs?.forEach { log ->
                     val logRecipes = recipes.filter { log.recipeIdList.contains(it.recipeId) }
                     item {
                         CardHistory(
@@ -75,7 +95,6 @@ fun HistoryScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
-
             }
         }
     }
