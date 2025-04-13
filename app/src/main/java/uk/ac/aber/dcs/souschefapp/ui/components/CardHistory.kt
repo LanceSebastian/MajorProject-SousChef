@@ -38,19 +38,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun CardHistory(
     navController: NavHostController,
-    date: LocalDate = LocalDate.now(),
+    date: Timestamp = Timestamp.now(),
     recipes: List<Recipe> = emptyList(),
     rating: Int = 0,
+    selectRecipe: (String) -> Unit,
     setLog: (Long) -> Unit,
 ) {
     /*      Variables       */
@@ -62,18 +66,22 @@ fun CardHistory(
     val unknown = ImageVector.vectorResource(id = R.drawable.unknown)
     val arrowDropUp = ImageVector.vectorResource(id = R.drawable.arrow_drop_up)
 
+    val localDateTime = Instant
+        .ofEpochSecond(date.seconds,date.nanoseconds.toLong())
+        .atZone(ZoneId.systemDefault())
+
     val topFormat by remember {
         derivedStateOf{
             DateTimeFormatter
                 .ofPattern("yyyy EEEE")
-                .format(date)
+                .format(localDateTime)
         }
     }
     val mainFormat by remember {
         derivedStateOf{
             DateTimeFormatter
                 .ofPattern("dd MMM")
-                .format(date)
+                .format(localDateTime)
         }
     }
 
@@ -85,7 +93,7 @@ fun CardHistory(
         modifier = Modifier
             .width(360.dp)
             .height(if (!isExpanded) 120.dp else 350.dp)
-            .clickable { if (recipes.isNotEmpty()) isExpanded = !isExpanded },
+            .clickable {  isExpanded = !isExpanded },
         shape = RoundedCornerShape(12.dp)
     ) {
         Column (
@@ -195,7 +203,7 @@ fun CardHistory(
                 ) {
                     Button(
                         onClick = {     // Navigate to Log
-                            setLog(date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+                            setLog(localDateTime.toInstant().toEpochMilli())
                             navController.navigate(Screen.Home.route)
                         }
                     ) {
@@ -224,6 +232,7 @@ fun CardHistoryView(){
             navController = navController,
             rating = 2,
             recipes = mockRecipes,
+            selectRecipe = {},
             setLog = {}
         )
     }
