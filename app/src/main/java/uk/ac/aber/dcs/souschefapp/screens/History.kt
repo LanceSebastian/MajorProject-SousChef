@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
@@ -18,6 +19,7 @@ import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.firebase.Log
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
@@ -31,15 +33,38 @@ import java.util.Date
 @Composable
 fun TopHistoryScreen(
     navController: NavHostController,
+    authViewModel: AuthViewModel,
     logViewModel: LogViewModel,
     recipeViewModel: RecipeViewModel
 ){
+
+    val user by authViewModel.user.observeAsState()
+    val userId = user?.uid
+
     val logs by logViewModel.logs.observeAsState(emptyList())
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
+
+    // Listen for logs in real-time when the user exists
+    DisposableEffect(userId) {
+        if(userId != null){
+            logViewModel.readLogs(userId)
+        }
+
+        onDispose {
+            logViewModel.stopListening()
+        }
+    }
+
     HistoryScreen(
-        navController,
-        logs,
-        recipes
+        navController = navController,
+        logs = logs,
+        recipes = recipes,
+        selectRecipe = { recipeId ->
+            recipeViewModel.selectRecipe(recipeId)
+        },
+        setLog = { dateMillis ->
+            logViewModel.readLogFromDate(dateMillis)
+        }
     )
 }
 
@@ -47,8 +72,11 @@ fun TopHistoryScreen(
 fun HistoryScreen(
     navController: NavHostController,
     logs: List<Log>,
-    recipes: List<Recipe>
+    recipes: List<Recipe>,
+    selectRecipe: (String) -> Unit,
+    setLog: (Long) -> Unit,
 ){
+    val sortedLogs = logs.sortedByDescending { it.createdAt }
     BareMainScreen(
         navController = navController,
         mainState = MainState.HISTORY
@@ -62,20 +90,24 @@ fun HistoryScreen(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                logs.forEach { log ->
+                sortedLogs.forEach { log ->
                     val logRecipes = recipes.filter { log.recipeIdList.contains(it.recipeId) }
                     item {
                         CardHistory(
                             navController = navController,
                             recipes = logRecipes,
-                            date = Instant.ofEpochMilli(log.logId.toLong())
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
+                            rating = log.rating,
+                            date = log.createdAt,
+                            selectRecipe = { recipeId ->
+                                selectRecipe(recipeId)
+                            },
+                            setLog = { dateMillis ->
+                                setLog(dateMillis)
+                            }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
-
             }
         }
     }
@@ -89,7 +121,9 @@ fun EmptyHistoryScreenPreview(){
         HistoryScreen(
             navController,
             logs = emptyList(),
-            recipes = emptyList()
+            recipes = emptyList(),
+            selectRecipe = {},
+            setLog = {}
         )
     }
 }
@@ -129,6 +163,15 @@ fun HistoryScreenPreview(){
             note = "A decent meal, but could use more seasoning."
         ),
         Log(
+            logId = "5",
+            createdAt = Timestamp(Date(System.currentTimeMillis() - 345_600_000)), // 4 days ago
+            createdBy = "0",
+            rating = -2,
+            recipeIdList = listOf("4"),
+            productIdList = listOf("808", "909"),
+            note = "Had a bad experience with this recipe."
+        ),
+        Log(
             logId = "4",
             createdAt = Timestamp(Date(System.currentTimeMillis() - 259_200_000)), // 3 days ago
             createdBy = "0",
@@ -137,15 +180,6 @@ fun HistoryScreenPreview(){
             productIdList = listOf("606", "707"),
             note = "Tried a new product, unsure about it yet."
         ),
-        Log(
-            logId = "5",
-            createdAt = Timestamp(Date(System.currentTimeMillis() - 345_600_000)), // 4 days ago
-            createdBy = "0",
-            rating = -2,
-            recipeIdList = listOf("4"),
-            productIdList = listOf("808", "909"),
-            note = "Had a bad experience with this recipe."
-        )
     )
 
     val sampleRecipes = mutableListOf(
@@ -161,7 +195,9 @@ fun HistoryScreenPreview(){
         HistoryScreen(
             navController,
             logs = sampleLogs,
-            recipes = sampleRecipes
+            recipes = sampleRecipes,
+            selectRecipe = {},
+            setLog = {}
         )
     }
 }

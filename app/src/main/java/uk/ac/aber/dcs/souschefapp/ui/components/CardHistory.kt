@@ -1,26 +1,22 @@
 package uk.ac.aber.dcs.souschefapp.ui.components
 
-import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxWidth
-import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
 import uk.ac.aber.dcs.souschefapp.R
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -34,71 +30,75 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun CardHistory(
     navController: NavHostController,
-    date: LocalDate = LocalDate.now(),
+    date: Timestamp = Timestamp.now(),
     recipes: List<Recipe> = emptyList(),
     rating: Int = 0,
+    selectRecipe: (String) -> Unit,
+    setLog: (Long) -> Unit,
 ) {
+    /*      Variables       */
     val satisfied = ImageVector.vectorResource(id = R.drawable.satisfied)
     val happy = ImageVector.vectorResource(id = R.drawable.happy)
     val neutral = ImageVector.vectorResource(id = R.drawable.neutral)
     val unhappy = ImageVector.vectorResource(id = R.drawable.unhappy)
     val disappointed = ImageVector.vectorResource(id = R.drawable.disappointed)
     val unknown = ImageVector.vectorResource(id = R.drawable.unknown)
+    val arrowDropUp = ImageVector.vectorResource(id = R.drawable.arrow_drop_up)
+
+    val localDateTime = Instant
+        .ofEpochSecond(date.seconds,date.nanoseconds.toLong())
+        .atZone(ZoneId.systemDefault())
 
     val topFormat by remember {
         derivedStateOf{
             DateTimeFormatter
                 .ofPattern("yyyy EEEE")
-                .format(date)
+                .format(localDateTime)
         }
     }
     val mainFormat by remember {
         derivedStateOf{
             DateTimeFormatter
                 .ofPattern("dd MMM")
-                .format(date)
+                .format(localDateTime)
         }
     }
 
     var isExpanded by remember { mutableStateOf(false) }
 
+    /*      UI       */
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
+        colors = CardDefaults.cardColors( containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         modifier = Modifier
             .width(360.dp)
-            .height(if (!isExpanded) 120.dp else 300.dp)
-            .clickable { if (recipes.isNotEmpty()) isExpanded = !isExpanded },
+            .height(if (!isExpanded) 120.dp else 350.dp)
+            .clickable {  isExpanded = !isExpanded },
         shape = RoundedCornerShape(12.dp)
     ) {
         Column (
             horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
@@ -109,17 +109,25 @@ fun CardHistory(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                Column {
-
-                    Text(
-                        text = topFormat,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        text = mainFormat,
-                        style = MaterialTheme.typography.headlineLarge
-                    )
-                }
+                Text(
+                    text = topFormat,
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Icon(
+                    imageVector = if (!isExpanded) Icons.Default.ArrowDropDown else arrowDropUp,
+                    contentDescription = null
+                )
+            }
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = mainFormat,
+                    style = MaterialTheme.typography.headlineLarge
+                )
                 Icon(
                     imageVector = when (rating) {
                         -2 -> disappointed
@@ -149,7 +157,7 @@ fun CardHistory(
 
             }
 
-            // Recipe Names Here...
+            /*      Recipes Content       */
             if (recipes.isEmpty()){
                 Text(
                     text = "Recipes: n/a",
@@ -158,37 +166,87 @@ fun CardHistory(
                     style = MaterialTheme.typography.bodySmall
                 )
             } else {
+                val text = if (!isExpanded) recipes.joinToString(", "){it.name} else ""
                 Text(
-                    text = "Recipes: ${recipes.joinToString(", "){it.name}}",
+                    text = "Recipes: $text",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            // Expansion Content Here...
+
+            /*      Expanded Content       */
             if (isExpanded) {
-                LazyRow(
+                if (recipes.isNotEmpty()) {
+                    LazyRow(
+                        modifier = Modifier
+                            .height(150.dp)
+                            .fillMaxWidth()
+                    ) {
+                        recipes.forEach { recipe ->
+                            item {
+                                CardRecipe(
+                                    text = recipe.name,
+                                    onClick = {     // Navigate to Recipe
+                                        selectRecipe(recipe.recipeId)
+                                        navController.navigate( Screen.RecipePage.route )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .height(150.dp)
+                            .fillMaxWidth()
+                    ){
+                        Text("This is looking empty...")
+                        Button(
+                            onClick = {
+                                TODO("Feat: Select Recipe")
+                            }
+                        ){
+                            Text("Add recipe?")
+                        }
+                    }
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.End,
                     modifier = Modifier
-                        .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                        .height(150.dp)
                         .fillMaxWidth()
                 ) {
-                    recipes.forEach { recipe ->
-                        item {
-                            CardRecipe(
-                                text = recipe.name,
-                                onClick = {
-                                    navController.navigate(
-                                        Screen.RecipePage.route + "/recipeId=${recipe.recipeId}"
-                                    )
-                                }
-                            )
+                    Button(
+                        onClick = {     // Navigate to Log
+                            setLog(localDateTime.toInstant().toEpochMilli())
+                            navController.navigate(Screen.Home.route)
                         }
+                    ) {
+                        Text("View")
                     }
                 }
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun EmptyCardHistoryView(){
+    val navController = rememberNavController()
+    AppTheme {
+        CardHistory(
+            navController = navController,
+            rating = 2,
+            recipes = emptyList(),
+            selectRecipe = {},
+            setLog = {}
+        )
+    }
+
 }
 
 @Preview
@@ -207,7 +265,9 @@ fun CardHistoryView(){
         CardHistory(
             navController = navController,
             rating = 2,
-            recipes = mockRecipes
+            recipes = mockRecipes,
+            selectRecipe = {},
+            setLog = {}
         )
     }
 

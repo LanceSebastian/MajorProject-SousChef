@@ -25,9 +25,9 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 @Composable
 fun HomeNavigationBar(
+    modifier: Modifier = Modifier,
     mainState: MainState = MainState.HOME,
     navController: NavHostController,
-    modifier: Modifier = Modifier
 ){
     val homeIcon = painterResource(R.drawable.home)
     val historyIcon = painterResource(R.drawable.history)

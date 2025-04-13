@@ -101,6 +101,16 @@ fun Navigation(
             )
         }
 
+        /* History */
+        composable(Screen.History.route){
+            TopHistoryScreen(
+                navController = navController,
+                authViewModel = authViewModel,
+                logViewModel = logViewModel,
+                recipeViewModel = recipeViewModel
+            )
+        }
+
         /* Recipes */
         composable(Screen.Recipes.route){
             TopRecipesScreen(

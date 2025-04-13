@@ -25,14 +25,14 @@ class RecipeViewModel : ViewModel() {
     private var _tagRecipes = MutableLiveData<List<Recipe>>()
     var tagRecipes = _tagRecipes
 
-    private var selectedRecipeId: String? = null
-    private var _viewRecipe = MediatorLiveData<Recipe>()
-    var viewRecipe: LiveData<Recipe> = _viewRecipe
+    private var selectRecipeId: String? = null
+    private var _selectRecipe = MediatorLiveData<Recipe>()
+    var selectRecipe: LiveData<Recipe> = _selectRecipe
 
     init {
-        _viewRecipe.addSource(_userRecipes) { recipes ->
-            selectedRecipeId?.let { id ->
-                _viewRecipe.value = recipes.find { it.recipeId == id }
+        _selectRecipe.addSource(_userRecipes) { recipes ->
+            selectRecipeId?.let { id ->
+                _selectRecipe.value = recipes.find { it.recipeId == id }
             }
         }
     }
@@ -88,9 +88,9 @@ class RecipeViewModel : ViewModel() {
     }
 
     fun selectRecipe(recipeId: String) {
-        selectedRecipeId = recipeId
+        selectRecipeId = recipeId
         _userRecipes.value?.let { recipes ->
-            _viewRecipe.value = recipes.find { it.recipeId == recipeId }
+            _selectRecipe.value = recipes.find { it.recipeId == recipeId }
         }
     }
 
