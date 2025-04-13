@@ -177,25 +177,43 @@ fun CardHistory(
 
             /*      Expanded Content       */
             if (isExpanded) {
-                LazyRow(
-                    modifier = Modifier
-                        .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                        .height(150.dp)
-                        .fillMaxWidth()
-                ) {
-                    recipes.forEach { recipe ->
-                        item {
-                            CardRecipe(
-                                text = recipe.name,
-                                onClick = {     // Navigate to Recipe
-                                    navController.navigate(
-                                        Screen.RecipePage.route + "/recipeId=${recipe.recipeId}"
-                                    )
-                                }
-                            )
+                if (recipes.isNotEmpty()) {
+                    LazyRow(
+                        modifier = Modifier
+                            .height(150.dp)
+                            .fillMaxWidth()
+                    ) {
+                        recipes.forEach { recipe ->
+                            item {
+                                CardRecipe(
+                                    text = recipe.name,
+                                    onClick = {     // Navigate to Recipe
+                                        selectRecipe(recipe.recipeId)
+                                        navController.navigate( Screen.RecipePage.route )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .height(150.dp)
+                            .fillMaxWidth()
+                    ){
+                        Text("This is looking empty...")
+                        Button(
+                            onClick = {
+                                TODO("Feat: Select Recipe")
+                            }
+                        ){
+                            Text("Add recipe?")
                         }
                     }
                 }
+
                 Row(
                     horizontalArrangement = Arrangement.End,
                     modifier = Modifier
@@ -213,6 +231,22 @@ fun CardHistory(
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun EmptyCardHistoryView(){
+    val navController = rememberNavController()
+    AppTheme {
+        CardHistory(
+            navController = navController,
+            rating = 2,
+            recipes = emptyList(),
+            selectRecipe = {},
+            setLog = {}
+        )
+    }
+
 }
 
 @Preview
