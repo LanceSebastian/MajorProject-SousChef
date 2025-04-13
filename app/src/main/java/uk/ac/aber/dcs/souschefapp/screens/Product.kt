@@ -17,6 +17,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -29,63 +30,61 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import uk.ac.aber.dcs.souschefapp.database.UserPreferences
-import uk.ac.aber.dcs.souschefapp.database.models.Log
-import uk.ac.aber.dcs.souschefapp.database.models.Product
+import com.google.firebase.Timestamp
+import uk.ac.aber.dcs.souschefapp.firebase.Product
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareRecipePageScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.LogViewModel
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.ProductViewModel
+import java.util.Date
 
+// Add Context
+// if product == null, addProduct else updateProduct
+// if product, fill in fields
 @Composable
 fun TopProductScreen(
     navController: NavHostController,
+    authViewModel: AuthViewModel,
     productViewModel: ProductViewModel,
     logViewModel: LogViewModel,
-    userPreferences: UserPreferences,
-    productId: Int,
-    logDate: Long
 ){
-    val accountId by userPreferences.accountId.observeAsState()
-    android.util.Log.d("RoomDB", "Fetched data: " + accountId.toString())
-    val product by productViewModel.getProductFromId(productId).observeAsState()
-    val log by logViewModel.getLogFromDate(logDate).observeAsState()
-    if (accountId != null) {
-        ProductScreen(
-            navController = navController,
-            product = product,
-            accountId = accountId!!,
-            log = log,
-            date = logDate,
-            addLog = { newLog ->
-                logViewModel.insertLog(newLog)
-            },
-            updateLog = { newLog ->
-                logViewModel.updateLog(newLog)
-            },
-            addProduct = { newProduct ->
-                productViewModel.insertProduct(newProduct)
-            },
-            updateProduct = { newProduct ->
-                productViewModel.updateProduct(newProduct)
-            },
-            deleteProduct = { newProduct ->
-                productViewModel.deleteProduct(newProduct)
-            },
-        )
+    val user by authViewModel.user.observeAsState(null)
+    val userId = user?.uid
+
+    val product by productViewModel.selectProduct.observeAsState(null)
+
+    // Listen for logs in real-time when the user exists
+    DisposableEffect(userId) {
+        if(userId != null){
+            productViewModel.readProducts(userId)
+        }
+
+        onDispose {
+            productViewModel.stopListening()
+        }
     }
+
+    ProductScreen(
+        navController = navController,
+        product = product,
+        addProduct = { newProduct ->
+            productViewModel.createProduct(userId, newProduct)
+        },
+        updateProduct = { newProduct ->
+            productViewModel.updateProduct(userId, newProduct)
+        },
+        deleteProduct = { newProduct ->
+            productViewModel.deleteProduct(userId, newProduct.productId)
+        },
+    )
 }
 
 @Composable
 fun ProductScreen(
     navController: NavHostController,
     product: Product? = null,
-    accountId: Int,
-    log: Log?,
-    date: Long,
-    addLog: (Log) -> Unit,
-    updateLog: (Log) -> Unit,
     addProduct: (Product) -> Unit,
     updateProduct: (Product) -> Unit,
     deleteProduct: (Product) -> Unit
@@ -99,39 +98,30 @@ fun ProductScreen(
         isBottomBar = false,
         editFunction = { isEdit = !isEdit },
         backFunction = {
-            if (nameText.isNotEmpty() || priceText.isNotEmpty()) {
-                val newProduct = Product(
-                    accountOwnerId = accountId,
-                    name = nameText,
-                    price = priceText.toBigDecimal()
-                )
-                val newLog = log?.let {
-                    it.copy(productIdList = it.productIdList + newProduct.productId)
-                } ?: Log(
-                    accountOwnerId = accountId,
-                    date = date,
-                    productIdList = listOf(newProduct.productId)
-                )
 
-                if (log != null) updateLog(newLog) else addLog(newLog)
-            }
         },
         saveFunction = {
-            val newProduct = product?.copy(
-                name = nameText,
-                price = priceText.toBigDecimal()
-            ) ?: Product(
-                accountOwnerId = accountId,
-                name = nameText,
-                price = priceText.toBigDecimal()
-            )
-
-            if (product != null) updateProduct(newProduct) else addProduct(newProduct)
-            isEdit = false
-                       },
+            isEdit = !isEdit
+//            val product = product?.copy(
+//                productId = product.productId,
+//                name = ,
+//                createdBy = userId
+//            ) ?: Log(
+//                logId = standardDate(millis).toString(),
+//                createdAt = Timestamp(Date(millis)),
+//                createdBy = userId
+//            )
+//            updateProduct(
+//
+//                Product(
+//                    productId = product?.productId,
+//                    name = nameText,
+//                    price = priceText.toDouble()
+//                )
+//            )
+        },
         deleteFunction = {
-            if(product != null) deleteProduct(product)
-            navController.popBackStack()
+
         },
     ){ innerPadding ->
         Surface(
@@ -155,7 +145,9 @@ fun ProductScreen(
                             .fillMaxWidth(0.8f)
                     )
                     Button(
-                        onClick = { TODO("Implement Add image function") }
+                        onClick = {
+                            TODO("Implement Add image function")
+                        }
                     ){
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -204,14 +196,9 @@ fun ProductScreenPreview(){
     AppTheme {
         ProductScreen(
             navController = navController,
-            accountId = 0,
-            log = null,
-            date = 0,
             addProduct = {},
             updateProduct = {},
             deleteProduct = {},
-            addLog = {},
-            updateLog = {}
         )
     }
 }

@@ -1,21 +1,36 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Timestamp
+import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.firebase.Log
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
@@ -24,6 +39,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardHistory
+import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 import java.time.Instant
@@ -76,7 +92,7 @@ fun HistoryScreen(
     selectRecipe: (String) -> Unit,
     setLog: (Long) -> Unit,
 ){
-    val sortedLogs = logs.sortedByDescending { it.createdAt }
+    val sortedLogs = logs.sortedBy { it.logId }
     BareMainScreen(
         navController = navController,
         mainState = MainState.HISTORY
@@ -85,28 +101,53 @@ fun HistoryScreen(
             modifier = Modifier
                 .padding(innerPadding)
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                sortedLogs.forEach { log ->
-                    val logRecipes = recipes.filter { log.recipeIdList.contains(it.recipeId) }
-                    item {
-                        CardHistory(
-                            navController = navController,
-                            recipes = logRecipes,
-                            rating = log.rating,
-                            date = log.createdAt,
-                            selectRecipe = { recipeId ->
-                                selectRecipe(recipeId)
-                            },
-                            setLog = { dateMillis ->
-                                setLog(dateMillis)
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+            if (logs.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    sortedLogs.forEach { log ->
+                        val logRecipes = recipes.filter { log.recipeIdList.contains(it.recipeId) }
+                        item {
+                            CardHistory(
+                                navController = navController,
+                                recipes = logRecipes,
+                                rating = log.rating,
+                                date = log.createdAt,
+                                selectRecipe = { recipeId ->
+                                    selectRecipe(recipeId)
+                                },
+                                setLog = { dateMillis ->
+                                    setLog(dateMillis)
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
                     }
+                }
+            } else {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.history),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(72.dp)
+                            .alpha(0.75f)
+                    )
+                    Text(
+                        text = "Looking Empty...",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(onClick = { navController.navigate(Screen.Home.route) }) {
+                        Text("Start Planning!")
+                    }
+                    Spacer(modifier = Modifier.height(48.dp))
                 }
             }
         }
