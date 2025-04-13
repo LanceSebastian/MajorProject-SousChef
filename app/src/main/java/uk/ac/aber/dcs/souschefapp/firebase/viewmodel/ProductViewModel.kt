@@ -45,7 +45,7 @@ class ProductViewModel : ViewModel() {
         }
     }
 
-    fun readProduct(userId: String?){
+    fun readProducts(userId: String?){
         if (userId == null) return
 
         productListener?.remove() // Stop previous listener if it exists
