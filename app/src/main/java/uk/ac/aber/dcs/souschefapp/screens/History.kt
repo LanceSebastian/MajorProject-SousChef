@@ -29,7 +29,6 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Date
-import kotlin.math.log
 
 @Composable
 fun TopHistoryScreen(
@@ -59,7 +58,10 @@ fun TopHistoryScreen(
     HistoryScreen(
         navController = navController,
         logs = logs,
-        recipes = recipes
+        recipes = recipes,
+        setLog = { dateMillis ->
+            logViewModel.readLogFromDate(dateMillis)
+        }
     )
 }
 
@@ -67,7 +69,8 @@ fun TopHistoryScreen(
 fun HistoryScreen(
     navController: NavHostController,
     logs: List<Log>? = null,
-    recipes: List<Recipe>
+    recipes: List<Recipe>,
+    setLog: (Long) -> Unit,
 ){
     BareMainScreen(
         navController = navController,
@@ -90,7 +93,10 @@ fun HistoryScreen(
                             recipes = logRecipes,
                             date = Instant.ofEpochMilli(log.logId.toLong())
                                 .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
+                                .toLocalDate(),
+                            setLog = { dateMillis ->
+                                setLog(dateMillis)
+                            }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -108,7 +114,8 @@ fun EmptyHistoryScreenPreview(){
         HistoryScreen(
             navController,
             logs = emptyList(),
-            recipes = emptyList()
+            recipes = emptyList(),
+            setLog = {}
         )
     }
 }
@@ -180,7 +187,8 @@ fun HistoryScreenPreview(){
         HistoryScreen(
             navController,
             logs = sampleLogs,
-            recipes = sampleRecipes
+            recipes = sampleRecipes,
+            setLog = {}
         )
     }
 }
