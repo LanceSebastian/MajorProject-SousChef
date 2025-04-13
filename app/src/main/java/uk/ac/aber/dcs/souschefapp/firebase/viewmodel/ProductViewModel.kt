@@ -11,7 +11,6 @@ import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.ProductRepository
-import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 
 class ProductViewModel : ViewModel() {
     private val productRepository = ProductRepository()
@@ -23,7 +22,7 @@ class ProductViewModel : ViewModel() {
 
     private var selectProductId: String? = null
     private var _selectProduct = MediatorLiveData<Product>()
-    var selectRecipe: LiveData<Product> = _selectProduct
+    var selectProduct: LiveData<Product> = _selectProduct
 
     init {
         _selectProduct.addSource(_userProducts) { products ->
