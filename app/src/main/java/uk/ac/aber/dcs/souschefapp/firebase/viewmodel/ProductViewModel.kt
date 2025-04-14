@@ -43,9 +43,12 @@ class ProductViewModel : ViewModel() {
         viewModelScope.launch{
             val isSuccess = productRepository.addProduct(userId, standardProduct)
 
+            _selectProduct.postValue(standardProduct)
+
             val message = if (isSuccess) "Product saved successfully!" else "Failed to save product."
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
+
     }
 
     fun readProducts(userId: String?){
