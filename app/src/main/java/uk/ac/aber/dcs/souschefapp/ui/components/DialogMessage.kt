@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,9 +30,11 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 fun ConfirmDialogue(
     onDismissRequest: () -> Unit,
     mainAction: () -> Unit,
+    secondAction: () -> Unit = {},
     title: String = "Are you sure?",
     supportingText: String = "This will be a permanent decision.",
-    mainButtonText: String = "Confirm"
+    mainButtonText: String = "Confirm",
+    secondButtonText: String = ""
 ){
     Dialog(
         onDismissRequest = onDismissRequest
@@ -64,13 +67,15 @@ fun ConfirmDialogue(
                     TextButton(onClick = onDismissRequest) {
                         Text("Cancel")
                     }
+                    if (secondButtonText.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(onClick = secondAction) {
+                            Text(secondButtonText)
+                        }
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = { mainAction() }
-                    ){
-                        Text(
-                            text = mainButtonText
-                        )
+                    TextButton(onClick = mainAction) {
+                        Text(mainButtonText)
                     }
                 }
             }
@@ -85,6 +90,19 @@ fun ConfirmDialoguePreview(){
         ConfirmDialogue(
             onDismissRequest = {},
             mainAction = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+fun TwoButtonsConfirmDialoguePreview(){
+    AppTheme(dynamicColor = false){
+        ConfirmDialogue(
+            onDismissRequest = {},
+            mainAction = {},
+            mainButtonText = "Save",
+            secondButtonText = "Don't Save"
         )
     }
 }
