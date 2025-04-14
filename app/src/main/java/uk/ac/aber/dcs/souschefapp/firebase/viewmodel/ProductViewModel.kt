@@ -102,7 +102,7 @@ class ProductViewModel : ViewModel() {
         }
     }
 
-    fun deleteProduct(userId: String?, productId: String){
+    fun deleteProduct(userId: String?, productId: String, context: Context){
         if (userId == null) return
 
         viewModelScope.launch {
@@ -110,8 +110,8 @@ class ProductViewModel : ViewModel() {
                 userId = userId,
                 productId = productId,
             )
-            val message = if (isSuccess) "Product restored successfully!" else "Failed to restore product."
-            android.util.Log.e("ProductViewModel", message)
+            val message = if (isSuccess) "Product deleted successfully!" else "Failed to delete product."
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 }
