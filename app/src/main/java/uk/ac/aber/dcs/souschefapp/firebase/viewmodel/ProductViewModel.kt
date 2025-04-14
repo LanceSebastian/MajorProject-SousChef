@@ -32,15 +32,14 @@ class ProductViewModel : ViewModel() {
         }
     }
 
-    fun createProduct(userId: String?, product: Product){
+    fun createProduct(userId: String?, product: Product, context: Context){
         if (userId == null) return
 
         viewModelScope.launch{
             val isSuccess = productRepository.addProduct(userId, product)
 
-            if (!isSuccess) {
-                android.util.Log.e("ProductViewModel", "Failed to create product")
-            }
+            val message = if (isSuccess) "Product saved successfully!" else "Failed to save product."
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -66,15 +65,14 @@ class ProductViewModel : ViewModel() {
         productListener = null
     }
 
-    fun updateProduct(userId: String?, product: Product){
+    fun updateProduct(userId: String?, product: Product, context: Context){
         if (userId == null) return
 
         viewModelScope.launch {
             val isSuccess = productRepository.updateProduct(userId, product)
 
-            if (!isSuccess) {
-                android.util.Log.e("ProductViewModel", "Failed to update product")
-            }
+            val message = if (isSuccess) "Product saved successfully!" else "Failed to save product."
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
