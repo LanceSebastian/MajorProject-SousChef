@@ -101,6 +101,8 @@ fun TwoButtonsConfirmDialoguePreview(){
         ConfirmDialogue(
             onDismissRequest = {},
             mainAction = {},
+            title = "Leaving already?",
+            supportingText = "Do you want to save your changes before you go?",
             mainButtonText = "Save",
             secondButtonText = "Don't Save"
         )
