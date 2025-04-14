@@ -1,5 +1,6 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -30,21 +32,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareRecipePageScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
+import uk.ac.aber.dcs.souschefapp.ui.components.ConfirmDialogue
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import java.util.Date
 
 // Add Context
 // if product == null, addProduct else updateProduct
 // if product, fill in fields
+// Add save and exit dialog
 @Composable
 fun TopProductScreen(
+    context: ComponentActivity,
     navController: NavHostController,
     authViewModel: AuthViewModel,
     productViewModel: ProductViewModel,
@@ -70,13 +73,13 @@ fun TopProductScreen(
         navController = navController,
         product = product,
         addProduct = { newProduct ->
-            productViewModel.createProduct(userId, newProduct)
+            productViewModel.createProduct(userId, newProduct, context)
         },
         updateProduct = { newProduct ->
-            productViewModel.updateProduct(userId, newProduct)
+            productViewModel.updateProduct(userId, newProduct, context)
         },
-        deleteProduct = { newProduct ->
-            productViewModel.deleteProduct(userId, newProduct.productId)
+        archiveProduct = { newProduct ->
+            productViewModel.archiveProduct(userId, newProduct.productId, context)
         },
     )
 }
@@ -87,41 +90,66 @@ fun ProductScreen(
     product: Product? = null,
     addProduct: (Product) -> Unit,
     updateProduct: (Product) -> Unit,
-    deleteProduct: (Product) -> Unit
+    archiveProduct: (Product) -> Unit
 ){
-    var nameText by remember { mutableStateOf("") }
-    var priceText by remember { mutableStateOf("") }
-    var isEdit by remember { mutableStateOf(false) }
+    val isProductExist = product != null
+
+    var isBackConfirm by remember { mutableStateOf(false) }
+
+    var nameText by remember { mutableStateOf(product?.name ?: "") }
+    var priceText by remember { mutableStateOf((product?.price ?: "").toString()) }
+    var isEdit by remember { mutableStateOf( product == null) }
+
+    var isModified = product?.let {
+        it.name != nameText || it.price.toString() != priceText
+    } ?: true
+
+
     BareRecipePageScreen(
         navController = navController,
         isEdit = isEdit,
         isBottomBar = false,
         editFunction = { isEdit = !isEdit },
-        backFunction = {
 
+        // Check if there are unsaved changes
+        backFunction = {
+            if (isModified) isBackConfirm = true else navController.popBackStack()
         },
+
+        //  Create or Update Product
         saveFunction = {
             isEdit = !isEdit
-//            val product = product?.copy(
-//                productId = product.productId,
-//                name = ,
-//                createdBy = userId
-//            ) ?: Log(
-//                logId = standardDate(millis).toString(),
-//                createdAt = Timestamp(Date(millis)),
-//                createdBy = userId
-//            )
-//            updateProduct(
-//
-//                Product(
-//                    productId = product?.productId,
-//                    name = nameText,
-//                    price = priceText.toDouble()
-//                )
-//            )
-        },
-        deleteFunction = {
 
+            val updatedName = nameText
+            val updatedPrice = priceText.toDouble()
+
+            val newProduct = product?.copy(
+                name = updatedName,
+                price = updatedPrice
+            ) ?: Product(
+                name = updatedName,
+                price = updatedPrice
+            )
+
+            if (isProductExist) updateProduct(newProduct) else addProduct(newProduct)
+
+            isModified = false
+        },
+
+        // Archive Product if it exists.
+        deleteFunction = {
+            val updatedName = nameText
+            val updatedPrice = priceText.toDouble()
+
+            val newProduct = product?.copy(
+                name = updatedName,
+                price = updatedPrice
+            ) ?: Product(
+                name = updatedName,
+                price = updatedPrice
+            )
+
+            if (isProductExist) archiveProduct(newProduct)
         },
     ){ innerPadding ->
         Surface(
@@ -147,7 +175,8 @@ fun ProductScreen(
                     Button(
                         onClick = {
                             TODO("Implement Add image function")
-                        }
+                        },
+                        enabled = false
                     ){
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -185,20 +214,66 @@ fun ProductScreen(
                         .padding(horizontal = 16.dp)
                 )
             }
+
+            if (isBackConfirm){
+                val updatedName = nameText
+                val updatedPrice = priceText.toDouble()
+
+                val newProduct = product?.copy(
+                    name = updatedName,
+                    price = updatedPrice
+                ) ?: Product(
+                    name = updatedName,
+                    price = updatedPrice
+                )
+
+                ConfirmDialogue(
+                    onDismissRequest = { isBackConfirm = false },
+                    mainAction = {
+                        if (isProductExist) updateProduct(newProduct) else addProduct(newProduct)
+                        navController.popBackStack()
+                                 },
+                    secondAction = { navController.popBackStack() },
+                    title = "Leaving already?",
+                    supportingText = "Do you want to save your changes before you go?",
+                    mainButtonText = "Save",
+                    secondButtonText = "Don't Save"
+                )
+            }
         }
     }
 }
 
 @Preview
 @Composable
-fun ProductScreenPreview(){
+fun NewProductScreenPreview(){
     val navController = rememberNavController()
     AppTheme {
         ProductScreen(
             navController = navController,
             addProduct = {},
             updateProduct = {},
-            deleteProduct = {},
+            archiveProduct = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+fun ViewProductScreenPreview(){
+    val navController = rememberNavController()
+    AppTheme {
+        ProductScreen(
+            navController = navController,
+            product = Product(
+                productId = "",
+                createdBy = "0",
+                name = "Tesco Meal Deal",
+                price = 3.40
+            ),
+            addProduct = {},
+            updateProduct = {},
+            archiveProduct = {},
         )
     }
 }
