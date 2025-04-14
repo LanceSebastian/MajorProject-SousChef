@@ -11,6 +11,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.ProductRepository
+import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 
 class ProductViewModel : ViewModel() {
     private val productRepository = ProductRepository()
@@ -35,8 +36,12 @@ class ProductViewModel : ViewModel() {
     fun createProduct(userId: String?, product: Product, context: Context){
         if (userId == null) return
 
+        val standardProduct = product.copy(
+            createdBy = userId
+        )
+
         viewModelScope.launch{
-            val isSuccess = productRepository.addProduct(userId, product)
+            val isSuccess = productRepository.addProduct(userId, standardProduct)
 
             val message = if (isSuccess) "Product saved successfully!" else "Failed to save product."
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
