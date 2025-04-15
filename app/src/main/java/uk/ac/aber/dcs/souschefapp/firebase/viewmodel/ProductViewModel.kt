@@ -36,19 +36,18 @@ class ProductViewModel : ViewModel() {
     fun createProduct(userId: String?, product: Product, context: Context){
         if (userId == null) return
 
-        val standardProduct = product.copy(
-            createdBy = userId
-        )
+        val standardProduct = product.copy(createdBy = userId)
 
-        viewModelScope.launch{
-            val isSuccess = productRepository.addProduct(userId, standardProduct)
+        viewModelScope.launch {
+            val savedProduct = productRepository.addProduct(userId, standardProduct)
 
-            _selectProduct.postValue(standardProduct)
-
-            val message = if (isSuccess) "Product saved successfully!" else "Failed to save product."
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            if (savedProduct != null) {
+                _selectProduct.postValue(savedProduct)
+                Toast.makeText(context, "Product saved successfully!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Failed to save product.", Toast.LENGTH_SHORT).show()
+            }
         }
-
     }
 
     fun readProducts(userId: String?){
