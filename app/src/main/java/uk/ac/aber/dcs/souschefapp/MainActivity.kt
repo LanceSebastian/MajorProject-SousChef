@@ -149,6 +149,17 @@ fun Navigation(
             )
         }
 
+        /* Recipe Screen */
+        composable(Screen.RecipePage.route){
+            TopRecipePageScreen(
+                context = context,
+                navController = navController,
+                authViewModel = authViewModel,
+                recipeViewModel = recipeViewModel,
+                ingredientViewModel = ingredientViewModel
+            )
+        }
+
     }
 
 }
