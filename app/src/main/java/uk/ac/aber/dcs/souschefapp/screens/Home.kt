@@ -59,11 +59,14 @@ import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.firebase.Log
+import uk.ac.aber.dcs.souschefapp.firebase.Mode
 import uk.ac.aber.dcs.souschefapp.firebase.Note
+import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
@@ -87,6 +90,7 @@ fun TopHomeScreen(
     authViewModel: AuthViewModel,
     logViewModel: LogViewModel,
     recipeViewModel: RecipeViewModel,
+    productViewModel: ProductViewModel,
     noteViewModel: NoteViewModel
 ){
     val user by authViewModel.user.observeAsState()
@@ -96,6 +100,7 @@ fun TopHomeScreen(
 
     val log by logViewModel.singleLog.observeAsState(null)
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
+    val products by productViewModel.userProducts.observeAsState(emptyList())
     val compiledNotes by noteViewModel.compiledNotes.observeAsState(null)
 
 
@@ -103,10 +108,12 @@ fun TopHomeScreen(
     DisposableEffect(userId) {
         if(userId != null){
             logViewModel.readLogs(userId)
+            productViewModel.readProducts(userId)
         }
 
         onDispose {
             logViewModel.stopListening()
+            productViewModel.stopListening()
         }
     }
 
@@ -116,9 +123,19 @@ fun TopHomeScreen(
         logs = logs,
         log = log,
         recipes = recipes,
+        products = products,
         compiledNotes = compiledNotes,
         createLog = { dateMillis ->
             logViewModel.createLog(userId, dateMillis)
+        },
+        selectProduct = { productId ->
+            productViewModel.selectProduct(productId)
+        },
+        getProductsFromList = { productIdList ->
+            productViewModel.getProductsFromList(userId, productIdList)
+        },
+        setProductMode = { mode ->
+            productViewModel.setMode(mode)
         },
         readLogFromDate = { dateMillis ->
             logViewModel.readLogFromDate(dateMillis)
@@ -145,8 +162,12 @@ fun HomeScreen(
     logs: List<Log>, // This will be used for the calendar
     log: Log? = null,
     recipes: List<Recipe>,
+    products: List<Product>,
     compiledNotes: List<Note>?,
     createLog: (Long) -> Unit,
+    selectProduct: (String) -> Unit,
+    getProductsFromList: (List<String>) -> Unit,
+    setProductMode: (Mode) -> Unit,
     readLogFromDate: (Long) -> Unit,
     updateRating: (Long, Int) -> Unit,
     updatePNote: (Long, String) -> Unit,
@@ -211,13 +232,15 @@ fun HomeScreen(
     }
 
     // Get Log Data
-    val isLogRecipes = log?.recipeIdList.isNullOrEmpty()
+    val isLogRecipesEmpty = log?.recipeIdList.isNullOrEmpty()
+    val isLogMenuEmpty = (isLogRecipesEmpty && log?.productIdList.isNullOrEmpty())
     var previousLog by remember { mutableStateOf<Log?>(null) }
 
     var logNote by remember { mutableStateOf("") }
     var logRating by remember { mutableStateOf(0) }
 
     val logRecipes = recipes.filter{ log?.recipeIdList?.contains(it.recipeId) == true }
+    val logProducts = products.filter{ log?.productIdList?.contains(it.productId) == true }
     var notesList = remember { mutableListOf<Note>() }
     if (compiledNotes != null) notesList = compiledNotes.toMutableList()
 
@@ -226,7 +249,6 @@ fun HomeScreen(
         previousLog?.let {
             updateRating(previousLog!!.logId.toLong(), logRating)
         }
-
         logRating = log?.rating ?: 0
         previousLog = log
         updateRNotes(log?.recipeIdList)
@@ -324,7 +346,7 @@ fun HomeScreen(
                         }
                     }
 
-                    if (isLogRecipes) {
+                    if (isLogMenuEmpty) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center,
@@ -340,12 +362,14 @@ fun HomeScreen(
                         }
 
                     } else {
+
                         LazyRow(
                             modifier = Modifier
                                 .background(color = MaterialTheme.colorScheme.surfaceContainer)
                                 .height(150.dp)
                                 .fillMaxWidth()
                         ) {
+
                             logRecipes.forEach { recipe ->
                                 item {
                                     CardRecipe(
@@ -358,6 +382,20 @@ fun HomeScreen(
                                     )
                                 }
                             }
+
+                            logProducts.forEach{ product ->
+                                item {
+                                    CardRecipe(
+                                        text = product.name,
+                                        onClick = {
+                                            selectProduct(product.productId)
+                                            setProductMode(Mode.View)
+                                            navController.navigate(Screen.Product.route)
+                                        }
+                                    )
+                                }
+                            }
+
                         }
                     }
 
@@ -479,10 +517,10 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .padding(start = 8.dp, end = 8.dp)
                             .clickable(
-                                enabled = !isLogRecipes,
+                                enabled = !isLogRecipesEmpty,
                                 onClick = { recipeExpanded = true }
                             )
-                            .alpha(if (isLogRecipes) 0.5f else 1f),
+                            .alpha(if (isLogRecipesEmpty) 0.5f else 1f),
                         shape = RoundedCornerShape(25.dp)
                     ) {
                         Column(
@@ -544,7 +582,8 @@ fun HomeScreen(
                     HomeAddDialogue(
                         onDismissRequest = { addSelected = false },
                         mainAction = {
-                            TODO()
+                            setProductMode(Mode.Create)
+                            navController.navigate(Screen.Product.route)
                         },
                         secondAction = {
                             navController.navigate(Screen.Recipes.route)
@@ -574,8 +613,12 @@ fun HomeScreenEmptyView(){
             mainState = MainState.HOME,
             logs = emptyList(),
             recipes = emptyList(),
+            products = emptyList(),
             compiledNotes = emptyList(),
             createLog = {},
+            selectProduct = {},
+            getProductsFromList = {},
+            setProductMode = {},
             readLogFromDate = {},
             deleteLog = {},
             updateRating = {_,_ -> },
@@ -597,7 +640,7 @@ fun HomeScreenView(){
             createdAt = Timestamp(Date(System.currentTimeMillis())),
             rating = 2,
             recipeIdList = listOf("1", "2"),
-            productIdList = listOf("101", "202"),
+            productIdList = listOf("0", "2"),
             note = "Tried a new recipe, turned out great!"
         ),
         Log(
@@ -605,7 +648,7 @@ fun HomeScreenView(){
             createdAt = Timestamp(Date(System.currentTimeMillis() - 86_400_000)), // 1 day ago
             rating = -1,
             recipeIdList = listOf("3"),
-            productIdList = listOf("303", "404"),
+            productIdList = listOf("3", "4"),
             note = "Didn't like the taste, will try adjusting ingredients."
         ),
         Log(
@@ -613,7 +656,7 @@ fun HomeScreenView(){
             createdAt = Timestamp(Date(System.currentTimeMillis() - 172_800_000)), // 2 days ago
             rating = 1,
             recipeIdList = listOf("6", "5"),
-            productIdList = listOf("505"),
+            productIdList = listOf("5"),
             note = "A decent meal, but could use more seasoning."
         ),
         Log(
@@ -621,7 +664,7 @@ fun HomeScreenView(){
             createdAt = Timestamp(Date(System.currentTimeMillis() - 259_200_000)), // 3 days ago
             rating = 0,
             recipeIdList = emptyList(),
-            productIdList = listOf("606", "707"),
+            productIdList = listOf("5", "4"),
             note = "Tried a new product, unsure about it yet."
         ),
         Log(
@@ -629,7 +672,7 @@ fun HomeScreenView(){
             createdAt = Timestamp(Date(System.currentTimeMillis() - 345_600_000)), // 4 days ago
             rating = -2,
             recipeIdList = listOf("4"),
-            productIdList = listOf("808", "909"),
+            productIdList = listOf("2", "3"),
             note = "Had a bad experience with this recipe."
         )
     )
@@ -659,6 +702,34 @@ fun HomeScreenView(){
         Recipe("6", "Margherita Pizza", "")
     )
 
+    val sampleProducts = listOf(
+        Product(
+            productId = "1",
+            name = "Tesco",
+            price = 25.99
+        ),
+        Product(
+            productId = "2",
+            name = "Lidl",
+            price = 89.99
+        ),
+        Product(
+            productId = "3",
+            name = "USB-C Charger",
+            price = 15.49
+        ),
+        Product(
+            productId = "4",
+            name = "Party Food",
+            price = 199.99
+        ),
+        Product(
+            productId = "5",
+            name = "Camp Food",
+            price = 59.99
+        )
+    )
+
     AppTheme {
         HomeScreen(
             navController = navController,
@@ -666,8 +737,12 @@ fun HomeScreenView(){
             logs = sampleLogs,
             log = sampleLogs[0],
             recipes = mockRecipes,
+            products = sampleProducts,
             compiledNotes = mockNotes,
             createLog = {},
+            selectProduct = {},
+            setProductMode = {},
+            getProductsFromList = {},
             readLogFromDate = {},
             deleteLog = {},
             updateRating = {_,_ -> },
