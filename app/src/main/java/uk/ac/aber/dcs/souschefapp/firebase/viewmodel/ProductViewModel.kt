@@ -72,6 +72,25 @@ class ProductViewModel : ViewModel() {
         _selectProduct.value = null
     }
 
+    fun getProductsFromList(userId: String?, productIdList: List<String>){
+        if (userId == null) return
+
+        viewModelScope.launch {
+            val products = mutableListOf<Product>()
+
+            productIdList.forEach { productId ->
+                try {
+                    val product = productRepository.findProductById(userId, productId)
+                    products.add(product)
+                } catch (e: Exception) {
+                    android.util.Log.e("Firestore", "Failed to fetch product $productId", e)
+                }
+            }
+
+            _logProducts.postValue(products)
+        }
+    }
+
     fun stopListening(){
         productListener?.remove()
         productListener = null
