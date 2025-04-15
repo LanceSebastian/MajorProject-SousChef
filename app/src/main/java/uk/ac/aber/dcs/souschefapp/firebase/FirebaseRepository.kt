@@ -213,7 +213,7 @@ class ProductRepository {
                     return@addSnapshotListener
                 }
 
-                // Convert Firestore documents to Post objects
+                // Convert Firestore documents to Product objects
                 val products = snapshot?.documents?.mapNotNull { document ->
                     document.toObject(Product::class.java)  // This returns a nullable Product? object
                 } ?: emptyList()
