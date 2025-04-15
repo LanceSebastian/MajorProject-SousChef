@@ -99,6 +99,20 @@ class RecipeViewModel : ViewModel() {
         recipeListener = null
     }
 
+    fun updateRecipe(userId: String?, newRecipe: Recipe){
+        val currentRecipe = _selectRecipe.value
+        if (userId == null || currentRecipe == null) return
+
+        viewModelScope.launch {
+            val isSuccess = recipeRepository.updateRecipeIfChanged(userId, currentRecipe, newRecipe)
+
+            if (!isSuccess) {
+                android.util.Log.e("RecipeViewModel", "Failed to update recipe")
+            }
+        }
+
+    }
+
     fun addTag(userId: String?, recipeId: String, tag: String){
         if (userId == null) return
 
