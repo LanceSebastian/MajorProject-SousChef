@@ -67,6 +67,11 @@ class ProductViewModel : ViewModel() {
         }
     }
 
+    fun clearSelectProduct(){
+        selectProductId = null
+        _selectProduct.value = null
+    }
+
     fun stopListening(){
         productListener?.remove()
         productListener = null
