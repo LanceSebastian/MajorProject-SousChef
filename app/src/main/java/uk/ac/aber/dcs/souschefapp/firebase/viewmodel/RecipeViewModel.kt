@@ -145,6 +145,14 @@ class RecipeViewModel : ViewModel() {
         }
     }
 
+    fun updateInstructions(userId: String?, recipeId: String, instructions: List<String>){
+        if (userId == null) return
+
+        viewModelScope.launch {
+            recipeRepository.updateInstructions(userId, recipeId, instructions)
+        }
+    }
+
     fun archiveRecipe(userId: String?, recipeId: String, context: Context){
         if (userId == null) return
 
