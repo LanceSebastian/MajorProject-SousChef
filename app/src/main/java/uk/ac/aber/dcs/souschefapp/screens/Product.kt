@@ -153,7 +153,7 @@ fun ProductScreen(
             setMode(Mode.View)
         },
 
-        // Archive Product if it exists.
+        // Cancel Edit.
         crossFunction = {
             nameText = product?.name ?: ""
             priceText = (product?.price ?: "").toString()
