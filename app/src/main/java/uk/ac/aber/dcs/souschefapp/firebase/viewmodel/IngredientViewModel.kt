@@ -24,7 +24,28 @@ class IngredientViewModel : ViewModel() {
             val isSuccess = ingredientRepository.addIngredient(userId, recipeId, ingredient)
 
             if (!isSuccess) {
-                android.util.Log.e("RecipeViewModel", "Failed to create recipe")
+                android.util.Log.e("IngredientViewModel", "Failed to create ingredient")
+            }
+        }
+    }
+
+    // Method updates existing and creates new ingredients.
+    fun addIngredients(userId: String?, recipeId: String?, ingredients: List<Ingredient>){
+        if (userId == null || recipeId == null) return
+
+        viewModelScope.launch {
+            ingredients.forEach { ingredient ->
+                val existing = _recipeIngredients.value?.find { it.ingredientId == ingredient.ingredientId }
+
+                val isSuccess = if (existing != null) {
+                    ingredientRepository.updateIngredient(userId, recipeId, ingredient)
+                } else {
+                    ingredientRepository.addIngredient(userId, recipeId, ingredient)
+                }
+
+                if (!isSuccess) {
+                    android.util.Log.e("IngredientViewModel", "Failed to add/update ingredient: ${ingredient.name}")
+                }
             }
         }
     }
