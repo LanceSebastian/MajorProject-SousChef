@@ -182,18 +182,24 @@ class LogRepository {
 class ProductRepository {
     private val db = FirebaseFirestore.getInstance()
 
-    suspend fun addProduct(userId: String, product: Product): Boolean {
+    suspend fun addProduct(userId: String, product: Product): Product? {
         return try {
-            db.collection("users")
+            val docRef = db.collection("users")
                 .document(userId)
                 .collection("products")
-                .add(product)
+                .add(product.copy(productId = "")) // Initially empty productId
                 .await()
-            android.util.Log.d("Firestore", "Product added successfully")
-            true
-        } catch(e: Exception){
+
+            val productId = docRef.id
+            val updatedProduct = product.copy(productId = productId)
+
+            docRef.update("productId", productId).await()
+
+            android.util.Log.d("Firestore", "Product added successfully with ID: $productId")
+            updatedProduct
+        } catch(e: Exception) {
             android.util.Log.e("Firestore", "Error adding product: ${e.message}", e)
-            false
+            null
         }
     }
 
@@ -207,13 +213,35 @@ class ProductRepository {
                     return@addSnapshotListener
                 }
 
-                // Convert Firestore documents to Post objects
+                // Convert Firestore documents to Product objects
                 val products = snapshot?.documents?.mapNotNull { document ->
                     document.toObject(Product::class.java)  // This returns a nullable Product? object
                 } ?: emptyList()
 
                 onResult(products)  // Send the filtered products back to the caller via the callback
             }
+    }
+
+    suspend fun findProductById(userId: String, productId: String): Product {
+        return try {
+            val docSnapshot = db.collection("users")
+                .document(userId)
+                .collection("products")
+                .document(productId)
+                .get()
+                .await()
+
+            val product = docSnapshot.toObject(Product::class.java)
+
+            if (product != null) {
+                product.copy(productId = docSnapshot.id) // Ensure ID is set
+            } else {
+                throw Exception("Product not found")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error fetching product: ${e.message}", e)
+            throw e
+        }
     }
 
     suspend fun updateProduct(userId: String, product: Product): Boolean {

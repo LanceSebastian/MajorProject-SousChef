@@ -123,7 +123,6 @@ fun RecipePageScreen(
 
     BareRecipePageScreen(
         navController = navController,
-        isEdit = isEdit,
         isBottomBar = false,
         editFunction = { isEdit = !isEdit },
         saveFunction = {
@@ -142,7 +141,7 @@ fun RecipePageScreen(
             }
             isEdit = false
                        },
-        deleteFunction = {
+        crossFunction = {
             if (recipe != null) onRecipeDelete(recipe)
             navController.popBackStack()
                          },

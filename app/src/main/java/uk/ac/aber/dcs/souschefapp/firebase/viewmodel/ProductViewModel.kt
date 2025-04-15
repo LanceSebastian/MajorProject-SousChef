@@ -9,20 +9,29 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
+import uk.ac.aber.dcs.souschefapp.firebase.Mode
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.ProductRepository
+import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 
 class ProductViewModel : ViewModel() {
     private val productRepository = ProductRepository()
 
+    private val _mode = MutableLiveData(Mode.View)
+    val mode: LiveData<Mode> = _mode
+
     private var productListener: ListenerRegistration? = null
+
     private var _userProducts = MutableLiveData<List<Product>>()
     var userProducts: LiveData<List<Product>> = _userProducts
 
+    private var _logProducts = MutableLiveData<List<Product>>()
+    var logProducts: LiveData<List<Product>> = _userProducts
+
 
     private var selectProductId: String? = null
-    private var _selectProduct = MediatorLiveData<Product>()
-    var selectProduct: LiveData<Product> = _selectProduct
+    private var _selectProduct = MediatorLiveData<Product?>()
+    var selectProduct: LiveData<Product?> = _selectProduct
 
     init {
         _selectProduct.addSource(_userProducts) { products ->
@@ -32,14 +41,23 @@ class ProductViewModel : ViewModel() {
         }
     }
 
-    fun createProduct(userId: String?, product: Product){
+    fun setMode(newMode: Mode){
+        _mode.value = newMode
+    }
+
+    fun createProduct(userId: String?, product: Product, context: Context){
         if (userId == null) return
 
-        viewModelScope.launch{
-            val isSuccess = productRepository.addProduct(userId, product)
+        val standardProduct = product.copy(createdBy = userId)
 
-            if (!isSuccess) {
-                android.util.Log.e("ProductViewModel", "Failed to create product")
+        viewModelScope.launch {
+            val savedProduct = productRepository.addProduct(userId, standardProduct)
+
+            if (savedProduct != null) {
+                _selectProduct.postValue(savedProduct)
+                Toast.makeText(context, "Product saved successfully!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Failed to save product.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -61,20 +79,43 @@ class ProductViewModel : ViewModel() {
         }
     }
 
+    fun clearSelectProduct(){
+        selectProductId = null
+        _selectProduct.value = null
+    }
+
+    fun getProductsFromList(userId: String?, productIdList: List<String>){
+        if (userId == null) return
+
+        viewModelScope.launch {
+            val products = mutableListOf<Product>()
+
+            productIdList.forEach { productId ->
+                try {
+                    val product = productRepository.findProductById(userId, productId)
+                    products.add(product)
+                } catch (e: Exception) {
+                    android.util.Log.e("Firestore", "Failed to fetch product $productId", e)
+                }
+            }
+
+            _logProducts.postValue(products)
+        }
+    }
+
     fun stopListening(){
         productListener?.remove()
         productListener = null
     }
 
-    fun updateProduct(userId: String?, product: Product){
+    fun updateProduct(userId: String?, product: Product, context: Context){
         if (userId == null) return
 
         viewModelScope.launch {
             val isSuccess = productRepository.updateProduct(userId, product)
 
-            if (!isSuccess) {
-                android.util.Log.e("ProductViewModel", "Failed to update product")
-            }
+            val message = if (isSuccess) "Product saved successfully!" else "Failed to save product."
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -104,7 +145,7 @@ class ProductViewModel : ViewModel() {
         }
     }
 
-    fun deleteProduct(userId: String?, productId: String){
+    fun deleteProduct(userId: String?, productId: String, context: Context){
         if (userId == null) return
 
         viewModelScope.launch {
@@ -112,8 +153,8 @@ class ProductViewModel : ViewModel() {
                 userId = userId,
                 productId = productId,
             )
-            val message = if (isSuccess) "Product restored successfully!" else "Failed to restore product."
-            android.util.Log.e("ProductViewModel", message)
+            val message = if (isSuccess) "Product deleted successfully!" else "Failed to delete product."
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 }

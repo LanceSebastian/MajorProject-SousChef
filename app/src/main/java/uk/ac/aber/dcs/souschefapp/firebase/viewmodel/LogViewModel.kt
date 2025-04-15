@@ -123,11 +123,13 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun addProductToLog(userId: String, millis: Long, productId: String, context: Context){
+    fun addProductToCurrentLog(userId: String?, productId: String, context: Context){
+        if (userId == null) return
+
         viewModelScope.launch {
             val isSuccess = logRepository.addProductToLog(
                 userId,
-                standardDate(millis).toString(),
+                _singleLog.value!!.logId,
                 productId
             )
             val message = if (isSuccess) "Product added successfully!" else "Failed to add product."
