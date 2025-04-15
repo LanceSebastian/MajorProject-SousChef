@@ -407,6 +407,35 @@ class RecipeRepository {
         }
     }
 
+    suspend fun updateRecipeIfChanged(userId: String, original: Recipe, updated: Recipe): Boolean {
+        return try {
+            val updates = mutableMapOf<String, Any>()
+
+            if (original.name != updated.name) updates["name"] = updated.name
+            if (original.instructions != updated.instructions) updates["instructions"] =
+                updated.instructions ?: emptyList<String>()
+            if (original.tags != updated.tags) updates["tags"] = updated.tags ?: emptyList<String>()
+            if (original.isArchive != updated.isArchive) updates["isArchive"] = updated.isArchive
+
+            if (updates.isNotEmpty()) {
+                val recipeRef = db.collection("users")
+                    .document(userId)
+                    .collection("recipes")
+                    .document(updated.recipeId)
+
+                recipeRef.update(updates).await()
+                true
+            } else {
+                android.util.Log.d("Firestore", "No changes detected — update skipped.")
+                false
+            }
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error updating recipe: ${e.message}", e)
+            false
+        }
+
+    }
+
     suspend fun addTag(userId: String, recipeId: String, tag: String): Boolean {
         return try {
             val logRef = db.collection("users")
