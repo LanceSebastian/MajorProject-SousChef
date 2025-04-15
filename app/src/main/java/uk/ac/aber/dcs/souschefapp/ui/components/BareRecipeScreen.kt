@@ -19,17 +19,18 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import uk.ac.aber.dcs.souschefapp.database.MainState
+import uk.ac.aber.dcs.souschefapp.firebase.Mode
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 
 @Composable
 fun BareRecipePageScreen(
     navController: NavHostController,
+    mode: Mode = Mode.View,
     editFunction: () -> Unit,
     backFunction: () -> Unit,
     saveFunction: () -> Unit,
-    deleteFunction: () -> Unit,
-    isEdit: Boolean = false,
+    crossFunction: () -> Unit,
     isBottomBar: Boolean = true,
     pageContent: @Composable (innerPadding: PaddingValues) -> Unit = {}
 ){
@@ -37,11 +38,11 @@ fun BareRecipePageScreen(
         topBar = {
             EditTopAppBar(
                 navController = navController,
-                isEdit = isEdit,
+                mode = mode,
                 editFunction = editFunction,
                 backFunction = backFunction,
                 saveFunction = saveFunction,
-                deleteFunction = deleteFunction,
+                crossFunction = crossFunction,
             ) },
         content = { innerPadding -> pageContent(innerPadding) },
         bottomBar = { if (isBottomBar) HomeNavigationBar(mainState = MainState.RECIPES, navController = navController) },
@@ -58,7 +59,22 @@ fun BareRecipePageView(){
             editFunction = {},
             backFunction = {},
             saveFunction = {},
-            deleteFunction = {},
+            crossFunction = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EditBareRecipePageView(){
+    val navController = rememberNavController()
+    AppTheme {
+        BareRecipePageScreen(
+            navController = navController,
+            editFunction = {},
+            backFunction = {},
+            saveFunction = {},
+            crossFunction = {},
         )
     }
 }
