@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
@@ -20,6 +21,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -28,10 +30,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import uk.ac.aber.dcs.souschefapp.firebase.Mode
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
@@ -57,21 +61,21 @@ fun TopProductScreen(
     val userId = user?.uid
 
     val product by productViewModel.selectProduct.observeAsState(null)
-
-    // Listen for logs in real-time when the user exists
-    DisposableEffect(userId) {
-        if(userId != null){
-            productViewModel.readProducts(userId)
-        }
-
-        onDispose {
-            productViewModel.stopListening()
-        }
-    }
+    val mode by productViewModel.mode.observeAsState(Mode.View)
 
     ProductScreen(
         navController = navController,
         product = product,
+        mode = mode,
+        setMode = { newMode ->
+            productViewModel.setMode(newMode)
+        },
+        clearSelectProduct = {
+            productViewModel.clearSelectProduct()
+        },
+        addProductToLog = { newProduct ->
+            logViewModel.addProductToCurrentLog(userId, newProduct.productId, context)
+        },
         addProduct = { newProduct ->
             productViewModel.createProduct(userId, newProduct, context)
         },
@@ -87,7 +91,11 @@ fun TopProductScreen(
 @Composable
 fun ProductScreen(
     navController: NavHostController,
+    mode: Mode = Mode.View,
+    setMode: (Mode) -> Unit,
     product: Product? = null,
+    clearSelectProduct: () -> Unit,
+    addProductToLog: (Product) -> Unit,
     addProduct: (Product) -> Unit,
     updateProduct: (Product) -> Unit,
     archiveProduct: (Product) -> Unit
@@ -98,59 +106,60 @@ fun ProductScreen(
 
     var nameText by remember { mutableStateOf(product?.name ?: "") }
     var priceText by remember { mutableStateOf((product?.price ?: "").toString()) }
-    var isEdit by remember { mutableStateOf( product == null) }
 
-    var isModified = product?.let {
-        it.name != nameText || it.price.toString() != priceText
-    } ?: true
+    val isModified by remember {
+        derivedStateOf {
+            product?.let {
+                it.name != nameText || it.price != priceText.toDoubleOrNull()
+            } ?: (nameText.isNotBlank() || priceText.isNotBlank())
+        }
+    }
+
+    LaunchedEffect(product?.productId) {
+        if (mode != Mode.View && product != null && product.productId.isNotBlank()) {
+            addProductToLog(product)
+            navController.popBackStack()
+            clearSelectProduct()
+        }
+    }
 
 
     BareRecipePageScreen(
         navController = navController,
-        isEdit = isEdit,
+        mode = mode,
         isBottomBar = false,
-        editFunction = { isEdit = !isEdit },
+        editFunction = { setMode(Mode.Edit) },
 
         // Check if there are unsaved changes
         backFunction = {
-            if (isModified) isBackConfirm = true else navController.popBackStack()
+            if (mode == Mode.View || !isModified) {
+                navController.popBackStack()
+            } else {
+                isBackConfirm = true
+            }
         },
 
-        //  Create or Update Product
+        // Create or Update Product
         saveFunction = {
-            isEdit = !isEdit
-
-            val updatedName = nameText
-            val updatedPrice = priceText.toDouble()
-
             val newProduct = product?.copy(
-                name = updatedName,
-                price = updatedPrice
+                name = nameText,
+                price = priceText.toDouble()
             ) ?: Product(
-                name = updatedName,
-                price = updatedPrice
+                name = nameText,
+                price = priceText.toDouble()
             )
 
-            if (isProductExist) updateProduct(newProduct) else addProduct(newProduct)
-
-            isModified = false
+            if (mode == Mode.Edit) updateProduct(newProduct) else addProduct(newProduct)
+            setMode(Mode.View)
         },
 
         // Archive Product if it exists.
-        deleteFunction = {
-            val updatedName = nameText
-            val updatedPrice = priceText.toDouble()
-
-            val newProduct = product?.copy(
-                name = updatedName,
-                price = updatedPrice
-            ) ?: Product(
-                name = updatedName,
-                price = updatedPrice
-            )
-
-            if (isProductExist) archiveProduct(newProduct)
+        crossFunction = {
+            nameText = product?.name ?: ""
+            priceText = (product?.price ?: "").toString()
+            setMode(Mode.View)
         },
+
     ){ innerPadding ->
         Surface(
             modifier = Modifier
@@ -161,6 +170,7 @@ fun ProductScreen(
                 modifier = Modifier
                     .padding(top = 8.dp)
             ){
+
                 /*      Add Image       */
                 Box(
                     contentAlignment = Alignment.Center
@@ -172,19 +182,21 @@ fun ProductScreen(
                             .blur(1.dp)
                             .fillMaxWidth(0.8f)
                     )
-                    Button(
-                        onClick = {
-                            TODO("Implement Add image function")
-                        },
-                        enabled = false
-                    ){
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null
-                        )
-                        Text(
-                            text = "Add Image"
-                        )
+                    if (mode != Mode.View) {
+                        Button(
+                            onClick = {
+                                TODO("Implement Add image function")
+                            },
+                            enabled = false
+                        ){
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null
+                            )
+                            Text(
+                                text = "Add Image"
+                            )
+                        }
                     }
                 }
 
@@ -195,7 +207,7 @@ fun ProductScreen(
                     value = nameText,
                     onValueChange = { nameText = it },
                     label = { Text("Name") },
-                    enabled = isEdit,
+                    enabled = mode != Mode.View,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
@@ -206,9 +218,16 @@ fun ProductScreen(
                 /*      Price TextField      */
                 TextField(
                     value = priceText,
-                    onValueChange = { priceText = it },
+                    onValueChange = { newText ->
+                        if (newText.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
+                            priceText = newText
+                        }
+                    },
                     label = { Text("Price") },
-                    enabled = isEdit,
+                    enabled = mode != Mode.View,
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Number
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
@@ -246,14 +265,18 @@ fun ProductScreen(
 
 @Preview
 @Composable
-fun NewProductScreenPreview(){
+fun CreateProductScreenPreview(){
     val navController = rememberNavController()
     AppTheme {
         ProductScreen(
             navController = navController,
+            mode = Mode.Create,
+            setMode = {},
+            addProductToLog = {},
             addProduct = {},
             updateProduct = {},
             archiveProduct = {},
+            clearSelectProduct = {},
         )
     }
 }
@@ -271,9 +294,37 @@ fun ViewProductScreenPreview(){
                 name = "Tesco Meal Deal",
                 price = 3.40
             ),
+            mode = Mode.View,
+            setMode = {},
+            addProductToLog = {},
             addProduct = {},
             updateProduct = {},
             archiveProduct = {},
+            clearSelectProduct = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+fun EditProductScreenPreview(){
+    val navController = rememberNavController()
+    AppTheme {
+        ProductScreen(
+            navController = navController,
+            product = Product(
+                productId = "",
+                createdBy = "0",
+                name = "Tesco Meal Deal",
+                price = 3.40
+            ),
+            mode = Mode.Edit,
+            setMode = {},
+            addProductToLog = {},
+            addProduct = {},
+            updateProduct = {},
+            archiveProduct = {},
+            clearSelectProduct = {},
         )
     }
 }
