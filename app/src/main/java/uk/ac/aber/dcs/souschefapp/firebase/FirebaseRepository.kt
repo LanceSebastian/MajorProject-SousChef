@@ -182,18 +182,24 @@ class LogRepository {
 class ProductRepository {
     private val db = FirebaseFirestore.getInstance()
 
-    suspend fun addProduct(userId: String, product: Product): Boolean {
+    suspend fun addProduct(userId: String, product: Product): Product? {
         return try {
-            db.collection("users")
+            val docRef = db.collection("users")
                 .document(userId)
                 .collection("products")
-                .add(product)
+                .add(product.copy(productId = "")) // Initially empty productId
                 .await()
-            android.util.Log.d("Firestore", "Product added successfully")
-            true
-        } catch(e: Exception){
+
+            val productId = docRef.id
+            val updatedProduct = product.copy(productId = productId)
+
+            docRef.update("productId", productId).await()
+
+            android.util.Log.d("Firestore", "Product added successfully with ID: $productId")
+            updatedProduct
+        } catch(e: Exception) {
             android.util.Log.e("Firestore", "Error adding product: ${e.message}", e)
-            false
+            null
         }
     }
 
