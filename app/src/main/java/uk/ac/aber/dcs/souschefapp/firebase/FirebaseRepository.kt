@@ -222,6 +222,28 @@ class ProductRepository {
             }
     }
 
+    suspend fun findProductById(userId: String, productId: String): Product {
+        return try {
+            val docSnapshot = db.collection("users")
+                .document(userId)
+                .collection("products")
+                .document(productId)
+                .get()
+                .await()
+
+            val product = docSnapshot.toObject(Product::class.java)
+
+            if (product != null) {
+                product.copy(productId = docSnapshot.id) // Ensure ID is set
+            } else {
+                throw Exception("Product not found")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error fetching product: ${e.message}", e)
+            throw e
+        }
+    }
+
     suspend fun updateProduct(userId: String, product: Product): Boolean {
         return try {
             val productRef = db.collection("users")
