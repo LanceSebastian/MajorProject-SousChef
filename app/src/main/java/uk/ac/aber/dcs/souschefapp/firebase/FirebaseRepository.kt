@@ -483,6 +483,22 @@ class RecipeRepository {
         }
     }
 
+    suspend fun updateInstructions(userId: String, recipeId: String, instructions: List<String>): Boolean {
+        return try{
+            db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .update("instructions", instructions)
+                .await()
+            android.util.Log.d("Firestore", "Instructions updated successfully")
+            true
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error updating instructions: ${e.message}", e)
+            false
+        }
+    }
+
     suspend fun archiveRecipe(userId: String, recipeId: String): Boolean {
         return try {
             val logRef = db.collection("users")
