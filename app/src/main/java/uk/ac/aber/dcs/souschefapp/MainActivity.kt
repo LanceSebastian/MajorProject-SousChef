@@ -33,6 +33,7 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 
 class MainActivity : ComponentActivity() {
@@ -40,6 +41,7 @@ class MainActivity : ComponentActivity() {
     private val logViewModel: LogViewModel by viewModels()
     private val noteViewModel: NoteViewModel by viewModels()
     private val recipeViewModel: RecipeViewModel by viewModels()
+    private val productViewModel: ProductViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +54,8 @@ class MainActivity : ComponentActivity() {
                     authViewModel = authViewModel,
                     logViewModel = logViewModel,
                     recipeViewModel = recipeViewModel,
-                    noteViewModel = noteViewModel
+                    noteViewModel = noteViewModel,
+                    productViewModel = productViewModel
                 )
             }
         }
@@ -65,7 +68,8 @@ fun Navigation(
     authViewModel: AuthViewModel,
     logViewModel: LogViewModel,
     recipeViewModel: RecipeViewModel,
-    noteViewModel: NoteViewModel
+    noteViewModel: NoteViewModel,
+    productViewModel: ProductViewModel
 ) {
     val navController = rememberNavController()
     val user by authViewModel.user.observeAsState()
@@ -97,7 +101,8 @@ fun Navigation(
                 authViewModel = authViewModel,
                 logViewModel = logViewModel,
                 recipeViewModel = recipeViewModel,
-                noteViewModel = noteViewModel
+                noteViewModel = noteViewModel,
+                productViewModel = productViewModel
             )
         }
 
@@ -126,6 +131,17 @@ fun Navigation(
             TopProfileScreen(
                 navController = navController,
                 authViewModel = authViewModel
+            )
+        }
+
+        /* Product Screen */
+        composable(Screen.Product.route){
+            TopProductScreen(
+                context = context,
+                navController = navController,
+                authViewModel = authViewModel,
+                productViewModel = productViewModel,
+                logViewModel = logViewModel
             )
         }
 
