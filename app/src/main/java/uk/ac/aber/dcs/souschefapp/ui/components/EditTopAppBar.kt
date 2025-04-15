@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import uk.ac.aber.dcs.souschefapp.firebase.Mode
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,11 +34,11 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 fun EditTopAppBar(
     navController: NavHostController,
     title: String = "",
-    isEdit: Boolean = false,
+    mode: Mode = Mode.View,
     editFunction: () -> Unit,
     backFunction: () -> Unit,
     saveFunction: () -> Unit,
-    deleteFunction: () -> Unit,
+    crossFunction: () -> Unit,
 ){
     var isMutableExpanded by remember { mutableStateOf(false) }
     Column {
@@ -59,30 +61,63 @@ fun EditTopAppBar(
                 }
             },
             actions = {
-                IconButton(onClick = {
-                    if (isEdit) saveFunction() else editFunction()
-                }
-                ) {
-                    Icon(
-                        imageVector = if (isEdit) Icons.Outlined.Check else Icons.Default.Edit,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                IconButton(onClick = {
-                    if (isEdit) {
-                        deleteFunction()
-                    } else {
-                        isMutableExpanded = !isMutableExpanded
+                if (mode == Mode.Create){
+                    IconButton(
+                        onClick = { saveFunction() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
-                ) {
-                    Icon(
-                        imageVector = if (isEdit) Icons.Outlined.Delete else Icons.Outlined.MoreVert,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+
+                if (mode == Mode.Edit){
+                    IconButton(onClick = {
+                        saveFunction()
+                    }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+
+                    IconButton(
+                        onClick = { crossFunction() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Clear,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                if (mode == Mode.View) {
+                    IconButton(
+                        onClick = { editFunction() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+
+                    IconButton(
+                        onClick = { isMutableExpanded = !isMutableExpanded }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.MoreVert,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             },
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -99,34 +134,51 @@ fun EditTopAppBar(
 
 @Preview(showBackground = true)
 @Composable
-fun FalseEditTopAppBarPreview(){
+fun ViewTopAppBarPreview(){
     val navController = rememberNavController()
     var isEdit by remember { mutableStateOf(false) }
     AppTheme {
         EditTopAppBar(
             navController = navController,
-            isEdit = isEdit,
+            mode = Mode.View,
             editFunction = { isEdit = true },
             backFunction = {},
             saveFunction = { isEdit = false },
-            deleteFunction = {},
+            crossFunction = {},
         )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun TrueEditTopAppBarPreview(){
+fun EditTopAppBarPreview(){
     val navController = rememberNavController()
     var isEdit by remember { mutableStateOf(true)}
     AppTheme {
         EditTopAppBar(
             navController = navController,
-            isEdit = isEdit,
+            mode = Mode.Edit,
             editFunction = { isEdit = true },
             backFunction = {},
             saveFunction = { isEdit = false },
-            deleteFunction = {},
+            crossFunction = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CreateTopAppBarPreview(){
+    val navController = rememberNavController()
+    var isEdit by remember { mutableStateOf(true)}
+    AppTheme {
+        EditTopAppBar(
+            navController = navController,
+            mode = Mode.Create,
+            editFunction = { isEdit = true },
+            backFunction = {},
+            saveFunction = { isEdit = false },
+            crossFunction = {},
         )
     }
 }
