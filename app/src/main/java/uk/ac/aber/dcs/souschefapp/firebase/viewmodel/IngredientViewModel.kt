@@ -29,16 +29,31 @@ class IngredientViewModel : ViewModel() {
         }
     }
 
-    // Method updates existing and creates new ingredients.
-    fun addIngredients(userId: String?, recipeId: String?, ingredients: List<Ingredient>){
+    // Method updates existing and creates new ingredients, deleting old.
+    fun updateIngredients(userId: String?, recipeId: String?, ingredients: List<Ingredient>){
         if (userId == null || recipeId == null) return
 
         viewModelScope.launch {
+            val existingIngredients = _recipeIngredients.value ?: emptyList()
+
+            // Delete
+            val toDelete = existingIngredients.filter{ existing ->
+                ingredients.none { it.ingredientId == existing.ingredientId }
+            }
+
+            toDelete.forEach{ ingredient ->
+                val deleted = ingredientRepository.deleteIngredient(userId, recipeId, ingredient.ingredientId)
+                if (!deleted) {
+                    android.util.Log.e("IngredientViewModel", "Failed to delete ingredient: ${ingredient.name}")
+                }
+            }
+
+            // Create and Update
             ingredients.forEach { ingredient ->
                 val existing = _recipeIngredients.value?.find { it.ingredientId == ingredient.ingredientId }
 
                 val isSuccess = if (existing != null) {
-                    ingredientRepository.updateIngredient(userId, recipeId, ingredient)
+                    if (existing != ingredient) ingredientRepository.updateIngredient(userId, recipeId, ingredient) else true
                 } else {
                     ingredientRepository.addIngredient(userId, recipeId, ingredient)
                 }
