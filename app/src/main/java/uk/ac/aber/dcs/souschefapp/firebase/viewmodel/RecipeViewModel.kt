@@ -9,13 +9,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
+import uk.ac.aber.dcs.souschefapp.firebase.Mode
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.RecipeRepository
 
 class RecipeViewModel : ViewModel() {
     private val recipeRepository = RecipeRepository()
 
+    private val _mode = MutableLiveData(Mode.View)
+    val mode: LiveData<Mode> = _mode
+
     private var recipeListener: ListenerRegistration? = null
+
     private var _userRecipes = MutableLiveData<List<Recipe>>()
     var userRecipes: LiveData<List<Recipe>> = _userRecipes
 
@@ -35,6 +40,10 @@ class RecipeViewModel : ViewModel() {
                 _selectRecipe.value = recipes.find { it.recipeId == id }
             }
         }
+    }
+
+    fun setMode(newMode: Mode){
+        _mode.value = newMode
     }
 
     fun createRecipe(userId: String?, recipe: Recipe? = null){
