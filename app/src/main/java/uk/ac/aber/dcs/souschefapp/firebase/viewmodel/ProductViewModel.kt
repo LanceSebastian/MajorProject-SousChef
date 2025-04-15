@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
+import uk.ac.aber.dcs.souschefapp.firebase.Mode
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.ProductRepository
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
@@ -16,14 +17,21 @@ import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 class ProductViewModel : ViewModel() {
     private val productRepository = ProductRepository()
 
+    private val _mode = MutableLiveData(Mode.View)
+    val mode: LiveData<Mode> = _mode
+
     private var productListener: ListenerRegistration? = null
+
     private var _userProducts = MutableLiveData<List<Product>>()
     var userProducts: LiveData<List<Product>> = _userProducts
 
+    private var _logProducts = MutableLiveData<List<Product>>()
+    var logProducts: LiveData<List<Product>> = _userProducts
+
 
     private var selectProductId: String? = null
-    private var _selectProduct = MediatorLiveData<Product>()
-    var selectProduct: LiveData<Product> = _selectProduct
+    private var _selectProduct = MediatorLiveData<Product?>()
+    var selectProduct: LiveData<Product?> = _selectProduct
 
     init {
         _selectProduct.addSource(_userProducts) { products ->
@@ -31,6 +39,10 @@ class ProductViewModel : ViewModel() {
                 _selectProduct.value = products.find { it.productId == id }
             }
         }
+    }
+
+    fun setMode(newMode: Mode){
+        _mode.value = newMode
     }
 
     fun createProduct(userId: String?, product: Product, context: Context){
