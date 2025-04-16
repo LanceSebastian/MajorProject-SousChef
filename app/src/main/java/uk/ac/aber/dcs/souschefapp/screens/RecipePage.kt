@@ -74,8 +74,25 @@ fun TopRecipePageScreen(
     recipeViewModel: RecipeViewModel,
     ingredientViewModel: IngredientViewModel
 ){
-    val ingredients by ingredientViewModel.getIngredientsFromRecipe(recipeId).observeAsState(listOf())
-    val recipe by recipeViewModel.getRecipeById(recipeId).observeAsState()
+    val user by authViewModel.user.observeAsState(null)
+    val userId = user?.uid
+
+    val recipe by recipeViewModel.selectRecipe.observeAsState()
+    val ingredients by ingredientViewModel.recipeIngredient.observeAsState()
+    val mode by recipeViewModel.mode.observeAsState(Mode.View)
+    val coroutineScope = rememberCoroutineScope()
+
+    // Listen for ingredients in real-time when the recipe exists
+    DisposableEffect(recipe?.recipeId) {
+        val currentRecipe = recipe // This line allows for smart casting
+        if (currentRecipe != null){
+            ingredientViewModel.readIngredients(userId, currentRecipe.recipeId)
+        }
+
+        onDispose {
+            ingredientViewModel.stopListening()
+        }
+    }
 
     RecipePageScreen(
         navController = navController,
