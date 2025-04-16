@@ -24,8 +24,7 @@ data class Ingredient(
     val ingredientId: String = "",
     val name: String = "",
     val description: String? = null,
-    val quantity: Int = 0,
-    val unit: String = "",
+    val quantity: String = "",
     val unit: String? = null,
 )
 
