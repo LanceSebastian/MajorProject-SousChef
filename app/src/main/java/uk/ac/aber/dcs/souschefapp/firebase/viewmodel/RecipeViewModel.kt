@@ -31,8 +31,8 @@ class RecipeViewModel : ViewModel() {
     var tagRecipes = _tagRecipes
 
     private var selectRecipeId: String? = null
-    private var _selectRecipe = MediatorLiveData<Recipe>()
-    var selectRecipe: LiveData<Recipe> = _selectRecipe
+    private var _selectRecipe = MediatorLiveData<Recipe?>()
+    var selectRecipe: LiveData<Recipe?> = _selectRecipe
 
     init {
         _selectRecipe.addSource(_userRecipes) { recipes ->
