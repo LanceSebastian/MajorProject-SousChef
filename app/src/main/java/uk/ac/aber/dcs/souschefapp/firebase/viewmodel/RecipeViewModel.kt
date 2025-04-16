@@ -9,13 +9,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
+import uk.ac.aber.dcs.souschefapp.firebase.Mode
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.RecipeRepository
 
 class RecipeViewModel : ViewModel() {
     private val recipeRepository = RecipeRepository()
 
+    private val _mode = MutableLiveData(Mode.View)
+    val mode: LiveData<Mode> = _mode
+
     private var recipeListener: ListenerRegistration? = null
+
     private var _userRecipes = MutableLiveData<List<Recipe>>()
     var userRecipes: LiveData<List<Recipe>> = _userRecipes
 
@@ -26,8 +31,8 @@ class RecipeViewModel : ViewModel() {
     var tagRecipes = _tagRecipes
 
     private var selectRecipeId: String? = null
-    private var _selectRecipe = MediatorLiveData<Recipe>()
-    var selectRecipe: LiveData<Recipe> = _selectRecipe
+    private var _selectRecipe = MediatorLiveData<Recipe?>()
+    var selectRecipe: LiveData<Recipe?> = _selectRecipe
 
     init {
         _selectRecipe.addSource(_userRecipes) { recipes ->
@@ -37,10 +42,14 @@ class RecipeViewModel : ViewModel() {
         }
     }
 
-    fun createRecipe(userId: String?, recipe: Recipe? = null){
+    fun setMode(newMode: Mode){
+        _mode.value = newMode
+    }
+
+    suspend fun createRecipe(userId: String?, recipe: Recipe? = null, context: Context): String? {
         if (userId == null) {
             android.util.Log.e("RecipeViewModel", "Failed to create recipe due to null userId")
-            return
+            return null
         }
 
         val standardRecipe = recipe?.copy(
@@ -50,15 +59,19 @@ class RecipeViewModel : ViewModel() {
             createdBy = userId,
         )
 
-        viewModelScope.launch {
-            val isSuccess = recipeRepository.addRecipe(
-                userId = userId,
-                recipe = standardRecipe
-            )
-            if (!isSuccess) {
-                android.util.Log.e("RecipeViewModel", "Failed to create recipe")
-            }
+        val savedRecipe = recipeRepository.addRecipe(
+            userId = userId,
+            recipe = standardRecipe
+        )
+
+        return if (savedRecipe != null) {
+            Toast.makeText(context, "Recipe saved successfully!", Toast.LENGTH_SHORT).show()
+            savedRecipe.recipeId
+        } else {
+            Toast.makeText(context, "Failed to save recipe.", Toast.LENGTH_SHORT).show()
+            null
         }
+
     }
 
     fun readRecipes(userId: String?) {
@@ -94,9 +107,28 @@ class RecipeViewModel : ViewModel() {
         }
     }
 
+    fun clearSelectRecipe(){
+        selectRecipeId = null
+        _selectRecipe.value = null
+    }
+
     fun stopListening(){
         recipeListener?.remove()
         recipeListener = null
+    }
+
+    fun updateRecipe(userId: String?, newRecipe: Recipe){
+        val currentRecipe = _selectRecipe.value
+        if (userId == null || currentRecipe == null) return
+
+        viewModelScope.launch {
+            val isSuccess = recipeRepository.updateRecipeIfChanged(userId, currentRecipe, newRecipe)
+
+            if (!isSuccess) {
+                android.util.Log.e("RecipeViewModel", "Failed to update recipe")
+            }
+        }
+
     }
 
     fun addTag(userId: String?, recipeId: String, tag: String){
@@ -142,6 +174,14 @@ class RecipeViewModel : ViewModel() {
             if (!isSuccess) {
                 android.util.Log.e("RecipeViewModel", "Failed to untag recipe")
             }
+        }
+    }
+
+    fun updateInstructions(userId: String?, recipeId: String, instructions: List<String>){
+        if (userId == null) return
+
+        viewModelScope.launch {
+            recipeRepository.updateInstructions(userId, recipeId, instructions)
         }
     }
 

@@ -1,5 +1,6 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,10 +33,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,50 +49,77 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.R
-import uk.ac.aber.dcs.souschefapp.database.models.Ingredient
-import uk.ac.aber.dcs.souschefapp.database.models.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
+import uk.ac.aber.dcs.souschefapp.firebase.Mode
+import uk.ac.aber.dcs.souschefapp.firebase.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareRecipePageScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.components.ConfirmDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.IngredientDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.InstructionDialogue
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.IngredientViewModel
-import uk.ac.aber.dcs.souschefapp.room_viewmodel.RecipeViewModel
 
+// Add Ingredient
 @Composable
 fun TopRecipePageScreen(
-    recipeId: Int,
+    context: ComponentActivity,
     navController: NavHostController,
+    authViewModel: AuthViewModel,
     recipeViewModel: RecipeViewModel,
-    ingredientViewModel: IngredientViewModel,
+    ingredientViewModel: IngredientViewModel
 ){
-    val ingredients by ingredientViewModel.getIngredientsFromRecipe(recipeId).observeAsState(listOf())
-    val recipe by recipeViewModel.getRecipeById(recipeId).observeAsState()
+    val user by authViewModel.user.observeAsState(null)
+    val userId = user?.uid
+
+    val recipe by recipeViewModel.selectRecipe.observeAsState()
+    val ingredients by ingredientViewModel.recipeIngredient.observeAsState()
+    val mode by recipeViewModel.mode.observeAsState(Mode.View)
+    val coroutineScope = rememberCoroutineScope()
+
+    // Listen for ingredients in real-time when the recipe exists
+    DisposableEffect(recipe?.recipeId) {
+        val currentRecipe = recipe // This line allows for smart casting
+        if (currentRecipe != null){
+            ingredientViewModel.readIngredients(userId, currentRecipe.recipeId)
+        }
+
+        onDispose {
+            ingredientViewModel.stopListening()
+        }
+    }
 
     RecipePageScreen(
         navController = navController,
+        mode = mode,
         recipe = recipe,
         ingredients = ingredients,
-        onRecipeAdd = { newRecipe ->
-            recipeViewModel.insertRecipe(newRecipe)
+        setMode = { newMode ->
+            recipeViewModel.setMode(newMode)
         },
-        onRecipeUpdate = { newRecipe ->
-            recipeViewModel.updateRecipe(newRecipe)
+        clearSelectRecipe = {
+            recipeViewModel.clearSelectRecipe()
         },
-        onRecipeDelete = { newRecipe ->
-            recipeViewModel.deactivateRecipe(newRecipe.recipeId)
+        addRecipe = { newRecipe, newIngredients ->
+            coroutineScope.launch {
+                val recipeId = recipeViewModel.createRecipe(userId, newRecipe, context)
+                if(recipeId != null){
+                    ingredientViewModel.createIngredients(userId, recipeId, newIngredients)
+                }
+            }
         },
-        onIngredientAdd = { ingredient ->
-            ingredientViewModel.insertIngredient(ingredient)
+        updateRecipe = { newRecipe, newIngredients ->
+            recipeViewModel.updateRecipe(userId, newRecipe)
+            ingredientViewModel.updateIngredients(userId, newRecipe.recipeId, newIngredients)
         },
-        onIngredientUpdate = { ingredient ->
-            ingredientViewModel.updateIngredient(ingredient)
+        archiveRecipe = { newRecipe ->
+            recipeViewModel.archiveRecipe(userId, newRecipe.recipeId, context)
         },
-        onIngredientDelete = { ingredient ->
-            ingredientViewModel.deleteIngredient(ingredient)
-        }
 
     )
 }
@@ -97,59 +127,80 @@ fun TopRecipePageScreen(
 @Composable
 fun RecipePageScreen(
     navController: NavHostController,
+    mode: Mode = Mode.View,
     recipe: Recipe? = null,
-    ingredients: List<Ingredient> = emptyList(),
-    onRecipeAdd: (Recipe) -> Unit = {},
-    onRecipeUpdate: (Recipe) -> Unit = {},
-    onRecipeDelete: (Recipe) -> Unit = {},
-    onIngredientAdd: (Ingredient) -> Unit = {},
-    onIngredientUpdate: (Ingredient) -> Unit = {},
-    onIngredientDelete: (Ingredient) -> Unit = {}
+    ingredients: List<Ingredient>? = null,
+    setMode: (Mode) -> Unit,
+    clearSelectRecipe: () -> Unit,
+    addRecipe: (Recipe, List<Ingredient>) -> Unit,
+    updateRecipe: (Recipe, List<Ingredient>) -> Unit,
+    archiveRecipe: (Recipe) -> Unit,
 
 ){
-    var nameText by remember { mutableStateOf(recipe?.recipeName ?: "") }
+    val isRecipeExist = recipe != null
+
+    var nameText by remember { mutableStateOf(recipe?.name ?: "") }
+    var mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf<String>()
+    var mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf<Ingredient>()
+
     var isIngredientDialog by remember { mutableStateOf(false) }
     var isInstructionDialog by remember { mutableStateOf(false) }
     var isIngredientDelete by remember { mutableStateOf(false) }
     var isInstructionDelete by remember { mutableStateOf(false) }
-    var isBackConfirm by remember { mutableStateOf(false) }
-    var isEdit by remember { mutableStateOf(false) }
+    var isCancelEditDialog by remember{ mutableStateOf(false) }
 
-    //      Mutable Data
-    val mutableIngredientList = ingredients.toMutableList()
-    val mutableInstructionList = recipe?.instructionList?.toMutableList() ?: mutableListOf()
+    var isBackConfirm by remember { mutableStateOf(false) }
+
+    var isEdit by remember { mutableStateOf(false) }
+    var isModified by remember { mutableStateOf(false) }
+
     var editIngredient: Ingredient? = null
     var editInstruction: String = ""
 
     BareRecipePageScreen(
         navController = navController,
         isBottomBar = false,
-        editFunction = { isEdit = !isEdit },
-        saveFunction = {
-            if (recipe != null){
-                val newRecipe = Recipe(
-                    recipeId = recipe.recipeId,
-                    recipeName = nameText,
-                    instructionList = mutableInstructionList.toList()
-                )
-                onRecipeUpdate(newRecipe)
-            } else {
-                onRecipeAdd(Recipe(
-                    recipeName = nameText,
-                    instructionList = mutableInstructionList.toList()
-                ))
-            }
-            isEdit = false
-                       },
-        crossFunction = {
-            if (recipe != null) onRecipeDelete(recipe)
-            navController.popBackStack()
-                         },
+        mode = mode,
+        editFunction = { setMode(Mode.Edit) },
+        // Check for unsaved edits
         backFunction = {
-            isBackConfirm = true
+            if (mode == Mode.View || !isModified) {
+                navController.popBackStack()
+                clearSelectRecipe()
+            } else {
+                isBackConfirm = true
+            }
         },
 
+        // Create or Update Recipe
+        saveFunction = {
+            val newRecipe = recipe?.copy(
+                name = nameText,
+                instructions = mutableInstructions
+            ) ?: Recipe (
+                name = nameText,
+                instructions = mutableInstructions
+            )
+            if (mode == Mode.Edit) {
+                updateRecipe(newRecipe, mutableIngredientList.toList())
+            } else {
+                addRecipe(newRecipe, mutableIngredientList)
+                navController.popBackStack()
+            }
+            setMode(Mode.View)
+        },
 
+        // Cancel Edit
+        crossFunction = {
+            if (isModified) {
+                isCancelEditDialog = true
+            }
+            else {
+                nameText = recipe?.name ?: ""
+                mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf()
+                mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf()
+            }
+        },
     ){ innerPadding ->
         Surface(
             modifier = Modifier
@@ -175,7 +226,8 @@ fun RecipePageScreen(
                             .fillMaxWidth(0.8f)
                     )
                     Button(
-                        onClick = { TODO("Implement Add image function") }
+                        onClick = { TODO("Implement Add image function") },
+                        enabled = false
                     ){
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -192,7 +244,10 @@ fun RecipePageScreen(
                 /*      Name TextField      */
                 TextField(
                     value = nameText,
-                    onValueChange = { nameText = it },
+                    onValueChange = {
+                        nameText = it
+                        if (nameText != recipe?.name && !isModified) isModified = true
+                                    },
                     label = { Text("Name") },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -223,7 +278,7 @@ fun RecipePageScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Ingredients")
-                            Icon(
+                            if (mode != Mode.View) Icon(
                                 imageVector = Icons.Default.AddCircle,
                                 contentDescription = null,
                                 modifier = Modifier
@@ -237,6 +292,13 @@ fun RecipePageScreen(
                             mutableIngredientList.forEach{ ingredient ->
                                 item{
                                     var expanded by remember { mutableStateOf(false) }
+                                    val ingredientText = buildString {
+                                        append("${ingredient.quantity} ")
+                                        ingredient.unit?.let { append("$it ") }
+                                        append(ingredient.name)
+                                        ingredient.description?.let { append(" - $it") }
+                                    }
+
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically
                                     ){
@@ -247,11 +309,11 @@ fun RecipePageScreen(
                                                 .weight(0.1f)
                                         )
                                         Text(
-                                            text = "${ingredient.quantity}${ingredient.unit} ${ingredient.name} ${ingredient.description}",
+                                            text = ingredientText,
                                             modifier = Modifier
                                                 .weight(1f)
-                                        ) // I need a system that changes the units
-                                        Box(
+                                        )
+                                        if (mode != Mode.View)Box(
                                             modifier = Modifier
                                                 .wrapContentSize(Alignment.TopStart)
                                                 .weight(0.1f)
@@ -314,7 +376,7 @@ fun RecipePageScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Instructions")
-                            Icon(
+                            if (mode != Mode.View) Icon(
                                 imageVector = Icons.Default.AddCircle,
                                 contentDescription = null,
                                 modifier = Modifier
@@ -322,17 +384,25 @@ fun RecipePageScreen(
                             )
                         }
                         LazyColumn {
-                            mutableInstructionList.forEach{ instruction ->
+                            mutableInstructions.forEach{ instruction ->
                                 item{
                                     var expanded by remember { mutableStateOf(false) }
                                     Row{
-                                        Icon(
+                                        if (mode != Mode.View)Icon(
                                             imageVector = ImageVector.vectorResource(R.drawable.draggable),
-                                            contentDescription = null
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .weight(0.1f)
+
                                         )
-                                        Text(text = instruction)
+                                        Text(
+                                            text = instruction,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                        )
                                         Box(modifier = Modifier
-                                            .wrapContentSize(Alignment.TopStart)) {
+                                            .wrapContentSize(Alignment.TopStart)
+                                            .weight(0.1f)) {
                                             Icon(
                                                 imageVector = Icons.Default.ArrowDropDown,
                                                 contentDescription = null,
@@ -370,15 +440,9 @@ fun RecipePageScreen(
             if (isIngredientDialog){
                 IngredientDialogue(
                     onDismissRequest = { isInstructionDialog = false },
-                    mainAction = { name, amount, unit, extra ->
-                        val newIngredient = Ingredient(
-                            recipeOwnerId = recipe!!.recipeId,
-                            name = name,
-                            description = extra,
-                            quantity = amount.toInt(),
-                            unit = unit
-                        )
-                        if (editIngredient == null) onIngredientAdd(newIngredient) else onIngredientUpdate(newIngredient)
+                    mainAction = { ingredient ->
+                        mutableIngredientList.add(ingredient)
+                        isModified = true
                     },
                     ingredient = editIngredient
                 )
@@ -388,17 +452,22 @@ fun RecipePageScreen(
             if (isIngredientDelete){
                 ConfirmDialogue(
                     onDismissRequest = { isIngredientDelete = false },
-                    mainAction = { onIngredientDelete(editIngredient!!) },
+                    mainAction = {
+                        mutableIngredientList.remove(editIngredient)
+                        isModified = true
+                                 },
                     supportingText = "Deleting an ingredient is permanent.",
                     mainButtonText = "Delete"
                 )
+                editIngredient = null
             }
 
             if (isInstructionDialog){
                 InstructionDialogue(
                     onDismissRequest = { isInstructionDialog = false },
                     mainAction = { instruction ->
-                        mutableInstructionList.add(instruction)
+                        mutableInstructions.add(0, instruction)
+                        isModified = true
                     },
                     instruction = editInstruction
                 )
@@ -408,19 +477,50 @@ fun RecipePageScreen(
             if (isInstructionDelete){
                 ConfirmDialogue(
                     onDismissRequest = { isIngredientDelete = false },
-                    mainAction = { mutableInstructionList.remove(editInstruction) },
+                    mainAction = {
+                        mutableInstructions.remove(editInstruction)
+                        isModified = true
+                                 },
                     supportingText = "Deleting an instruction is permanent.",
                     mainButtonText = "Delete"
+                )
+                editInstruction = ""
+            }
+
+            if (isCancelEditDialog){
+                ConfirmDialogue(
+                    onDismissRequest = { isCancelEditDialog = false },
+                    mainAction = {
+                        nameText = recipe?.name ?: ""
+                        mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf()
+                        mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf()
+                    },
+                    supportingText = "Any unsaved changes will be forgotten.",
+                    mainButtonText = "Confirm",
                 )
             }
 
             if (isBackConfirm){
+
+                val newRecipe = recipe?.copy(
+                    name = nameText,
+                    instructions = mutableInstructions
+                ) ?: Recipe(
+                    name = nameText,
+                    instructions = mutableInstructions
+                )
+
                 ConfirmDialogue(
-                    onDismissRequest = { isIngredientDelete = false },
-                    mainAction = { navController.popBackStack() },
-                    title = "Ready to go?",
-                    supportingText = "Any unsaved data will be forgotten!",
-                    mainButtonText = "Continue"
+                    onDismissRequest = { isBackConfirm = false },
+                    mainAction = {
+                        if (isRecipeExist) updateRecipe(newRecipe, mutableIngredientList) else addRecipe(newRecipe, mutableIngredientList)
+                        navController.popBackStack()
+                    },
+                    secondAction = { navController.popBackStack() },
+                    title = "Leaving already?",
+                    supportingText = "Do you want to save your changes before you go?",
+                    mainButtonText = "Save",
+                    secondButtonText = "Don't Save"
                 )
             }
 
@@ -430,23 +530,30 @@ fun RecipePageScreen(
 
 @Preview
 @Composable
-fun RecipePageScreenEmptyPreview(){
+fun CreateRecipePageScreenPreview(){
     val navController = rememberNavController()
     AppTheme {
         RecipePageScreen(
-            navController = navController
+            navController = navController,
+            mode = Mode.Create,
+            addRecipe = {_,_ ->},
+            updateRecipe = {_,_ ->},
+            archiveRecipe = {},
+            setMode = {},
+            clearSelectRecipe = {}
         )
     }
 }
 
 @Preview
 @Composable
-fun RecipePageScreenPreview(){
+fun EditRecipePageScreenPreview(){
     val navController = rememberNavController()
     val englishBreakfastRecipe = Recipe(
-        recipeName = "Full English Breakfast",
-        description = "A classic English breakfast with eggs, bacon, sausages, beans, and more.",
-        instructionList = listOf(
+        recipeId = "1",
+        name = "Full English Breakfast",
+        createdBy = "120813",
+        instructions = listOf(
             "1. Heat a pan over medium heat and cook the bacon until crispy.",
             "2. In the same pan, cook the sausages until browned and cooked through.",
             "3. Grill or fry the tomato halves until slightly charred.",
@@ -458,26 +565,82 @@ fun RecipePageScreenPreview(){
             "9. Serve everything hot with a cup of English tea!"
         ),
         tags = listOf("Breakfast", "British", "Traditional"),
-        isActive = true
+        isArchive = false
     )
     val englishBreakfastIngredients = listOf(
-        Ingredient(recipeOwnerId = 1, name = "Eggs", description = "Large eggs, preferably free-range", quantity = 2, unit = "pieces"),
-        Ingredient(recipeOwnerId = 1, name = "Bacon", description = "Thick-cut smoked back bacon", quantity = 3, unit = "slices"),
-        Ingredient(recipeOwnerId = 1, name = "Sausages", description = "Pork sausages, traditional British style", quantity = 2, unit = "pieces"),
-        Ingredient(recipeOwnerId = 1, name = "Baked Beans", description = "Classic British-style baked beans in tomato sauce", quantity = 200, unit = "grams"),
-        Ingredient(recipeOwnerId = 1, name = "Tomatoes", description = "Ripe tomatoes, halved and grilled", quantity = 1, unit = "piece"),
-        Ingredient(recipeOwnerId = 1, name = "Mushrooms", description = "Button mushrooms, sautéed in butter", quantity = 100, unit = "grams"),
-        Ingredient(recipeOwnerId = 1, name = "Toast", description = "Thick slices of white or brown bread, toasted", quantity = 2, unit = "slices"),
-        Ingredient(recipeOwnerId = 1, name = "Black Pudding", description = "Traditional British black pudding (blood sausage)", quantity = 1, unit = "slice"),
-        Ingredient(recipeOwnerId = 1, name = "Hash Browns", description = "Crispy golden hash browns", quantity = 2, unit = "pieces"),
-        Ingredient(recipeOwnerId = 1, name = "Butter", description = "For spreading on toast", quantity = 10, unit = "grams"),
-        Ingredient(recipeOwnerId = 1, name = "Tea", description = "English breakfast tea with milk", quantity = 1, unit = "cup")
+        Ingredient(ingredientId = "1", name = "Eggs", description = "Large eggs, preferably free-range", quantity = "2", unit = null),
+        Ingredient(ingredientId = "2", name = "Bacon", description = "Thick-cut smoked back bacon", quantity = "3", unit = "slices"),
+        Ingredient(ingredientId = "3", name = "Sausages", description = "Pork sausages, traditional British style", quantity = "2", unit = "pieces"),
+        Ingredient(ingredientId = "4", name = "Baked Beans", description = "Classic British-style baked beans in tomato sauce", quantity = "200", unit = "grams"),
+        Ingredient(ingredientId = "5", name = "Tomatoes", description = "Ripe tomatoes, halved and grilled", quantity = "1", unit = "piece"),
+        Ingredient(ingredientId = "6", name = "Mushrooms", description = "Button mushrooms, sautéed in butter", quantity = "100", unit = "grams"),
+        Ingredient(ingredientId = "7", name = "Toast", description = "Thick slices of white or brown bread, toasted", quantity = "2", unit = "slices"),
+        Ingredient(ingredientId = "8", name = "Black Pudding", description = "Traditional British black pudding (blood sausage)", quantity = "1", unit = "slice"),
+        Ingredient(ingredientId = "9", name = "Hash Browns", description = "Crispy golden hash browns", quantity = "2", unit = "pieces"),
+        Ingredient(ingredientId = "10", name = "Butter", description = "For spreading on toast", quantity = "10", unit = "grams"),
+        Ingredient(ingredientId = "11", name = "Tea", description = "English breakfast tea with milk", quantity = "1", unit = "cup")
     )
     AppTheme {
         RecipePageScreen(
             navController = navController,
+            mode = Mode.Edit,
             recipe = englishBreakfastRecipe,
-            ingredients = englishBreakfastIngredients
+            ingredients = englishBreakfastIngredients,
+            addRecipe = {_,_ ->},
+            updateRecipe = {_,_ ->},
+            archiveRecipe = {},
+            setMode = {},
+            clearSelectRecipe = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+fun ViewRecipePageScreenPreview(){
+    val navController = rememberNavController()
+    val englishBreakfastRecipe = Recipe(
+        recipeId = "1",
+        name = "Full English Breakfast",
+        createdBy = "120813",
+        instructions = listOf(
+            "1. Heat a pan over medium heat and cook the bacon until crispy.",
+            "2. In the same pan, cook the sausages until browned and cooked through.",
+            "3. Grill or fry the tomato halves until slightly charred.",
+            "4. Sauté the mushrooms in butter until golden brown.",
+            "5. Heat the baked beans in a small saucepan.",
+            "6. Fry the black pudding slices until crispy.",
+            "7. Cook the eggs to your preference (fried, scrambled, or poached).",
+            "8. Toast the bread and butter it.",
+            "9. Serve everything hot with a cup of English tea!"
+        ),
+        tags = listOf("Breakfast", "British", "Traditional"),
+        isArchive = false
+    )
+    val englishBreakfastIngredients = listOf(
+        Ingredient(ingredientId = "1", name = "Eggs", description = "Large eggs, preferably free-range", quantity = "2", unit = null),
+        Ingredient(ingredientId = "2", name = "Bacon", description = "Thick-cut smoked back bacon", quantity = "3", unit = "slices"),
+        Ingredient(ingredientId = "3", name = "Sausages", description = "Pork sausages, traditional British style", quantity = "2", unit = "pieces"),
+        Ingredient(ingredientId = "4", name = "Baked Beans", description = "Classic British-style baked beans in tomato sauce", quantity = "200", unit = "grams"),
+        Ingredient(ingredientId = "5", name = "Tomatoes", description = "Ripe tomatoes, halved and grilled", quantity = "1", unit = "piece"),
+        Ingredient(ingredientId = "6", name = "Mushrooms", description = "Button mushrooms, sautéed in butter", quantity = "100", unit = "grams"),
+        Ingredient(ingredientId = "7", name = "Toast", description = "Thick slices of white or brown bread, toasted", quantity = "2", unit = "slices"),
+        Ingredient(ingredientId = "8", name = "Black Pudding", description = "Traditional British black pudding (blood sausage)", quantity = "1", unit = "slice"),
+        Ingredient(ingredientId = "9", name = "Hash Browns", description = "Crispy golden hash browns", quantity = "2", unit = "pieces"),
+        Ingredient(ingredientId = "10", name = "Butter", description = "For spreading on toast", quantity = "10", unit = "grams"),
+        Ingredient(ingredientId = "11", name = "Tea", description = "English breakfast tea with milk", quantity = "1", unit = "cup")
+    )
+    AppTheme {
+        RecipePageScreen(
+            navController = navController,
+            mode = Mode.View,
+            recipe = englishBreakfastRecipe,
+            ingredients = englishBreakfastIngredients,
+            addRecipe = {_,_ ->},
+            updateRecipe = {_,_ ->},
+            archiveRecipe = {},
+            setMode = {},
+            clearSelectRecipe = {}
         )
     }
 }

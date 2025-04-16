@@ -14,15 +14,9 @@ data class Recipe(
     val recipeId: String = "",
     val name: String = "",
     val createdBy: String = "",
+    val instructions: List<String>? = null,
     val tags: List<String>? = null,
     val isArchive: Boolean = false
-)
-
-// Subcollection to Recipe
-data class Instruction(
-    val instructionId: String = "",
-    val content: String = "",
-    val placement: Int = 0,
 )
 
 // Subcollection to Recipe
@@ -30,8 +24,8 @@ data class Ingredient(
     val ingredientId: String = "",
     val name: String = "",
     val description: String? = null,
-    val quantity: Int = 0,
-    val unit: String = "",
+    val quantity: String = "",
+    val unit: String? = null,
 )
 
 // Subcollection to Recipe

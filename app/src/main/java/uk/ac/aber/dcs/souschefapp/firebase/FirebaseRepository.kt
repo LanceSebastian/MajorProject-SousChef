@@ -337,18 +337,24 @@ class ProductRepository {
 class RecipeRepository {
     private val db = FirebaseFirestore.getInstance()
 
-    suspend fun addRecipe(userId: String, recipe: Recipe): Boolean {
+    suspend fun addRecipe(userId: String, recipe: Recipe): Recipe? {
         return try {
-            db.collection("users")
+            val docRef = db.collection("users")
                 .document(userId)
                 .collection("recipes")
-                .add(recipe)
+                .add(recipe.copy(recipeId = ""))
                 .await()
+
+            val recipeId = docRef.id
+            val updatedRecipe = recipe.copy(recipeId = recipeId)
+
+            docRef.update("recipeId", recipeId).await()
+
             android.util.Log.d("Firestore", "Recipe added successfully")
-            true
+            updatedRecipe
         } catch(e: Exception){
             android.util.Log.e("Firestore", "Error adding recipe: ${e.message}", e)
-            false
+            null
         }
     }
 
@@ -405,6 +411,35 @@ class RecipeRepository {
             android.util.Log.e("Firestore", "Error finding recipes by tag: ${e.message}", e)
             emptyList()
         }
+    }
+
+    suspend fun updateRecipeIfChanged(userId: String, original: Recipe, updated: Recipe): Boolean {
+        return try {
+            val updates = mutableMapOf<String, Any>()
+
+            if (original.name != updated.name) updates["name"] = updated.name
+            if (original.instructions != updated.instructions) updates["instructions"] =
+                updated.instructions ?: emptyList<String>()
+            if (original.tags != updated.tags) updates["tags"] = updated.tags ?: emptyList<String>()
+            if (original.isArchive != updated.isArchive) updates["isArchive"] = updated.isArchive
+
+            if (updates.isNotEmpty()) {
+                val recipeRef = db.collection("users")
+                    .document(userId)
+                    .collection("recipes")
+                    .document(updated.recipeId)
+
+                recipeRef.update(updates).await()
+                true
+            } else {
+                android.util.Log.d("Firestore", "No changes detected — update skipped.")
+                false
+            }
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error updating recipe: ${e.message}", e)
+            false
+        }
+
     }
 
     suspend fun addTag(userId: String, recipeId: String, tag: String): Boolean {
@@ -479,6 +514,22 @@ class RecipeRepository {
             true
         } catch (e: Exception) {
             android.util.Log.e("Firestore", "Error adding tag: ${e.message}", e)
+            false
+        }
+    }
+
+    suspend fun updateInstructions(userId: String, recipeId: String, instructions: List<String>): Boolean {
+        return try{
+            db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .update("instructions", instructions)
+                .await()
+            android.util.Log.d("Firestore", "Instructions updated successfully")
+            true
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error updating instructions: ${e.message}", e)
             false
         }
     }
@@ -748,100 +799,6 @@ class IngredientRepository {
             true
         } catch (e: Exception) {
             android.util.Log.e("Firestore", "Error deleting ingredient: ${e.message}", e)
-            false
-        }
-    }
-}
-
-class InstructionRepository {
-    private val db = FirebaseFirestore.getInstance()
-
-    suspend fun addInstruction(userId: String, recipeId: String, instruction: Instruction): Boolean {
-        return try{
-            val instructionRef = db.collection("users")
-                .document(userId)
-                .collection("recipes")
-                .document(recipeId)
-                .collection("instructions")
-                .document()
-            val newId = instructionRef.id
-
-            val newInstruction = instruction.copy(instructionId = newId)
-
-            instructionRef.set(newInstruction).await()
-            android.util.Log.d("Firestore", "Instruction added successfully")
-            true
-        } catch (e: Exception){
-            android.util.Log.e("Firestore", "Error adding instruction: ${e.message}", e)
-            false
-        }
-    }
-
-    fun listenForInstructions(userId: String, recipeId: String, onResult: (List<Instruction>) -> Unit): ListenerRegistration {
-        return db.collection("users")
-            .document(userId)
-            .collection("recipes")
-            .document(recipeId)
-            .collection("instructions")
-            .addSnapshotListener { snapshot, exception ->
-                if (exception != null) {
-                    android.util.Log.e("Firestore", "Error fetching instructions: ${exception.message}")
-                    return@addSnapshotListener
-                }
-
-                // Convert Firestore documents to Post objects
-                val instructions = snapshot?.documents?.mapNotNull { document ->
-                    document.toObject(Instruction::class.java)  // This returns a nullable Ingredient? object
-                } ?: emptyList()
-
-                onResult(instructions)  // Send the filtered ingredients back to the caller via the callback
-            }
-    }
-
-    suspend fun updateContent(userId: String, recipeId: String, instructionId: String, content: String): Boolean {
-        return try{
-            val instructionRef = db.collection("users")
-                .document(userId)
-                .collection("recipes")
-                .document(recipeId)
-                .collection("instructions")
-                .document(instructionId)
-            instructionRef.update("content", content).await()
-            android.util.Log.d("Firestore", "Instruction content updated successfully")
-            true
-        } catch (e:Exception){
-            android.util.Log.e("Firestore", "Error updating instruction content: ${e.message}", e)
-            false
-        }
-    }
-
-    suspend fun updatePlacement(userId: String, recipeId: String, instructionId: String, placement: Int): Boolean {
-        TODO("""
-            I need to also update the rest of the instructions. I should think about how I'm going to structure this for 
-            effective server calls.
-            Should I:
-                1) place instruction: recursively update the placements of the other instructions - #instructions calls)
-                2) use an array for instructions and update the array - one call (I think)
-            |
-        """)
-
-    }
-
-
-    suspend fun deleteInstruction(userId: String, recipeId: String, instructionId: String): Boolean {
-        return try{
-            val instructionRef = db.collection("users")
-                .document(userId)
-                .collection("recipes")
-                .document(recipeId)
-                .collection("instructions")
-                .document(instructionId)
-                .delete()
-                .await()
-            android.util.Log.d("Firestore", "Instruction deleted successfully")
-            true
-        } catch (e:Exception){
-            android.util.Log.e("Firestore", "Error deleting instruction: ${e.message}", e)
             false
         }
     }

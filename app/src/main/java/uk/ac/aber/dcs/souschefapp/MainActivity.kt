@@ -31,6 +31,7 @@ import uk.ac.aber.dcs.souschefapp.screens.TopRecipesScreen
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
@@ -42,6 +43,7 @@ class MainActivity : ComponentActivity() {
     private val noteViewModel: NoteViewModel by viewModels()
     private val recipeViewModel: RecipeViewModel by viewModels()
     private val productViewModel: ProductViewModel by viewModels()
+    private val ingredientViewModel: IngredientViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +57,8 @@ class MainActivity : ComponentActivity() {
                     logViewModel = logViewModel,
                     recipeViewModel = recipeViewModel,
                     noteViewModel = noteViewModel,
-                    productViewModel = productViewModel
+                    productViewModel = productViewModel,
+                    ingredientViewModel = ingredientViewModel
                 )
             }
         }
@@ -69,7 +72,8 @@ fun Navigation(
     logViewModel: LogViewModel,
     recipeViewModel: RecipeViewModel,
     noteViewModel: NoteViewModel,
-    productViewModel: ProductViewModel
+    productViewModel: ProductViewModel,
+    ingredientViewModel: IngredientViewModel
 ) {
     val navController = rememberNavController()
     val user by authViewModel.user.observeAsState()
@@ -122,7 +126,7 @@ fun Navigation(
                 context = context,
                 navController = navController,
                 authViewModel = authViewModel,
-                recipeViewModel = recipeViewModel
+                recipeViewModel = recipeViewModel,
             )
         }
 
@@ -142,6 +146,17 @@ fun Navigation(
                 authViewModel = authViewModel,
                 productViewModel = productViewModel,
                 logViewModel = logViewModel
+            )
+        }
+
+        /* Recipe Screen */
+        composable(Screen.RecipePage.route){
+            TopRecipePageScreen(
+                context = context,
+                navController = navController,
+                authViewModel = authViewModel,
+                recipeViewModel = recipeViewModel,
+                ingredientViewModel = ingredientViewModel
             )
         }
 
