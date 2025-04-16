@@ -160,7 +160,8 @@ fun RecipePageScreen(
     BareRecipePageScreen(
         navController = navController,
         isBottomBar = false,
-        editFunction = { isEdit = !isEdit },
+        mode = mode,
+        editFunction = { setMode(Mode.Edit) },
         // Check for unsaved edits
         backFunction = {
             if (mode == Mode.View || !isModified) {
@@ -171,6 +172,7 @@ fun RecipePageScreen(
             }
         },
 
+        // Create or Update Recipe
         saveFunction = {
             if (recipe != null){
                 val newRecipe = Recipe(
@@ -188,14 +190,15 @@ fun RecipePageScreen(
             isEdit = false
                        },
         crossFunction = {
-            if (recipe != null) onRecipeDelete(recipe)
-            navController.popBackStack()
-                         },
-        backFunction = {
-            isBackConfirm = true
+            if (isModified) {
+                isCancelEditDialog = true
+            }
+            else {
+                nameText = recipe?.name ?: ""
+                mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf()
+                mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf()
+            }
         },
-
-
     ){ innerPadding ->
         Surface(
             modifier = Modifier
