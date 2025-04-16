@@ -65,12 +65,14 @@ import uk.ac.aber.dcs.souschefapp.ui.components.IngredientDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.InstructionDialogue
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
+// Add Ingredient
 @Composable
 fun TopRecipePageScreen(
-    recipeId: Int,
+    context: ComponentActivity,
     navController: NavHostController,
+    authViewModel: AuthViewModel,
     recipeViewModel: RecipeViewModel,
-    ingredientViewModel: IngredientViewModel,
+    ingredientViewModel: IngredientViewModel
 ){
     val ingredients by ingredientViewModel.getIngredientsFromRecipe(recipeId).observeAsState(listOf())
     val recipe by recipeViewModel.getRecipeById(recipeId).observeAsState()
