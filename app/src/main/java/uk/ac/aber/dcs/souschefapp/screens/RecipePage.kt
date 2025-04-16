@@ -292,6 +292,13 @@ fun RecipePageScreen(
                             mutableIngredientList.forEach{ ingredient ->
                                 item{
                                     var expanded by remember { mutableStateOf(false) }
+                                    val ingredientText = buildString {
+                                        append("${ingredient.quantity} ")
+                                        ingredient.unit?.let { append("$it ") }
+                                        append(ingredient.name)
+                                        ingredient.description?.let { append(" - $it") }
+                                    }
+
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically
                                     ){
@@ -302,7 +309,7 @@ fun RecipePageScreen(
                                                 .weight(0.1f)
                                         )
                                         Text(
-                                            text = "${ingredient.quantity}${ingredient.unit} ${ingredient.name} ${ingredient.description}",
+                                            text = ingredientText,
                                             modifier = Modifier
                                                 .weight(1f)
                                         )
