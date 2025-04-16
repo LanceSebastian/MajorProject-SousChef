@@ -384,17 +384,25 @@ fun RecipePageScreen(
                             )
                         }
                         LazyColumn {
-                            mutableInstructionList.forEach{ instruction ->
+                            mutableInstructions.forEach{ instruction ->
                                 item{
                                     var expanded by remember { mutableStateOf(false) }
                                     Row{
                                         if (mode != Mode.View)Icon(
                                             imageVector = ImageVector.vectorResource(R.drawable.draggable),
-                                            contentDescription = null
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .weight(0.1f)
+
                                         )
-                                        Text(text = instruction)
+                                        Text(
+                                            text = instruction,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                        )
                                         Box(modifier = Modifier
-                                            .wrapContentSize(Alignment.TopStart)) {
+                                            .wrapContentSize(Alignment.TopStart)
+                                            .weight(0.1f)) {
                                             Icon(
                                                 imageVector = Icons.Default.ArrowDropDown,
                                                 contentDescription = null,
