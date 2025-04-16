@@ -147,7 +147,10 @@ fun RecipePageScreen(
     var isInstructionDialog by remember { mutableStateOf(false) }
     var isIngredientDelete by remember { mutableStateOf(false) }
     var isInstructionDelete by remember { mutableStateOf(false) }
+    var isCancelEditDialog by remember{ mutableStateOf(false) }
+
     var isBackConfirm by remember { mutableStateOf(false) }
+
     var isEdit by remember { mutableStateOf(false) }
 
     var editIngredient: Ingredient? = null
@@ -443,6 +446,19 @@ fun RecipePageScreen(
                     mainAction = { mutableInstructionList.remove(editInstruction) },
                     supportingText = "Deleting an instruction is permanent.",
                     mainButtonText = "Delete"
+                )
+            }
+
+            if (isCancelEditDialog){
+                ConfirmDialogue(
+                    onDismissRequest = { isCancelEditDialog = false },
+                    mainAction = {
+                        nameText = recipe?.name ?: ""
+                        mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf()
+                        mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf()
+                    },
+                    supportingText = "Any unsaved changes will be forgotten.",
+                    mainButtonText = "Confirm",
                 )
             }
 
