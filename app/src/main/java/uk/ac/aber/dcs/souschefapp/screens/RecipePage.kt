@@ -152,6 +152,7 @@ fun RecipePageScreen(
     var isBackConfirm by remember { mutableStateOf(false) }
 
     var isEdit by remember { mutableStateOf(false) }
+    var isModified by remember { mutableStateOf(false) }
 
     var editIngredient: Ingredient? = null
     var editInstruction: String = ""
@@ -160,6 +161,16 @@ fun RecipePageScreen(
         navController = navController,
         isBottomBar = false,
         editFunction = { isEdit = !isEdit },
+        // Check for unsaved edits
+        backFunction = {
+            if (mode == Mode.View || !isModified) {
+                navController.popBackStack()
+                clearSelectRecipe()
+            } else {
+                isBackConfirm = true
+            }
+        },
+
         saveFunction = {
             if (recipe != null){
                 val newRecipe = Recipe(
@@ -463,12 +474,26 @@ fun RecipePageScreen(
             }
 
             if (isBackConfirm){
+
+                val newRecipe = recipe?.copy(
+                    name = nameText,
+                    instructions = mutableInstructions
+                ) ?: Recipe(
+                    name = nameText,
+                    instructions = mutableInstructions
+                )
+
                 ConfirmDialogue(
-                    onDismissRequest = { isIngredientDelete = false },
-                    mainAction = { navController.popBackStack() },
-                    title = "Ready to go?",
-                    supportingText = "Any unsaved data will be forgotten!",
-                    mainButtonText = "Continue"
+                    onDismissRequest = { isBackConfirm = false },
+                    mainAction = {
+                        if (isRecipeExist) updateRecipe(newRecipe, mutableIngredientList) else addRecipe(newRecipe, mutableIngredientList)
+                        navController.popBackStack()
+                    },
+                    secondAction = { navController.popBackStack() },
+                    title = "Leaving already?",
+                    supportingText = "Do you want to save your changes before you go?",
+                    mainButtonText = "Save",
+                    secondButtonText = "Don't Save"
                 )
             }
 
