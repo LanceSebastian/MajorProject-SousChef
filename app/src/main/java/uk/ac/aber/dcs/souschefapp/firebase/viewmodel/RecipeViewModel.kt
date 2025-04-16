@@ -107,6 +107,11 @@ class RecipeViewModel : ViewModel() {
         }
     }
 
+    fun clearSelectRecipe(){
+        selectRecipeId = null
+        _selectRecipe.value = null
+    }
+
     fun stopListening(){
         recipeListener?.remove()
         recipeListener = null
