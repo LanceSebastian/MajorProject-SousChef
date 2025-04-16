@@ -96,26 +96,30 @@ fun TopRecipePageScreen(
 
     RecipePageScreen(
         navController = navController,
+        mode = mode,
         recipe = recipe,
         ingredients = ingredients,
-        onRecipeAdd = { newRecipe ->
-            recipeViewModel.insertRecipe(newRecipe)
+        setMode = { newMode ->
+            recipeViewModel.setMode(newMode)
         },
-        onRecipeUpdate = { newRecipe ->
-            recipeViewModel.updateRecipe(newRecipe)
+        clearSelectRecipe = {
+            recipeViewModel.clearSelectRecipe()
         },
-        onRecipeDelete = { newRecipe ->
-            recipeViewModel.deactivateRecipe(newRecipe.recipeId)
+        addRecipe = { newRecipe, newIngredients ->
+            coroutineScope.launch {
+                val recipeId = recipeViewModel.createRecipe(userId, newRecipe, context)
+                if(recipeId != null){
+                    ingredientViewModel.createIngredients(userId, recipeId, newIngredients)
+                }
+            }
         },
-        onIngredientAdd = { ingredient ->
-            ingredientViewModel.insertIngredient(ingredient)
+        updateRecipe = { newRecipe, newIngredients ->
+            recipeViewModel.updateRecipe(userId, newRecipe)
+            ingredientViewModel.updateIngredients(userId, newRecipe.recipeId, newIngredients)
         },
-        onIngredientUpdate = { ingredient ->
-            ingredientViewModel.updateIngredient(ingredient)
+        archiveRecipe = { newRecipe ->
+            recipeViewModel.archiveRecipe(userId, newRecipe.recipeId, context)
         },
-        onIngredientDelete = { ingredient ->
-            ingredientViewModel.deleteIngredient(ingredient)
-        }
 
     )
 }
@@ -123,14 +127,14 @@ fun TopRecipePageScreen(
 @Composable
 fun RecipePageScreen(
     navController: NavHostController,
+    mode: Mode = Mode.View,
     recipe: Recipe? = null,
-    ingredients: List<Ingredient> = emptyList(),
-    onRecipeAdd: (Recipe) -> Unit = {},
-    onRecipeUpdate: (Recipe) -> Unit = {},
-    onRecipeDelete: (Recipe) -> Unit = {},
-    onIngredientAdd: (Ingredient) -> Unit = {},
-    onIngredientUpdate: (Ingredient) -> Unit = {},
-    onIngredientDelete: (Ingredient) -> Unit = {}
+    ingredients: List<Ingredient>? = null,
+    setMode: (Mode) -> Unit,
+    clearSelectRecipe: () -> Unit,
+    addRecipe: (Recipe, List<Ingredient>) -> Unit,
+    updateRecipe: (Recipe, List<Ingredient>) -> Unit,
+    archiveRecipe: (Recipe) -> Unit,
 
 ){
     var nameText by remember { mutableStateOf(recipe?.recipeName ?: "") }
