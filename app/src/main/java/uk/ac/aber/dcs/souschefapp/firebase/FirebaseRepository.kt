@@ -337,18 +337,24 @@ class ProductRepository {
 class RecipeRepository {
     private val db = FirebaseFirestore.getInstance()
 
-    suspend fun addRecipe(userId: String, recipe: Recipe): Boolean {
+    suspend fun addRecipe(userId: String, recipe: Recipe): Recipe? {
         return try {
-            db.collection("users")
+            val docRef = db.collection("users")
                 .document(userId)
                 .collection("recipes")
-                .add(recipe)
+                .add(recipe.copy(recipeId = ""))
                 .await()
+
+            val recipeId = docRef.id
+            val updatedRecipe = recipe.copy(recipeId = recipeId)
+
+            docRef.update("recipeId", recipeId).await()
+
             android.util.Log.d("Firestore", "Recipe added successfully")
-            true
+            updatedRecipe
         } catch(e: Exception){
             android.util.Log.e("Firestore", "Error adding recipe: ${e.message}", e)
-            false
+            null
         }
     }
 
