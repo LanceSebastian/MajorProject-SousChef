@@ -134,6 +134,7 @@ fun ProductScreen(
         backFunction = {
             if (mode == Mode.View || !isModified) {
                 navController.popBackStack()
+                clearSelectProduct()
             } else {
                 isBackConfirm = true
             }
@@ -149,12 +150,17 @@ fun ProductScreen(
                 price = priceText.toDouble()
             )
 
-            if (mode == Mode.Edit) updateProduct(newProduct) else addProduct(newProduct)
+            if (mode == Mode.Edit) {
+                updateProduct(newProduct)
+            } else {
+                addProduct(newProduct)
+            }
             setMode(Mode.View)
         },
 
         // Cancel Edit.
         crossFunction = {
+            // Dialog Check
             nameText = product?.name ?: ""
             priceText = (product?.price ?: "").toString()
             setMode(Mode.View)
