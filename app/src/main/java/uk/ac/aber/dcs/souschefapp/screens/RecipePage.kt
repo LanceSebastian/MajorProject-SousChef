@@ -278,7 +278,7 @@ fun RecipePageScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Ingredients")
-                            Icon(
+                            if (mode != Mode.View) Icon(
                                 imageVector = Icons.Default.AddCircle,
                                 contentDescription = null,
                                 modifier = Modifier
@@ -305,8 +305,8 @@ fun RecipePageScreen(
                                             text = "${ingredient.quantity}${ingredient.unit} ${ingredient.name} ${ingredient.description}",
                                             modifier = Modifier
                                                 .weight(1f)
-                                        ) // I need a system that changes the units
-                                        Box(
+                                        )
+                                        if (mode != Mode.View)Box(
                                             modifier = Modifier
                                                 .wrapContentSize(Alignment.TopStart)
                                                 .weight(0.1f)
@@ -369,7 +369,7 @@ fun RecipePageScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Instructions")
-                            Icon(
+                            if (mode != Mode.View) Icon(
                                 imageVector = Icons.Default.AddCircle,
                                 contentDescription = null,
                                 modifier = Modifier
@@ -381,7 +381,7 @@ fun RecipePageScreen(
                                 item{
                                     var expanded by remember { mutableStateOf(false) }
                                     Row{
-                                        Icon(
+                                        if (mode != Mode.View)Icon(
                                             imageVector = ImageVector.vectorResource(R.drawable.draggable),
                                             contentDescription = null
                                         )
@@ -515,23 +515,30 @@ fun RecipePageScreen(
 
 @Preview
 @Composable
-fun RecipePageScreenEmptyPreview(){
+fun CreateRecipePageScreenPreview(){
     val navController = rememberNavController()
     AppTheme {
         RecipePageScreen(
-            navController = navController
+            navController = navController,
+            mode = Mode.Create,
+            addRecipe = {_,_ ->},
+            updateRecipe = {_,_ ->},
+            archiveRecipe = {},
+            setMode = {},
+            clearSelectRecipe = {}
         )
     }
 }
 
 @Preview
 @Composable
-fun RecipePageScreenPreview(){
+fun EditRecipePageScreenPreview(){
     val navController = rememberNavController()
     val englishBreakfastRecipe = Recipe(
-        recipeName = "Full English Breakfast",
-        description = "A classic English breakfast with eggs, bacon, sausages, beans, and more.",
-        instructionList = listOf(
+        recipeId = "1",
+        name = "Full English Breakfast",
+        createdBy = "120813",
+        instructions = listOf(
             "1. Heat a pan over medium heat and cook the bacon until crispy.",
             "2. In the same pan, cook the sausages until browned and cooked through.",
             "3. Grill or fry the tomato halves until slightly charred.",
@@ -543,26 +550,82 @@ fun RecipePageScreenPreview(){
             "9. Serve everything hot with a cup of English tea!"
         ),
         tags = listOf("Breakfast", "British", "Traditional"),
-        isActive = true
+        isArchive = false
     )
     val englishBreakfastIngredients = listOf(
-        Ingredient(recipeOwnerId = 1, name = "Eggs", description = "Large eggs, preferably free-range", quantity = 2, unit = "pieces"),
-        Ingredient(recipeOwnerId = 1, name = "Bacon", description = "Thick-cut smoked back bacon", quantity = 3, unit = "slices"),
-        Ingredient(recipeOwnerId = 1, name = "Sausages", description = "Pork sausages, traditional British style", quantity = 2, unit = "pieces"),
-        Ingredient(recipeOwnerId = 1, name = "Baked Beans", description = "Classic British-style baked beans in tomato sauce", quantity = 200, unit = "grams"),
-        Ingredient(recipeOwnerId = 1, name = "Tomatoes", description = "Ripe tomatoes, halved and grilled", quantity = 1, unit = "piece"),
-        Ingredient(recipeOwnerId = 1, name = "Mushrooms", description = "Button mushrooms, sautéed in butter", quantity = 100, unit = "grams"),
-        Ingredient(recipeOwnerId = 1, name = "Toast", description = "Thick slices of white or brown bread, toasted", quantity = 2, unit = "slices"),
-        Ingredient(recipeOwnerId = 1, name = "Black Pudding", description = "Traditional British black pudding (blood sausage)", quantity = 1, unit = "slice"),
-        Ingredient(recipeOwnerId = 1, name = "Hash Browns", description = "Crispy golden hash browns", quantity = 2, unit = "pieces"),
-        Ingredient(recipeOwnerId = 1, name = "Butter", description = "For spreading on toast", quantity = 10, unit = "grams"),
-        Ingredient(recipeOwnerId = 1, name = "Tea", description = "English breakfast tea with milk", quantity = 1, unit = "cup")
+        Ingredient(ingredientId = "1", name = "Eggs", description = "Large eggs, preferably free-range", quantity = "2", unit = null),
+        Ingredient(ingredientId = "2", name = "Bacon", description = "Thick-cut smoked back bacon", quantity = "3", unit = "slices"),
+        Ingredient(ingredientId = "3", name = "Sausages", description = "Pork sausages, traditional British style", quantity = "2", unit = "pieces"),
+        Ingredient(ingredientId = "4", name = "Baked Beans", description = "Classic British-style baked beans in tomato sauce", quantity = "200", unit = "grams"),
+        Ingredient(ingredientId = "5", name = "Tomatoes", description = "Ripe tomatoes, halved and grilled", quantity = "1", unit = "piece"),
+        Ingredient(ingredientId = "6", name = "Mushrooms", description = "Button mushrooms, sautéed in butter", quantity = "100", unit = "grams"),
+        Ingredient(ingredientId = "7", name = "Toast", description = "Thick slices of white or brown bread, toasted", quantity = "2", unit = "slices"),
+        Ingredient(ingredientId = "8", name = "Black Pudding", description = "Traditional British black pudding (blood sausage)", quantity = "1", unit = "slice"),
+        Ingredient(ingredientId = "9", name = "Hash Browns", description = "Crispy golden hash browns", quantity = "2", unit = "pieces"),
+        Ingredient(ingredientId = "10", name = "Butter", description = "For spreading on toast", quantity = "10", unit = "grams"),
+        Ingredient(ingredientId = "11", name = "Tea", description = "English breakfast tea with milk", quantity = "1", unit = "cup")
     )
     AppTheme {
         RecipePageScreen(
             navController = navController,
+            mode = Mode.Edit,
             recipe = englishBreakfastRecipe,
-            ingredients = englishBreakfastIngredients
+            ingredients = englishBreakfastIngredients,
+            addRecipe = {_,_ ->},
+            updateRecipe = {_,_ ->},
+            archiveRecipe = {},
+            setMode = {},
+            clearSelectRecipe = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+fun ViewRecipePageScreenPreview(){
+    val navController = rememberNavController()
+    val englishBreakfastRecipe = Recipe(
+        recipeId = "1",
+        name = "Full English Breakfast",
+        createdBy = "120813",
+        instructions = listOf(
+            "1. Heat a pan over medium heat and cook the bacon until crispy.",
+            "2. In the same pan, cook the sausages until browned and cooked through.",
+            "3. Grill or fry the tomato halves until slightly charred.",
+            "4. Sauté the mushrooms in butter until golden brown.",
+            "5. Heat the baked beans in a small saucepan.",
+            "6. Fry the black pudding slices until crispy.",
+            "7. Cook the eggs to your preference (fried, scrambled, or poached).",
+            "8. Toast the bread and butter it.",
+            "9. Serve everything hot with a cup of English tea!"
+        ),
+        tags = listOf("Breakfast", "British", "Traditional"),
+        isArchive = false
+    )
+    val englishBreakfastIngredients = listOf(
+        Ingredient(ingredientId = "1", name = "Eggs", description = "Large eggs, preferably free-range", quantity = "2", unit = null),
+        Ingredient(ingredientId = "2", name = "Bacon", description = "Thick-cut smoked back bacon", quantity = "3", unit = "slices"),
+        Ingredient(ingredientId = "3", name = "Sausages", description = "Pork sausages, traditional British style", quantity = "2", unit = "pieces"),
+        Ingredient(ingredientId = "4", name = "Baked Beans", description = "Classic British-style baked beans in tomato sauce", quantity = "200", unit = "grams"),
+        Ingredient(ingredientId = "5", name = "Tomatoes", description = "Ripe tomatoes, halved and grilled", quantity = "1", unit = "piece"),
+        Ingredient(ingredientId = "6", name = "Mushrooms", description = "Button mushrooms, sautéed in butter", quantity = "100", unit = "grams"),
+        Ingredient(ingredientId = "7", name = "Toast", description = "Thick slices of white or brown bread, toasted", quantity = "2", unit = "slices"),
+        Ingredient(ingredientId = "8", name = "Black Pudding", description = "Traditional British black pudding (blood sausage)", quantity = "1", unit = "slice"),
+        Ingredient(ingredientId = "9", name = "Hash Browns", description = "Crispy golden hash browns", quantity = "2", unit = "pieces"),
+        Ingredient(ingredientId = "10", name = "Butter", description = "For spreading on toast", quantity = "10", unit = "grams"),
+        Ingredient(ingredientId = "11", name = "Tea", description = "English breakfast tea with milk", quantity = "1", unit = "cup")
+    )
+    AppTheme {
+        RecipePageScreen(
+            navController = navController,
+            mode = Mode.View,
+            recipe = englishBreakfastRecipe,
+            ingredients = englishBreakfastIngredients,
+            addRecipe = {_,_ ->},
+            updateRecipe = {_,_ ->},
+            archiveRecipe = {},
+            setMode = {},
+            clearSelectRecipe = {}
         )
     }
 }
