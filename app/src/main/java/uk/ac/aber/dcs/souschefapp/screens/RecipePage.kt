@@ -137,7 +137,12 @@ fun RecipePageScreen(
     archiveRecipe: (Recipe) -> Unit,
 
 ){
-    var nameText by remember { mutableStateOf(recipe?.recipeName ?: "") }
+    val isRecipeExist = recipe != null
+
+    var nameText by remember { mutableStateOf(recipe?.name ?: "") }
+    var mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf<String>()
+    var mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf<Ingredient>()
+
     var isIngredientDialog by remember { mutableStateOf(false) }
     var isInstructionDialog by remember { mutableStateOf(false) }
     var isIngredientDelete by remember { mutableStateOf(false) }
@@ -145,9 +150,6 @@ fun RecipePageScreen(
     var isBackConfirm by remember { mutableStateOf(false) }
     var isEdit by remember { mutableStateOf(false) }
 
-    //      Mutable Data
-    val mutableIngredientList = ingredients.toMutableList()
-    val mutableInstructionList = recipe?.instructionList?.toMutableList() ?: mutableListOf()
     var editIngredient: Ingredient? = null
     var editInstruction: String = ""
 
