@@ -244,7 +244,10 @@ fun RecipePageScreen(
                 /*      Name TextField      */
                 TextField(
                     value = nameText,
-                    onValueChange = { nameText = it },
+                    onValueChange = {
+                        nameText = it
+                        if (nameText != recipe?.name && !isModified) isModified = true
+                                    },
                     label = { Text("Name") },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -422,15 +425,9 @@ fun RecipePageScreen(
             if (isIngredientDialog){
                 IngredientDialogue(
                     onDismissRequest = { isInstructionDialog = false },
-                    mainAction = { name, amount, unit, extra ->
-                        val newIngredient = Ingredient(
-                            recipeOwnerId = recipe!!.recipeId,
-                            name = name,
-                            description = extra,
-                            quantity = amount.toInt(),
-                            unit = unit
-                        )
-                        if (editIngredient == null) onIngredientAdd(newIngredient) else onIngredientUpdate(newIngredient)
+                    mainAction = { ingredient ->
+                        mutableIngredientList.add(ingredient)
+                        isModified = true
                     },
                     ingredient = editIngredient
                 )
@@ -440,17 +437,22 @@ fun RecipePageScreen(
             if (isIngredientDelete){
                 ConfirmDialogue(
                     onDismissRequest = { isIngredientDelete = false },
-                    mainAction = { onIngredientDelete(editIngredient!!) },
+                    mainAction = {
+                        mutableIngredientList.remove(editIngredient)
+                        isModified = true
+                                 },
                     supportingText = "Deleting an ingredient is permanent.",
                     mainButtonText = "Delete"
                 )
+                editIngredient = null
             }
 
             if (isInstructionDialog){
                 InstructionDialogue(
                     onDismissRequest = { isInstructionDialog = false },
                     mainAction = { instruction ->
-                        mutableInstructionList.add(instruction)
+                        mutableInstructions.add(0, instruction)
+                        isModified = true
                     },
                     instruction = editInstruction
                 )
@@ -460,10 +462,14 @@ fun RecipePageScreen(
             if (isInstructionDelete){
                 ConfirmDialogue(
                     onDismissRequest = { isIngredientDelete = false },
-                    mainAction = { mutableInstructionList.remove(editInstruction) },
+                    mainAction = {
+                        mutableInstructions.remove(editInstruction)
+                        isModified = true
+                                 },
                     supportingText = "Deleting an instruction is permanent.",
                     mainButtonText = "Delete"
                 )
+                editInstruction = ""
             }
 
             if (isCancelEditDialog){
