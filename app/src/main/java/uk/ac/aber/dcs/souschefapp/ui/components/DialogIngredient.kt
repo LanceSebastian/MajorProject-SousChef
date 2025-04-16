@@ -104,10 +104,11 @@ fun IngredientDialogue(
                         .fillMaxWidth()
                 ) {
                     TextField(
-                        value = extraText,
-                        onValueChange = {
-                            extraText = it
                         value = amountText,
+                        onValueChange = { newText ->
+                            if (newText.matches(Regex("^\\d*\\.?\\d{0,2}$")) && newText.length <= 8) {
+                                amountText = newText
+                            }
                         },
                         isError = emptyAmountError,
                         singleLine = true,
@@ -117,14 +118,17 @@ fun IngredientDialogue(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
+                        keyboardOptions = KeyboardOptions.Default.copy(
+                            keyboardType = KeyboardType.Number
+                        ),
                         modifier = Modifier
-                            .weight(0.7f)
+                            .weight(0.6f)
                     )
 
                     TextField(
                         value = unitText,
                         onValueChange = { newText ->
-                            if (newText.matches(Regex("^\\d*\\.?\\d{0,2}$")) || newText.length <= 4) {
+                            if (newText.length <= 4) {
                                 unitText = newText
                             }
                         },
@@ -135,12 +139,9 @@ fun IngredientDialogue(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
-                        keyboardOptions = KeyboardOptions.Default.copy(
-                            keyboardType = KeyboardType.Number
-                        ),
                         modifier = Modifier
                             .height(55.dp)
-                            .weight(0.3f)
+                            .weight(0.4f)
                     )
                 }
 
@@ -191,7 +192,7 @@ fun IngredientDialogue(
                             if (!emptyFieldsError) mainAction(
                                 Ingredient(
                                     name = nameText,
-                                    quantity = amountText.toDouble(),
+                                    quantity = amountText,
                                     unit = unitText,
                                     description = extraText
                                 )
