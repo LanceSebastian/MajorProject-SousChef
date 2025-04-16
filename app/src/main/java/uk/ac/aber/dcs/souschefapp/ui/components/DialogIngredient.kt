@@ -107,6 +107,7 @@ fun IngredientDialogue(
                         value = extraText,
                         onValueChange = {
                             extraText = it
+                        value = amountText,
                         },
                         isError = emptyAmountError,
                         singleLine = true,
