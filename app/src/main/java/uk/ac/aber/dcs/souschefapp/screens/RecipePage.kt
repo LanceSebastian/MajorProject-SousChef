@@ -174,21 +174,23 @@ fun RecipePageScreen(
 
         // Create or Update Recipe
         saveFunction = {
-            if (recipe != null){
-                val newRecipe = Recipe(
-                    recipeId = recipe.recipeId,
-                    recipeName = nameText,
-                    instructionList = mutableInstructionList.toList()
-                )
-                onRecipeUpdate(newRecipe)
+            val newRecipe = recipe?.copy(
+                name = nameText,
+                instructions = mutableInstructions
+            ) ?: Recipe (
+                name = nameText,
+                instructions = mutableInstructions
+            )
+            if (mode == Mode.Edit) {
+                updateRecipe(newRecipe, mutableIngredientList.toList())
             } else {
-                onRecipeAdd(Recipe(
-                    recipeName = nameText,
-                    instructionList = mutableInstructionList.toList()
-                ))
+                addRecipe(newRecipe, mutableIngredientList)
+                navController.popBackStack()
             }
-            isEdit = false
-                       },
+            setMode(Mode.View)
+        },
+
+        // Cancel Edit
         crossFunction = {
             if (isModified) {
                 isCancelEditDialog = true
