@@ -226,7 +226,8 @@ fun RecipePageScreen(
                             .fillMaxWidth(0.8f)
                     )
                     Button(
-                        onClick = { TODO("Implement Add image function") }
+                        onClick = { TODO("Implement Add image function") },
+                        enabled = false
                     ){
                         Icon(
                             imageVector = Icons.Default.Add,
