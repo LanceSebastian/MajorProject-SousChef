@@ -26,6 +26,7 @@ data class Ingredient(
     val description: String? = null,
     val quantity: Int = 0,
     val unit: String = "",
+    val unit: String? = null,
 )
 
 // Subcollection to Recipe
