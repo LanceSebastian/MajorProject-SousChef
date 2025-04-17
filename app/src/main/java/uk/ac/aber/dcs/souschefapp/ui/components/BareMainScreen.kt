@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import uk.ac.aber.dcs.souschefapp.database.MainState
+import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 
@@ -26,34 +27,16 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 fun BareMainScreen(
     navController: NavHostController,
     mainState: MainState = MainState.HOME,
-    onFloatClick: () -> Unit = {},
+    selectMode: SelectMode = SelectMode.View,
     onSearch: () -> Unit = {},
+    floatButton: @Composable () -> Unit = {},
     pageContent: @Composable (innerPadding: PaddingValues) -> Unit = {}
 ){
     Scaffold(
-        topBar = { HomeTopAppBar(mainState = mainState, navController = navController, onSearch = onSearch) },
+        topBar = { HomeTopAppBar(mainState = mainState, selectMode = selectMode, navController = navController, onSearch = onSearch) },
         content = { innerPadding -> pageContent(innerPadding) },
-        bottomBar = { HomeNavigationBar(mainState = mainState, navController = navController) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    if (mainState == MainState.RECIPES) { onFloatClick() }
-                },
-                content = {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = "Add")
-                        Text(text = "Add Recipe")
-                    }
-                },
-                modifier = Modifier
-                    .alpha(if (mainState == MainState.RECIPES) 1f else 0f)
-            )
-        }
+        bottomBar = { if (selectMode == SelectMode.View) HomeNavigationBar(mainState = mainState, navController = navController) },
+        floatingActionButton = floatButton
     )
 }
 
@@ -64,7 +47,36 @@ fun BareMainScreenView(){
     AppTheme {
         BareMainScreen(
             navController = navController,
-            mainState = MainState.RECIPES
+            mainState = MainState.RECIPES,
+            floatButton = {
+                FloatingActionButton(
+                    onClick = {},
+                    content = {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = "Add")
+                            Text(text = "Add Recipe")
+                        }
+                    },
+                )
+            }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SelectModeMainScreenView(){
+    val navController = rememberNavController()
+    AppTheme {
+        BareMainScreen(
+            navController = navController,
+            mainState = MainState.RECIPES,
+            selectMode = SelectMode.Select
         )
     }
 }
