@@ -51,6 +51,7 @@ fun TopRecipesScreen(
     context: ComponentActivity,
     navController: NavHostController,
     authViewModel: AuthViewModel,
+    logViewModel: LogViewModel,
     recipeViewModel: RecipeViewModel
 ){
     val user by authViewModel.user.observeAsState()
