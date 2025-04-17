@@ -62,6 +62,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Note
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
@@ -136,6 +137,12 @@ fun TopHomeScreen(
         setProductMode = { mode ->
             productViewModel.setMode(mode)
         },
+        setRecipePageMode = {mode ->
+            recipeViewModel.setEditMode(mode)
+        },
+        setRecipesSelectMode = { mode ->
+           recipeViewModel.setSelectMode(mode)
+        },
         readLogFromDate = { dateMillis ->
             logViewModel.readLogFromDate(dateMillis)
         },
@@ -167,6 +174,8 @@ fun HomeScreen(
     selectProduct: (String) -> Unit,
     getProductsFromList: (List<String>) -> Unit,
     setProductMode: (EditMode) -> Unit,
+    setRecipePageMode: (EditMode) -> Unit,
+    setRecipesSelectMode: (SelectMode) -> Unit,
     readLogFromDate: (Long) -> Unit,
     updateRating: (Long, Int) -> Unit,
     updatePNote: (Long, String) -> Unit,
@@ -585,6 +594,7 @@ fun HomeScreen(
                             navController.navigate(Screen.Product.route)
                         },
                         secondAction = {
+                            setRecipesSelectMode(SelectMode.Select)
                             navController.navigate(Screen.Recipes.route)
                         }
                     )
@@ -622,7 +632,9 @@ fun HomeScreenEmptyView(){
             deleteLog = {},
             updateRating = {_,_ -> },
             updatePNote = { _, _ -> },
-            updateRNotes = {_ -> }
+            updateRNotes = {_ -> },
+            setRecipesSelectMode = {},
+            setRecipePageMode = {},
         )
     }
 }
@@ -747,6 +759,8 @@ fun HomeScreenView(){
             updateRating = {_,_ -> },
             updatePNote = { _, _ -> },
             updateRNotes = {_ -> },
+            setRecipesSelectMode = {},
+            setRecipePageMode = {},
         )
     }
 }

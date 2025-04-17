@@ -37,7 +37,8 @@ fun HomeTopAppBar(
     mainState: MainState,
     selectMode: SelectMode = SelectMode.View,
     navController: NavHostController,
-    onSearch: () -> Unit
+    onSearch: () -> Unit,
+    onNavBack: () -> Unit = {},
 ){
     Column {
         if (selectMode == SelectMode.View) CenterAlignedTopAppBar(
@@ -79,7 +80,10 @@ fun HomeTopAppBar(
                 Text("Select Recipe", fontWeight = FontWeight.Bold)
             },
             navigationIcon = {
-                IconButton(onClick = {navController.popBackStack()}) {
+                IconButton(onClick = {
+                    onNavBack()
+                    navController.popBackStack()
+                }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Default.ArrowBack,
                         contentDescription = null

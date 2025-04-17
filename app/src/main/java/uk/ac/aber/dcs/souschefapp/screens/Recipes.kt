@@ -86,9 +86,13 @@ fun TopRecipesScreen(
         setEditMode = { newMode ->
             recipeViewModel.setEditMode( newMode )
         },
+        setSelectMode = { newMode ->
+            recipeViewModel.setSelectMode(newMode)
+        },
         addRecipesToLog = { recipeList ->
             logViewModel.addRecipesToLog(userId, recipeList, context)
-        }
+        },
+
     )
 }
 
@@ -99,6 +103,7 @@ fun RecipesScreen(
     selectMode: SelectMode = SelectMode.View,
     selectRecipe: (String) -> Unit,
     setEditMode: (EditMode) -> Unit,
+    setSelectMode: (SelectMode) -> Unit,
     addRecipesToLog: (List<Recipe>) -> Unit,
 ){
     var isSearch by remember { mutableStateOf(false) }
@@ -113,6 +118,9 @@ fun RecipesScreen(
         mainState = MainState.RECIPES,
         selectMode = selectMode,
         onSearch = { isSearch = !isSearch },
+        onNavBack = {
+            setSelectMode(SelectMode.View)
+        },
         floatButton = {
              if (selectMode == SelectMode.View) AddRecipeFloat(
                 onFloatClick = {
@@ -124,6 +132,7 @@ fun RecipesScreen(
                 onFloatClick = {
                     addRecipesToLog(selectedRecipes)
                     navController.popBackStack()
+                    setSelectMode(SelectMode.View)
                 },
                 recipes = selectedRecipes
             )
@@ -269,6 +278,7 @@ fun RecipesScreenPreview(){
             setEditMode = {},
             selectRecipe = {},
             addRecipesToLog = {},
+            setSelectMode = {}
         )
     }
 }
@@ -294,6 +304,7 @@ fun SelectRecipesScreenPreview(){
             setEditMode = {},
             selectRecipe = {},
             addRecipesToLog = {},
+            setSelectMode = {}
         )
     }
 }

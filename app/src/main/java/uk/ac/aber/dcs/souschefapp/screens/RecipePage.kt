@@ -166,6 +166,7 @@ fun RecipePageScreen(
             if (editMode == EditMode.View || !isModified) {
                 navController.popBackStack()
                 clearSelectRecipe()
+                setMode(EditMode.View)
             } else {
                 isBackConfirm = true
             }
@@ -514,8 +515,12 @@ fun RecipePageScreen(
                     mainAction = {
                         if (isRecipeExist) updateRecipe(newRecipe, mutableIngredientList) else addRecipe(newRecipe, mutableIngredientList)
                         navController.popBackStack()
+                        setMode(EditMode.View)
                     },
-                    secondAction = { navController.popBackStack() },
+                    secondAction = {
+                        navController.popBackStack()
+                        setMode(EditMode.View)
+                                   },
                     title = "Leaving already?",
                     supportingText = "Do you want to save your changes before you go?",
                     mainButtonText = "Save",

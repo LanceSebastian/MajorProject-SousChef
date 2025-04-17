@@ -29,11 +29,12 @@ fun BareMainScreen(
     mainState: MainState = MainState.HOME,
     selectMode: SelectMode = SelectMode.View,
     onSearch: () -> Unit = {},
+    onNavBack: () -> Unit = {},
     floatButton: @Composable () -> Unit = {},
     pageContent: @Composable (innerPadding: PaddingValues) -> Unit = {}
 ){
     Scaffold(
-        topBar = { HomeTopAppBar(mainState = mainState, selectMode = selectMode, navController = navController, onSearch = onSearch) },
+        topBar = { HomeTopAppBar(mainState = mainState, onNavBack = onNavBack, selectMode = selectMode, navController = navController, onSearch = onSearch) },
         content = { innerPadding -> pageContent(innerPadding) },
         bottomBar = { if (selectMode == SelectMode.View) HomeNavigationBar(mainState = mainState, navController = navController) },
         floatingActionButton = floatButton
