@@ -107,8 +107,20 @@ fun RecipesScreen(
         mainState = MainState.RECIPES,
         selectMode = selectMode,
         onSearch = { isSearch = !isSearch },
-        onFloatClick = {
-            isFloatClick = true
+        floatButton = {
+             if (selectMode == SelectMode.View) AddRecipeFloat(
+                onFloatClick = {
+                    setEditMode(EditMode.Create)
+                    navController.navigate(Screen.RecipePage.route)
+                }
+            )
+            if (selectMode == SelectMode.Select) SubmitRecipesFloat(
+                onFloatClick = {
+                    addRecipesToLog(selectedRecipes)
+                    navController.popBackStack()
+                },
+                recipes = selectedRecipes
+            )
         }
     ){ innerPadding ->
         Surface(
