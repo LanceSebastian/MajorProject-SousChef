@@ -266,7 +266,34 @@ fun RecipesScreenPreview(){
         RecipesScreen(
             navController = navController,
             recipes = sampleRecipes,
-            addRecipe = {}
+            setEditMode = {},
+            selectRecipe = {},
+            addRecipesToLog = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+fun SelectRecipesScreenPreview(){
+    val navController = rememberNavController()
+    val sampleRecipes = mutableListOf(
+        Recipe("1", "English Breakfast", ""),
+        Recipe("2", "Chicken Sandwich", ""),
+        Recipe("3", "Spaghetti Bolognese", ""),
+        Recipe("4", "Vegetable Stir Fry", ""),
+        Recipe("5", "Beef Tacos", ""),
+        Recipe("6", "Margherita Pizza", "")
+    )
+
+    AppTheme {
+        RecipesScreen(
+            navController = navController,
+            recipes = sampleRecipes,
+            selectMode = SelectMode.Select,
+            setEditMode = {},
+            selectRecipe = {},
+            addRecipesToLog = {},
         )
     }
 }
