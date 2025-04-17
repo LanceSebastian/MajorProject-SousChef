@@ -632,7 +632,9 @@ fun HomeScreenEmptyView(){
             deleteLog = {},
             updateRating = {_,_ -> },
             updatePNote = { _, _ -> },
-            updateRNotes = {_ -> }
+            updateRNotes = {_ -> },
+            setRecipesSelectMode = {},
+            setRecipePageMode = {},
         )
     }
 }
@@ -757,6 +759,8 @@ fun HomeScreenView(){
             updateRating = {_,_ -> },
             updatePNote = { _, _ -> },
             updateRNotes = {_ -> },
+            setRecipesSelectMode = {},
+            setRecipePageMode = {},
         )
     }
 }
