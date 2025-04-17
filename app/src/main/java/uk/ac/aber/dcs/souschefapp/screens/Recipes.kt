@@ -203,54 +203,6 @@ fun RecipesScreen(
 
                 }
             }
-            if (isFloatClick) {
-                Dialog(
-                    onDismissRequest = { isFloatClick = false }
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.background,
-                        modifier = Modifier
-                            .height(220.dp)
-                    ) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Add a Recipe",
-                            )
-                            TextField(
-                                value = recipeNameText,
-                                onValueChange = { recipeNameText = it },
-                                label = { Text("Name") }
-                            )
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                TextButton(onClick = {
-                                    isFloatClick = false
-                                    recipeNameText = ""
-                                }) {
-                                    Text("Cancel")
-                                }
-                                Button(onClick = {
-                                    val newRecipe = Recipe(name = recipeNameText)
-                                    addRecipe(newRecipe)
-                                    recipeNameText = ""
-                                    navController.navigate(Screen.RecipePage.route + "/recipeId = ${newRecipe.recipeId}")
-                                }) {
-                                    Text("Continue")
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
         }
     }
 }
