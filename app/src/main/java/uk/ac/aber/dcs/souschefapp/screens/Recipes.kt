@@ -249,6 +249,7 @@ fun RecipesScreen(
         }
     }
 }
+
 @Composable
 private fun AddRecipeFloat(
     onFloatClick: () -> Unit,
@@ -269,6 +270,27 @@ private fun AddRecipeFloat(
     )
 }
 
+@Composable
+private fun SubmitRecipesFloat(
+    onFloatClick: () -> Unit,
+    recipes: List<Recipe> = emptyList()
+){
+    if (recipes.isEmpty()) return
+    FloatingActionButton(
+        onClick = { onFloatClick() },
+        content = {
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+            ) {
+                Icon(Icons.Filled.Check, contentDescription = "Confirm")
+                Text(text = "Confirm")
+            }
+        },
+    )
+}
 
 @Preview
 @Composable
