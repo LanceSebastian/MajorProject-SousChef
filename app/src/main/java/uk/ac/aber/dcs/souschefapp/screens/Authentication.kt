@@ -57,7 +57,7 @@ fun TopAuthScreen(
         onRegister = { email, password, username ->
             authViewModel.register(email, password, username)
         },
-        goToMain = { navController.navigate(Screen.Profile.route) }
+        goToMain = { navController.navigate(Screen.Home.route) }
     )
 
 }
