@@ -99,14 +99,14 @@ fun TopRecipePageScreen(
         recipe = recipe,
         ingredients = ingredients,
         setMode = { newMode ->
-            recipeViewModel.setMode(newMode)
+            recipeViewModel.setEditMode(newMode)
         },
         clearSelectRecipe = {
             recipeViewModel.clearSelectRecipe()
         },
         addRecipe = { newRecipe, newIngredients ->
             coroutineScope.launch {
-                val recipeId = recipeViewModel.createRecipe(userId, newRecipe, context)
+                val recipeId = recipeViewModel.createRecipeAndId(userId, newRecipe, context)
                 if(recipeId != null){
                     ingredientViewModel.createIngredients(userId, recipeId, newIngredients)
                 }
