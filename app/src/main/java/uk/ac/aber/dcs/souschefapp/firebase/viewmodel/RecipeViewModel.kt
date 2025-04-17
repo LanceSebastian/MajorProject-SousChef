@@ -12,12 +12,16 @@ import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.RecipeRepository
+import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 
 class RecipeViewModel : ViewModel() {
     private val recipeRepository = RecipeRepository()
 
-    private val _Edit_mode = MutableLiveData(EditMode.View)
-    val editMode: LiveData<EditMode> = _Edit_mode
+    private val _editMode = MutableLiveData(EditMode.View)
+    val editMode: LiveData<EditMode> = _editMode
+
+    private val _selectMode = MutableLiveData(SelectMode.View)
+    val selectMode: LiveData<SelectMode> = _selectMode
 
     private var recipeListener: ListenerRegistration? = null
 
@@ -42,11 +46,15 @@ class RecipeViewModel : ViewModel() {
         }
     }
 
-    fun setMode(newEditMode: EditMode){
-        _Edit_mode.value = newEditMode
+    fun setEditMode(newEditMode: EditMode){
+        _editMode.value = newEditMode
     }
 
-    suspend fun createRecipe(userId: String?, recipe: Recipe? = null, context: Context): String? {
+    fun setSelectMode(newSelectMode: SelectMode){
+        _selectMode.value = newSelectMode
+    }
+
+    suspend fun createRecipeAndId(userId: String?, recipe: Recipe? = null, context: Context): String? {
         if (userId == null) {
             android.util.Log.e("RecipeViewModel", "Failed to create recipe due to null userId")
             return null
