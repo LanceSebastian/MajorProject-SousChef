@@ -585,6 +585,7 @@ fun HomeScreen(
                             navController.navigate(Screen.Product.route)
                         },
                         secondAction = {
+                            setRecipesSelectMode(SelectMode.Select)
                             navController.navigate(Screen.Recipes.route)
                         }
                     )
