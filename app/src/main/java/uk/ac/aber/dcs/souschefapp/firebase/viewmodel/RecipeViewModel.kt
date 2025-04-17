@@ -9,15 +9,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
-import uk.ac.aber.dcs.souschefapp.firebase.Mode
+import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.RecipeRepository
 
 class RecipeViewModel : ViewModel() {
     private val recipeRepository = RecipeRepository()
 
-    private val _mode = MutableLiveData(Mode.View)
-    val mode: LiveData<Mode> = _mode
+    private val _Edit_mode = MutableLiveData(EditMode.View)
+    val editMode: LiveData<EditMode> = _Edit_mode
 
     private var recipeListener: ListenerRegistration? = null
 
@@ -42,8 +42,8 @@ class RecipeViewModel : ViewModel() {
         }
     }
 
-    fun setMode(newMode: Mode){
-        _mode.value = newMode
+    fun setMode(newEditMode: EditMode){
+        _Edit_mode.value = newEditMode
     }
 
     suspend fun createRecipe(userId: String?, recipe: Recipe? = null, context: Context): String? {

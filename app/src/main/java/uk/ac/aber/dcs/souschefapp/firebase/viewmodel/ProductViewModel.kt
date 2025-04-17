@@ -9,16 +9,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
-import uk.ac.aber.dcs.souschefapp.firebase.Mode
+import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.ProductRepository
-import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 
 class ProductViewModel : ViewModel() {
     private val productRepository = ProductRepository()
 
-    private val _mode = MutableLiveData(Mode.View)
-    val mode: LiveData<Mode> = _mode
+    private val _Edit_mode = MutableLiveData(EditMode.View)
+    val editMode: LiveData<EditMode> = _Edit_mode
 
     private var productListener: ListenerRegistration? = null
 
@@ -41,8 +40,8 @@ class ProductViewModel : ViewModel() {
         }
     }
 
-    fun setMode(newMode: Mode){
-        _mode.value = newMode
+    fun setMode(newEditMode: EditMode){
+        _Edit_mode.value = newEditMode
     }
 
     fun createProduct(userId: String?, product: Product, context: Context){
