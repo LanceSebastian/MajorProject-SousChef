@@ -95,6 +95,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
 
+    // Splash Art
+    implementation ("androidx.navigation:navigation-compose:2.7.0")
+    implementation ("androidx.activity:activity-compose:1.8.0")
+    implementation ("androidx.core:core-splashscreen:1.0.1")
+
     implementation(libs.gson)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)
