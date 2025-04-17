@@ -49,11 +49,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
-import uk.ac.aber.dcs.souschefapp.firebase.Mode
+import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
@@ -79,7 +78,7 @@ fun TopRecipePageScreen(
 
     val recipe by recipeViewModel.selectRecipe.observeAsState()
     val ingredients by ingredientViewModel.recipeIngredient.observeAsState()
-    val mode by recipeViewModel.mode.observeAsState(Mode.View)
+    val editMode by recipeViewModel.editMode.observeAsState(EditMode.View)
     val coroutineScope = rememberCoroutineScope()
 
     // Listen for ingredients in real-time when the recipe exists
@@ -96,18 +95,18 @@ fun TopRecipePageScreen(
 
     RecipePageScreen(
         navController = navController,
-        mode = mode,
+        editMode = editMode,
         recipe = recipe,
         ingredients = ingredients,
         setMode = { newMode ->
-            recipeViewModel.setMode(newMode)
+            recipeViewModel.setEditMode(newMode)
         },
         clearSelectRecipe = {
             recipeViewModel.clearSelectRecipe()
         },
         addRecipe = { newRecipe, newIngredients ->
             coroutineScope.launch {
-                val recipeId = recipeViewModel.createRecipe(userId, newRecipe, context)
+                val recipeId = recipeViewModel.createRecipeAndId(userId, newRecipe, context)
                 if(recipeId != null){
                     ingredientViewModel.createIngredients(userId, recipeId, newIngredients)
                 }
@@ -127,16 +126,16 @@ fun TopRecipePageScreen(
 @Composable
 fun RecipePageScreen(
     navController: NavHostController,
-    mode: Mode = Mode.View,
+    editMode: EditMode = EditMode.View,
     recipe: Recipe? = null,
     ingredients: List<Ingredient>? = null,
-    setMode: (Mode) -> Unit,
+    setMode: (EditMode) -> Unit,
     clearSelectRecipe: () -> Unit,
     addRecipe: (Recipe, List<Ingredient>) -> Unit,
     updateRecipe: (Recipe, List<Ingredient>) -> Unit,
     archiveRecipe: (Recipe) -> Unit,
 
-){
+    ){
     val isRecipeExist = recipe != null
 
     var nameText by remember { mutableStateOf(recipe?.name ?: "") }
@@ -160,11 +159,11 @@ fun RecipePageScreen(
     BareRecipePageScreen(
         navController = navController,
         isBottomBar = false,
-        mode = mode,
-        editFunction = { setMode(Mode.Edit) },
+        editMode = editMode,
+        editFunction = { setMode(EditMode.Edit) },
         // Check for unsaved edits
         backFunction = {
-            if (mode == Mode.View || !isModified) {
+            if (editMode == EditMode.View || !isModified) {
                 navController.popBackStack()
                 clearSelectRecipe()
             } else {
@@ -181,13 +180,13 @@ fun RecipePageScreen(
                 name = nameText,
                 instructions = mutableInstructions
             )
-            if (mode == Mode.Edit) {
+            if (editMode == EditMode.Edit) {
                 updateRecipe(newRecipe, mutableIngredientList.toList())
             } else {
                 addRecipe(newRecipe, mutableIngredientList)
                 navController.popBackStack()
             }
-            setMode(Mode.View)
+            setMode(EditMode.View)
         },
 
         // Cancel Edit
@@ -278,7 +277,7 @@ fun RecipePageScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Ingredients")
-                            if (mode != Mode.View) Icon(
+                            if (editMode != EditMode.View) Icon(
                                 imageVector = Icons.Default.AddCircle,
                                 contentDescription = null,
                                 modifier = Modifier
@@ -313,7 +312,7 @@ fun RecipePageScreen(
                                             modifier = Modifier
                                                 .weight(1f)
                                         )
-                                        if (mode != Mode.View)Box(
+                                        if (editMode != EditMode.View)Box(
                                             modifier = Modifier
                                                 .wrapContentSize(Alignment.TopStart)
                                                 .weight(0.1f)
@@ -376,7 +375,7 @@ fun RecipePageScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Instructions")
-                            if (mode != Mode.View) Icon(
+                            if (editMode != EditMode.View) Icon(
                                 imageVector = Icons.Default.AddCircle,
                                 contentDescription = null,
                                 modifier = Modifier
@@ -388,7 +387,7 @@ fun RecipePageScreen(
                                 item{
                                     var expanded by remember { mutableStateOf(false) }
                                     Row{
-                                        if (mode != Mode.View)Icon(
+                                        if (editMode != EditMode.View)Icon(
                                             imageVector = ImageVector.vectorResource(R.drawable.draggable),
                                             contentDescription = null,
                                             modifier = Modifier
@@ -535,7 +534,7 @@ fun CreateRecipePageScreenPreview(){
     AppTheme {
         RecipePageScreen(
             navController = navController,
-            mode = Mode.Create,
+            editMode = EditMode.Create,
             addRecipe = {_,_ ->},
             updateRecipe = {_,_ ->},
             archiveRecipe = {},
@@ -583,7 +582,7 @@ fun EditRecipePageScreenPreview(){
     AppTheme {
         RecipePageScreen(
             navController = navController,
-            mode = Mode.Edit,
+            editMode = EditMode.Edit,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,
             addRecipe = {_,_ ->},
@@ -633,7 +632,7 @@ fun ViewRecipePageScreenPreview(){
     AppTheme {
         RecipePageScreen(
             navController = navController,
-            mode = Mode.View,
+            editMode = EditMode.View,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,
             addRecipe = {_,_ ->},

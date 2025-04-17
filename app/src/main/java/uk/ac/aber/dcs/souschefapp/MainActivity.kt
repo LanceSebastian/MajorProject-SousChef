@@ -126,7 +126,8 @@ fun Navigation(
                 context = context,
                 navController = navController,
                 authViewModel = authViewModel,
-                recipeViewModel = recipeViewModel,
+                logViewModel = logViewModel,
+                recipeViewModel = recipeViewModel
             )
         }
 

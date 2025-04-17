@@ -9,15 +9,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
-import uk.ac.aber.dcs.souschefapp.firebase.Mode
+import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.RecipeRepository
+import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 
 class RecipeViewModel : ViewModel() {
     private val recipeRepository = RecipeRepository()
 
-    private val _mode = MutableLiveData(Mode.View)
-    val mode: LiveData<Mode> = _mode
+    private val _editMode = MutableLiveData(EditMode.View)
+    val editMode: LiveData<EditMode> = _editMode
+
+    private val _selectMode = MutableLiveData(SelectMode.View)
+    val selectMode: LiveData<SelectMode> = _selectMode
 
     private var recipeListener: ListenerRegistration? = null
 
@@ -42,11 +46,15 @@ class RecipeViewModel : ViewModel() {
         }
     }
 
-    fun setMode(newMode: Mode){
-        _mode.value = newMode
+    fun setEditMode(newEditMode: EditMode){
+        _editMode.value = newEditMode
     }
 
-    suspend fun createRecipe(userId: String?, recipe: Recipe? = null, context: Context): String? {
+    fun setSelectMode(newSelectMode: SelectMode){
+        _selectMode.value = newSelectMode
+    }
+
+    suspend fun createRecipeAndId(userId: String?, recipe: Recipe? = null, context: Context): String? {
         if (userId == null) {
             android.util.Log.e("RecipeViewModel", "Failed to create recipe due to null userId")
             return null
@@ -70,6 +78,36 @@ class RecipeViewModel : ViewModel() {
         } else {
             Toast.makeText(context, "Failed to save recipe.", Toast.LENGTH_SHORT).show()
             null
+        }
+
+    }
+
+    fun createRecipe(userId: String?, recipe: Recipe? = null, context: Context) {
+        if (userId == null) {
+            android.util.Log.e("RecipeViewModel", "Failed to create recipe due to null userId")
+            return
+        }
+
+        val standardRecipe = recipe?.copy(
+            createdBy = userId
+        ) ?: Recipe(
+            name = "Unnamed",
+            createdBy = userId,
+        )
+
+        viewModelScope.launch {
+            val savedRecipe = recipeRepository.addRecipe(
+                userId = userId,
+                recipe = standardRecipe
+            )
+
+            if (savedRecipe != null) {
+                Toast.makeText(context, "Recipe saved successfully!", Toast.LENGTH_SHORT).show()
+                savedRecipe.recipeId
+            } else {
+                Toast.makeText(context, "Failed to save recipe.", Toast.LENGTH_SHORT).show()
+
+            }
         }
 
     }

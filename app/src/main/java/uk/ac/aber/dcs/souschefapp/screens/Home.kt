@@ -40,7 +40,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,7 +58,7 @@ import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.firebase.Log
-import uk.ac.aber.dcs.souschefapp.firebase.Mode
+import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Note
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
@@ -167,7 +166,7 @@ fun HomeScreen(
     createLog: (Long) -> Unit,
     selectProduct: (String) -> Unit,
     getProductsFromList: (List<String>) -> Unit,
-    setProductMode: (Mode) -> Unit,
+    setProductMode: (EditMode) -> Unit,
     readLogFromDate: (Long) -> Unit,
     updateRating: (Long, Int) -> Unit,
     updatePNote: (Long, String) -> Unit,
@@ -389,7 +388,7 @@ fun HomeScreen(
                                         text = product.name,
                                         onClick = {
                                             selectProduct(product.productId)
-                                            setProductMode(Mode.View)
+                                            setProductMode(EditMode.View)
                                             navController.navigate(Screen.Product.route)
                                         }
                                     )
@@ -582,7 +581,7 @@ fun HomeScreen(
                     HomeAddDialogue(
                         onDismissRequest = { addSelected = false },
                         mainAction = {
-                            setProductMode(Mode.Create)
+                            setProductMode(EditMode.Create)
                             navController.navigate(Screen.Product.route)
                         },
                         secondAction = {

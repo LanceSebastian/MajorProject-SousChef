@@ -33,11 +33,11 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 @Composable
 fun CardRecipe(
+    modifier: Modifier = Modifier,
     text: String = "",
     imageUri: Uri? = null,
     overlay: Boolean = true,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
     val defaultImage = painterResource(id = R.drawable.questionimage)
 

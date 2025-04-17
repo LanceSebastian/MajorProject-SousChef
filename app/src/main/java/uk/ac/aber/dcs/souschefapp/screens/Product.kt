@@ -19,7 +19,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -35,7 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import uk.ac.aber.dcs.souschefapp.firebase.Mode
+import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
@@ -61,12 +60,12 @@ fun TopProductScreen(
     val userId = user?.uid
 
     val product by productViewModel.selectProduct.observeAsState(null)
-    val mode by productViewModel.mode.observeAsState(Mode.View)
+    val editMode by productViewModel.editMode.observeAsState(EditMode.View)
 
     ProductScreen(
         navController = navController,
         product = product,
-        mode = mode,
+        editMode = editMode,
         setMode = { newMode ->
             productViewModel.setMode(newMode)
         },
@@ -91,8 +90,8 @@ fun TopProductScreen(
 @Composable
 fun ProductScreen(
     navController: NavHostController,
-    mode: Mode = Mode.View,
-    setMode: (Mode) -> Unit,
+    editMode: EditMode = EditMode.View,
+    setMode: (EditMode) -> Unit,
     product: Product? = null,
     clearSelectProduct: () -> Unit,
     addProductToLog: (Product) -> Unit,
@@ -116,7 +115,7 @@ fun ProductScreen(
     }
 
     LaunchedEffect(product?.productId) {
-        if (mode != Mode.View && product != null && product.productId.isNotBlank()) {
+        if (editMode != EditMode.View && product != null && product.productId.isNotBlank()) {
             addProductToLog(product)
             navController.popBackStack()
             clearSelectProduct()
@@ -126,13 +125,13 @@ fun ProductScreen(
 
     BareRecipePageScreen(
         navController = navController,
-        mode = mode,
+        editMode = editMode,
         isBottomBar = false,
-        editFunction = { setMode(Mode.Edit) },
+        editFunction = { setMode(EditMode.Edit) },
 
         // Check if there are unsaved changes
         backFunction = {
-            if (mode == Mode.View || !isModified) {
+            if (editMode == EditMode.View || !isModified) {
                 navController.popBackStack()
                 clearSelectProduct()
             } else {
@@ -150,12 +149,12 @@ fun ProductScreen(
                 price = priceText.toDouble()
             )
 
-            if (mode == Mode.Edit) {
+            if (editMode == EditMode.Edit) {
                 updateProduct(newProduct)
             } else {
                 addProduct(newProduct)
             }
-            setMode(Mode.View)
+            setMode(EditMode.View)
         },
 
         // Cancel Edit.
@@ -163,7 +162,7 @@ fun ProductScreen(
             // Dialog Check
             nameText = product?.name ?: ""
             priceText = (product?.price ?: "").toString()
-            setMode(Mode.View)
+            setMode(EditMode.View)
         },
 
     ){ innerPadding ->
@@ -188,7 +187,7 @@ fun ProductScreen(
                             .blur(1.dp)
                             .fillMaxWidth(0.8f)
                     )
-                    if (mode != Mode.View) {
+                    if (editMode != EditMode.View) {
                         Button(
                             onClick = {
                                 TODO("Implement Add image function")
@@ -213,7 +212,7 @@ fun ProductScreen(
                     value = nameText,
                     onValueChange = { nameText = it },
                     label = { Text("Name") },
-                    enabled = mode != Mode.View,
+                    enabled = editMode != EditMode.View,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
@@ -230,7 +229,7 @@ fun ProductScreen(
                         }
                     },
                     label = { Text("Price") },
-                    enabled = mode != Mode.View,
+                    enabled = editMode != EditMode.View,
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Number
                     ),
@@ -276,7 +275,7 @@ fun CreateProductScreenPreview(){
     AppTheme {
         ProductScreen(
             navController = navController,
-            mode = Mode.Create,
+            editMode = EditMode.Create,
             setMode = {},
             addProductToLog = {},
             addProduct = {},
@@ -300,7 +299,7 @@ fun ViewProductScreenPreview(){
                 name = "Tesco Meal Deal",
                 price = 3.40
             ),
-            mode = Mode.View,
+            editMode = EditMode.View,
             setMode = {},
             addProductToLog = {},
             addProduct = {},
@@ -324,7 +323,7 @@ fun EditProductScreenPreview(){
                 name = "Tesco Meal Deal",
                 price = 3.40
             ),
-            mode = Mode.Edit,
+            editMode = EditMode.Edit,
             setMode = {},
             addProductToLog = {},
             addProduct = {},

@@ -7,7 +7,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Clear
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,7 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import uk.ac.aber.dcs.souschefapp.firebase.Mode
+import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,7 +33,7 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 fun EditTopAppBar(
     navController: NavHostController,
     title: String = "",
-    mode: Mode = Mode.View,
+    editMode: EditMode = EditMode.View,
     editFunction: () -> Unit,
     backFunction: () -> Unit,
     saveFunction: () -> Unit,
@@ -61,7 +60,7 @@ fun EditTopAppBar(
                 }
             },
             actions = {
-                if (mode == Mode.Create){
+                if (editMode == EditMode.Create){
                     IconButton(
                         onClick = { saveFunction() }
                     ) {
@@ -73,7 +72,7 @@ fun EditTopAppBar(
                     }
                 }
 
-                if (mode == Mode.Edit){
+                if (editMode == EditMode.Edit){
                     IconButton(onClick = {
                         saveFunction()
                     }
@@ -97,7 +96,7 @@ fun EditTopAppBar(
                     }
                 }
 
-                if (mode == Mode.View) {
+                if (editMode == EditMode.View) {
                     IconButton(
                         onClick = { editFunction() }
                     ) {
@@ -140,7 +139,7 @@ fun ViewTopAppBarPreview(){
     AppTheme {
         EditTopAppBar(
             navController = navController,
-            mode = Mode.View,
+            editMode = EditMode.View,
             editFunction = { isEdit = true },
             backFunction = {},
             saveFunction = { isEdit = false },
@@ -157,7 +156,7 @@ fun EditTopAppBarPreview(){
     AppTheme {
         EditTopAppBar(
             navController = navController,
-            mode = Mode.Edit,
+            editMode = EditMode.Edit,
             editFunction = { isEdit = true },
             backFunction = {},
             saveFunction = { isEdit = false },
@@ -174,7 +173,7 @@ fun CreateTopAppBarPreview(){
     AppTheme {
         EditTopAppBar(
             navController = navController,
-            mode = Mode.Create,
+            editMode = EditMode.Create,
             editFunction = { isEdit = true },
             backFunction = {},
             saveFunction = { isEdit = false },
