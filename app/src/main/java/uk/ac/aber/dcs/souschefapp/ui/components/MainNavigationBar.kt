@@ -14,6 +14,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
@@ -44,10 +45,11 @@ fun HomeNavigationBar(
                 if (!mainState.equals(MainState.HOME)) navController.navigate(Screen.Home.route)
             },
             icon = {
-                Image(
+                Icon(
                     painter = homeIcon,
                     contentDescription = null,
-                    alpha = if (mainState.equals(MainState.HOME)) 1.0f else 0.7f
+                    modifier = Modifier
+                        .alpha(if (mainState == MainState.HOME) 1.0f else 0.7f)
                 )
             },
             label = { Text("Home") },
@@ -61,13 +63,17 @@ fun HomeNavigationBar(
                 if (!mainState.equals(MainState.HISTORY)) navController.navigate(Screen.History.route)
             },
             icon = {
-                Image(
+                Icon(
                     painter =  historyIcon,
                     contentDescription = null,
-                    alpha = if (mainState.equals(MainState.HISTORY)) 1.0f else 0.7f
+                    modifier = Modifier
+                        .alpha(if (mainState == MainState.HOME) 1.0f else 0.7f)
                 )
             },
-            label = { Text("History") }
+            label = { Text("History") },
+            colors = NavigationBarItemDefaults.colors(
+                indicatorColor = MaterialTheme.colorScheme.surfaceContainerLowest
+            )
         )
         NavigationBarItem(
             selected = mainState.equals(MainState.RECIPES),
@@ -75,13 +81,17 @@ fun HomeNavigationBar(
                 if (!mainState.equals(MainState.RECIPES)) navController.navigate(Screen.Recipes.route)
             },
             icon = {
-                Image(
+                Icon(
                     painter =  recipeIcon,
                     contentDescription = null,
-                    alpha = if (mainState.equals(MainState.RECIPES)) 1.0f else 0.7f
+                    modifier = Modifier
+                        .alpha(if (mainState == MainState.HOME) 1.0f else 0.7f)
                 )
             },
-            label = {Text("Recipes")}
+            label = {Text("Recipes")},
+            colors = NavigationBarItemDefaults.colors(
+                indicatorColor = MaterialTheme.colorScheme.surfaceContainerLowest
+            )
         )
         NavigationBarItem(
             selected = mainState.equals(MainState.PROFILE),
@@ -89,13 +99,17 @@ fun HomeNavigationBar(
                 if (!mainState.equals(MainState.PROFILE)) navController.navigate(Screen.Profile.route)
             },
             icon = {
-                Image(
+                Icon(
                     painter =  profileIcon,
                     contentDescription = null,
-                    alpha = if (mainState.equals(MainState.PROFILE)) 1.0f else 0.7f
+                    modifier = Modifier
+                        .alpha(if (mainState == MainState.HOME) 1.0f else 0.7f)
                 )
             },
-            label = {Text("Profile")}
+            label = {Text("Profile")},
+            colors = NavigationBarItemDefaults.colors(
+                indicatorColor = MaterialTheme.colorScheme.surfaceContainerLowest
+            )
         )
     }
 }
