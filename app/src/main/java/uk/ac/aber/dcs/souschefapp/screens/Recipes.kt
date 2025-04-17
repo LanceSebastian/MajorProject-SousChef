@@ -72,8 +72,15 @@ fun TopRecipesScreen(
     RecipesScreen(
         navController = navController,
         recipes = recipes,
-        addRecipe = { recipe ->
-            recipeViewModel.createRecipe(user?.uid, recipe)
+        selectMode = selectMode,
+        selectRecipe = { recipeId ->
+            recipeViewModel.selectRecipe(recipeId)
+        },
+        setEditMode = { newMode ->
+            recipeViewModel.setEditMode( newMode )
+        },
+        addRecipesToLog = { recipeList ->
+            logViewModel.addRecipesToLog(userId, recipeList, context)
         }
     )
 }
@@ -82,7 +89,10 @@ fun TopRecipesScreen(
 fun RecipesScreen(
     navController: NavHostController,
     recipes: List<Recipe> = emptyList(),
-    addRecipe: (Recipe) -> Unit,
+    selectMode: SelectMode = SelectMode.View,
+    selectRecipe: (String) -> Unit,
+    setEditMode: (EditMode) -> Unit,
+    addRecipesToLog: (List<Recipe>) -> Unit,
 ){
     var isSearch by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
