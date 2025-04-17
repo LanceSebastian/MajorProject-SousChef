@@ -249,6 +249,26 @@ fun RecipesScreen(
         }
     }
 }
+@Composable
+private fun AddRecipeFloat(
+    onFloatClick: () -> Unit,
+){
+    FloatingActionButton(
+        onClick = { onFloatClick() },
+        content = {
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Add")
+                Text(text = "Add Recipe")
+            }
+        },
+    )
+}
+
 
 @Preview
 @Composable
