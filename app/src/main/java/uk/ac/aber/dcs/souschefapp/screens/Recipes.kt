@@ -101,6 +101,7 @@ fun RecipesScreen(
     val filteredRecipes = recipes.filter { it.name.contains(searchText, ignoreCase = true) }
     var isFloatClick by remember { mutableStateOf(false) }
     var recipeNameText by remember { mutableStateOf("") }
+    val selectedRecipes = remember { mutableStateListOf<Recipe>() }
 
     BareMainScreen(
         navController = navController,
@@ -156,13 +157,42 @@ fun RecipesScreen(
                         .fillMaxSize()
                         .padding(top = 8.dp)
                 ) {
-                    filteredRecipes.forEach { recipe ->
-                        item {
-                            CardRecipe(
-                                text = recipe.name,
-                                onClick = { navController.navigate(Screen.RecipePage.route + "/recipeId=${recipe.recipeId}") }
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
+                    items(filteredRecipes.chunked(2)) { pair ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            pair.forEach { recipe ->
+                                var isSelected by remember { mutableStateOf(false) }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    CardRecipe(
+                                        text = recipe.name,
+                                        onClick = {
+                                            if (selectMode == SelectMode.View) {
+                                                selectRecipe(recipe.recipeId)
+                                                navController.navigate(Screen.RecipePage.route)
+                                            }
+                                            if (selectMode == SelectMode.Select){
+                                                if (selectedRecipes.contains(recipe)) {
+                                                    selectedRecipes.remove(recipe)
+                                                    isSelected = false
+                                                }
+                                                else {
+                                                    selectedRecipes.add(recipe)
+                                                    isSelected = true
+                                                }
+                                            }
+                                        },
+                                        modifier = if (isSelected) Modifier.border(8.dp, MaterialTheme.colorScheme.tertiary, RoundedCornerShape(12.dp)) else Modifier
+                                    )
+                                }
+                            }
+
+                            if (pair.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
 
