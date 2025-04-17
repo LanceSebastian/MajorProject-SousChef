@@ -47,7 +47,7 @@ fun HomeTopAppBar(
             },
             navigationIcon = {
                 IconButton(onClick = {}) {
-                    Image(
+                    Icon(
                         painter = painterResource(id = R.drawable.chef),
                         contentDescription = null,
                         modifier = Modifier
