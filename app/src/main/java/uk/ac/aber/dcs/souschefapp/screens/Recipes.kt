@@ -58,6 +58,7 @@ fun TopRecipesScreen(
     val userId = user?.uid
 
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
+    val selectMode by recipeViewModel.selectMode.observeAsState(SelectMode.View)
 
     // Listen for logs in real-time when the user exists
     DisposableEffect(userId) {
