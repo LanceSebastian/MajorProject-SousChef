@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -36,6 +37,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
+import uk.ac.aber.dcs.souschefapp.screens.SplashScreen
 
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -46,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private val ingredientViewModel: IngredientViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)
         enableEdgeToEdge()
@@ -87,7 +90,16 @@ fun Navigation(
     }
 
 
-    NavHost(navController = navController, startDestination = Screen.Auth.route){
+    NavHost(navController = navController, startDestination = Screen.Splash.route){
+
+        /* Splash */
+        composable(Screen.Splash.route) {
+            SplashScreen {
+                navController.navigate(Screen.Auth.route) {
+                    popUpTo(Screen.Splash.route) { inclusive = true }
+                }
+            }
+        }
 
         /* Auth */
         composable(Screen.Auth.route){
