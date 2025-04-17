@@ -105,6 +105,7 @@ fun RecipesScreen(
     BareMainScreen(
         navController = navController,
         mainState = MainState.RECIPES,
+        selectMode = selectMode,
         onSearch = { isSearch = !isSearch },
         onFloatClick = {
             isFloatClick = true
