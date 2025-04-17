@@ -82,6 +82,36 @@ class RecipeViewModel : ViewModel() {
 
     }
 
+    fun createRecipe(userId: String?, recipe: Recipe? = null, context: Context) {
+        if (userId == null) {
+            android.util.Log.e("RecipeViewModel", "Failed to create recipe due to null userId")
+            return
+        }
+
+        val standardRecipe = recipe?.copy(
+            createdBy = userId
+        ) ?: Recipe(
+            name = "Unnamed",
+            createdBy = userId,
+        )
+
+        viewModelScope.launch {
+            val savedRecipe = recipeRepository.addRecipe(
+                userId = userId,
+                recipe = standardRecipe
+            )
+
+            if (savedRecipe != null) {
+                Toast.makeText(context, "Recipe saved successfully!", Toast.LENGTH_SHORT).show()
+                savedRecipe.recipeId
+            } else {
+                Toast.makeText(context, "Failed to save recipe.", Toast.LENGTH_SHORT).show()
+
+            }
+        }
+
+    }
+
     fun readRecipes(userId: String?) {
         if (userId == null) return
 
