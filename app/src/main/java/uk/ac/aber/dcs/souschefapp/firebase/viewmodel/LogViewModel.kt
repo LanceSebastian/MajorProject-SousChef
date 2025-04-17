@@ -117,6 +117,40 @@ class LogViewModel: ViewModel() {
         }
     }
 
+    fun addRecipesToLog(userId: String?, recipes: List<Recipe>, context: Context){
+        val logId = _singleLog.value?.logId
+        if (logId == null){
+            Toast.makeText(context, "Log ID is missing. Cannot add recipe", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (userId == null){
+            Toast.makeText(context, "User Id is missing. Cannot add recipe", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        viewModelScope.launch {
+            val failed = mutableListOf<String>()
+
+            recipes.forEach { recipe ->
+                val isSuccess = logRepository.addRecipeToLog(
+                    userId,
+                    logId,
+                    recipe.recipeId
+                )
+                if (!isSuccess) failed.add(recipe.name)
+            }
+
+            val message = if (failed.isEmpty()){
+                "All recipes have successfully been added!"
+            } else {
+                "Failed to add ${failed.joinToString(", ") }}"
+            }
+
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+
+        }
+    }
+
     fun removeRecipeToLog(userId: String, millis: Long, recipeId: String, context: Context){
         viewModelScope.launch {
             val isSuccess = logRepository.removeRecipeFromLog(
