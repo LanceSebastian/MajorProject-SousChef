@@ -11,6 +11,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.firebase.LogRepository
 import uk.ac.aber.dcs.souschefapp.firebase.Log
+import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.Date
@@ -99,11 +100,16 @@ class LogViewModel: ViewModel() {
         logListener = null
     }
 
-    fun addRecipeToLog(userId: String, millis: Long, recipeId: String, context: Context){
+    fun addRecipeToLog(userId: String, recipeId: String, context: Context){
+        val logId = _singleLog.value?.logId
+        if (logId == null){
+            Toast.makeText(context, "Log ID is missing. Cannot add recipe", Toast.LENGTH_SHORT).show()
+            return
+        }
         viewModelScope.launch {
             val isSuccess = logRepository.addRecipeToLog(
                 userId,
-                standardDate(millis).toString(),
+                logId,
                 recipeId
             )
             val message = if (isSuccess) "Recipe added successfully!" else "Failed to add recipe."
