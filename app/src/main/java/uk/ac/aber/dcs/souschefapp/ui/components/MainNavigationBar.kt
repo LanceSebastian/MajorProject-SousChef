@@ -114,14 +114,51 @@ fun HomeNavigationBar(
     }
 }
 
+val darkTheme = false
 
 @Preview(showBackground = true)
 @Composable
 fun HomeNavigationBarPreview(){
     val navController = rememberNavController()
-    AppTheme () {
+    AppTheme (darkTheme = darkTheme) {
         HomeNavigationBar(
             mainState = MainState.HOME,
+            navController = navController,
+            modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HistoryNavigationBarPreview(){
+    val navController = rememberNavController()
+    AppTheme (darkTheme = darkTheme) {
+        HomeNavigationBar(
+            mainState = MainState.HISTORY,
+            navController = navController,
+            modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RecipesNavigationBarPreview(){
+    val navController = rememberNavController()
+    AppTheme (darkTheme = darkTheme) {
+        HomeNavigationBar(
+            mainState = MainState.RECIPES,
+            navController = navController,
+            modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProfileNavigationBarPreview(){
+    val navController = rememberNavController()
+    AppTheme (darkTheme = darkTheme) {
+        HomeNavigationBar(
+            mainState = MainState.PROFILE,
             navController = navController,
             modifier = Modifier.fillMaxWidth())
     }
