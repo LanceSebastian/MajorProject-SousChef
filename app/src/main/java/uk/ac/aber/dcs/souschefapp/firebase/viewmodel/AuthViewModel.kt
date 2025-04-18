@@ -22,6 +22,7 @@ class AuthViewModel : ViewModel() {
 
     init {
         _user.value = auth.currentUser // Check if user is already logged in
+        _user.value?.let { fetchUsername(it.uid) } // ← Fetch username on startup
     }
 
     fun register(email: String, password: String, username: String) {
