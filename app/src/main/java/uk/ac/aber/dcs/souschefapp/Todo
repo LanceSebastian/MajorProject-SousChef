@@ -1,20 +1,20 @@
 
 First Test - Bugs:
 Auth
-    Pressing Sign Up multiple times can create copies of the same account.
+    * Pressing Sign Up multiple times can create copies of the same account.
 Home
-    Log isn't initially read, until you move off and on it again.
-    Add Recipe shouldn't "createRecipe" but "selectRecipe" instead.
+    * Log isn't initially read, until you move off and on it again.
+    * Add Recipe shouldn't "createRecipe" but "selectRecipe" instead.
 
 History
-    Center "AddRecipe" Button
+    * Center "AddRecipe" Button
 
 RecipePage
-    Ingredient Dialog Doesn't Close. It gets stuck completely.
-    Instruction Dialog doesn't close - except when using the phone's back function
+    * Ingredient Dialog Doesn't Close. It gets stuck completely.
+    * Instruction Dialog doesn't close - except when using the phone's back function
 
 Profile
-    Username isn't being read when autologged in.
+    * Username isn't being read when autologged in.
 
 
 Archive:
