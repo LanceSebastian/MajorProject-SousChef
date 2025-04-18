@@ -32,6 +32,7 @@ import uk.ac.aber.dcs.souschefapp.screens.TopRecipesScreen
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.DateViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
@@ -47,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private val recipeViewModel: RecipeViewModel by viewModels()
     private val productViewModel: ProductViewModel by viewModels()
     private val ingredientViewModel: IngredientViewModel by viewModels()
+    private val dateViewModel: DateViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -62,7 +64,8 @@ class MainActivity : ComponentActivity() {
                     recipeViewModel = recipeViewModel,
                     noteViewModel = noteViewModel,
                     productViewModel = productViewModel,
-                    ingredientViewModel = ingredientViewModel
+                    ingredientViewModel = ingredientViewModel,
+                    dateViewModel = dateViewModel
                 )
             }
         }
@@ -77,7 +80,8 @@ fun Navigation(
     recipeViewModel: RecipeViewModel,
     noteViewModel: NoteViewModel,
     productViewModel: ProductViewModel,
-    ingredientViewModel: IngredientViewModel
+    ingredientViewModel: IngredientViewModel,
+    dateViewModel: DateViewModel
 ) {
     val navController = rememberNavController()
     val user by authViewModel.user.observeAsState()
@@ -130,7 +134,8 @@ fun Navigation(
                 logViewModel = logViewModel,
                 recipeViewModel = recipeViewModel,
                 noteViewModel = noteViewModel,
-                productViewModel = productViewModel
+                productViewModel = productViewModel,
+                dateViewModel = dateViewModel
             )
         }
 
@@ -140,7 +145,9 @@ fun Navigation(
                 navController = navController,
                 authViewModel = authViewModel,
                 logViewModel = logViewModel,
-                recipeViewModel = recipeViewModel
+                recipeViewModel = recipeViewModel,
+                productViewModel = productViewModel,
+                dateViewModel = dateViewModel
             )
         }
 
