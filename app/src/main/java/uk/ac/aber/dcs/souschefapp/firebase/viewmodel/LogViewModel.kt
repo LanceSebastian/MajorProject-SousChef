@@ -19,6 +19,9 @@ import java.util.Date
 class LogViewModel: ViewModel() {
     private val logRepository = LogRepository()
 
+    private val _isLoading = MutableLiveData(true)
+    val isLoading: LiveData<Boolean> = _isLoading
+
     private var logListener: ListenerRegistration? = null
     private var logListenerSelected: ListenerRegistration? = null
 
@@ -73,10 +76,13 @@ class LogViewModel: ViewModel() {
     fun readLogs(userId: String?) {
         if (userId == null) return
 
+        _isLoading.postValue(true)
+
         logListener?.remove() // Stop previous listener if it exists
 
         logListener = logRepository.listenForLogs(userId) { logs ->
             _logs.postValue(logs)
+            _isLoading.postValue(false)
         }
     }
 

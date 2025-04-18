@@ -30,7 +30,8 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 @Composable
 fun SignUpDialogue(
     onDismissRequest: () -> Unit,
-    mainAction: (String, String, String) -> Unit
+    mainAction: (String, String, String) -> Unit,
+    authStatus: String? = null
 ) {
 
     var usernameText by remember { mutableStateOf("") }
@@ -108,6 +109,9 @@ fun SignUpDialogue(
                     isError = emailError,
                     singleLine = true
                 )
+                if (authStatus != null){
+                    Text(authStatus)
+                }
                 if (emptyFieldsError) {
                     Text(
                         text = "Please fill in the fields.",

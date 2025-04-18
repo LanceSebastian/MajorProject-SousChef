@@ -16,6 +16,9 @@ import uk.ac.aber.dcs.souschefapp.firebase.NoteRepository
 class NoteViewModel : ViewModel() {
     private val noteRepository = NoteRepository()
 
+    private val _isLoading = MutableLiveData(true)
+    val isLoading: LiveData<Boolean> = _isLoading
+
     private var noteListener: ListenerRegistration? = null
 
     private var _notes = MutableLiveData<List<Note>>() // Single recipe notes.
@@ -41,10 +44,13 @@ class NoteViewModel : ViewModel() {
     fun readNotesFromRecipe(userId: String?, recipeId: String){
         if (userId == null) return
 
+        _isLoading.postValue(true)
+
         noteListener?.remove() // Stop previous listener if it exists
 
         noteListener = noteRepository.listenForNotes(userId, recipeId) { notes ->
             _notes.postValue(notes)
+            _isLoading.postValue(false)
         }
     }
 
