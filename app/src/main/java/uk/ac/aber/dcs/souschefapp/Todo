@@ -14,7 +14,7 @@ RecipePage
     Instruction Dialog doesn't close - except when using the phone's back function
 
 Profile
-    Username isn't being consistently read.
+    Username isn't being read when autologged in.
 
 
 Archive:
