@@ -44,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.delay
 import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.firebase.Log
@@ -168,8 +170,8 @@ fun TopHomeScreen(
             readLogFromDate = { dateMillis ->
                 logViewModel.readLogFromDate(dateMillis)
             },
-            updateRating = { millis, rating ->
-                logViewModel.updateRating(userId, millis, rating)
+            updateRating = { rating ->
+                logViewModel.updateRating(userId, rating)
             },
             updatePNote = { millis, content ->
                 logViewModel.updateNote(userId, millis, content, context)
@@ -209,7 +211,7 @@ fun HomeScreen(
     setRecipePageMode: (EditMode) -> Unit,
     setRecipesSelectMode: (SelectMode) -> Unit,
     readLogFromDate: (Long) -> Unit,
-    updateRating: (Long, Int) -> Unit,
+    updateRating: (Int) -> Unit,
     updatePNote: (Long, String) -> Unit,
     deleteLog: (Long) -> Unit,
     updateRNotes: (List<String>?) -> Unit,
@@ -257,7 +259,6 @@ fun HomeScreen(
     // Get Log Data
     val isLogRecipesEmpty = log?.recipeIdList.isNullOrEmpty()
     val isLogMenuEmpty = (isLogRecipesEmpty && log?.productIdList.isNullOrEmpty())
-    var previousLog by remember { mutableStateOf<Log?>(null) }
 
     val datePickedEpoch = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -269,30 +270,25 @@ fun HomeScreen(
     var notesList = remember { mutableListOf<Note>() }
     if (compiledNotes != null) notesList = compiledNotes.toMutableList()
 
-    // When new log, save previous log's rating.
-    LaunchedEffect(log) {
-        previousLog?.let {
-            updateRating(previousLog!!.logId.toLong(), logRating)
-        }
-        logNote = log?.note ?: ""
-        logRating = log?.rating ?: 0
-        previousLog = log
-        updateRNotes(log?.recipeIdList)
-    }
-
     // Update NoteViewModel: singleLog
     LaunchedEffect(datePickedEpoch) {
         readLogFromDate(datePickedEpoch)
     }
 
-    // Save current log if disposed.
-    DisposableEffect(Unit) {
-        onDispose {
-            log?.let {
-                updateRating(datePickedEpoch, logRating)
-            }
-        }
+    // When new log, save previous log's rating.
+    LaunchedEffect(log) {
+        // If the previous log is different, update rating
+
+        logNote = log?.note ?: ""
+        logRating = log?.rating ?: 0
+        updateRNotes(log?.recipeIdList)
     }
+
+    LaunchedEffect(logRating){
+        delay(500L)
+        updateRating(logRating)
+    }
+
 
     BareMainScreen(
         mainState = mainState,
@@ -449,7 +445,7 @@ fun HomeScreen(
                     /*      Log Notes        */
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            containerColor = if (!personalExpanded && editNoteSelected) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         modifier = Modifier
@@ -500,7 +496,6 @@ fun HomeScreen(
                                             modifier = Modifier
                                                 .clickable {
                                                     personalExpanded = false
-                                                    editNoteSelected = false
                                                 }
                                         )
                                     }
@@ -638,7 +633,7 @@ fun HomeScreenEmptyView(){
             setProductMode = {},
             readLogFromDate = {},
             deleteLog = {},
-            updateRating = {_,_ -> },
+            updateRating = {_ -> },
             updatePNote = { _, _ -> },
             updateRNotes = {_ -> },
             setRecipesSelectMode = {},
@@ -768,7 +763,7 @@ fun HomeScreenView(){
             getProductsFromList = {},
             readLogFromDate = {},
             deleteLog = {},
-            updateRating = {_,_ -> },
+            updateRating = {_ -> },
             updatePNote = { _, _ -> },
             updateRNotes = {_ -> },
             setRecipesSelectMode = {},

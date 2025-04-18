@@ -195,11 +195,13 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun updateRating(userId: String?, millis: Long, rating: Int){
+    fun updateRating(userId: String?, rating: Int){
+        val currentLog: Log? = _singleLog.value
         if (userId == null) return
+        if (currentLog == null) return
 
         viewModelScope.launch {
-            logRepository.updateLogRating(userId, standardDate(millis).toString(), rating)
+            logRepository.updateLogRating(userId, currentLog.logId, rating)
         }
     }
 

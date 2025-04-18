@@ -5,6 +5,7 @@ Auth
 Home
     o Log isn't initially read, until you move off and on it again. (Adding Loading screen to load data before anything happens)
     O Add Recipe shouldn't "createRecipe" but "selectRecipe" instead. (Unintentional fix, it doesn't do it anymore and I haven't done anything.)
+    o Log Rating Bug, not saving when exiting the composable / moving onto a new log. (Fix: I changed it to update on click - with a debounce. Power to the people.)
 
 History
     o Center "AddRecipe" Button (simply centering with column)
