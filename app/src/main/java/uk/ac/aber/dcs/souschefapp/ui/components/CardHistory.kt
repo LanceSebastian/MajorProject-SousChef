@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Timestamp
+import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
@@ -54,8 +55,10 @@ fun CardHistory(
     navController: NavHostController,
     date: Timestamp = Timestamp.now(),
     recipes: List<Recipe> = emptyList(),
+    products: List<Product> = emptyList(),
     rating: Int = 0,
     selectRecipe: (String) -> Unit,
+    selectProduct: (String) -> Unit,
     selectMode: (SelectMode) -> Unit,
     setLog: (Long) -> Unit,
 ) {
@@ -160,7 +163,7 @@ fun CardHistory(
             }
 
             /*      Recipes Content       */
-            if (recipes.isEmpty()){
+            if (recipes.isEmpty() || products.isEmpty()){
                 Text(
                     text = "Recipes: n/a",
                     maxLines = 1,
@@ -179,7 +182,7 @@ fun CardHistory(
 
             /*      Expanded Content       */
             if (isExpanded) {
-                if (recipes.isNotEmpty()) {
+                if (recipes.isNotEmpty()|| products.isNotEmpty()) {
                     LazyRow(
                         modifier = Modifier
                             .height(150.dp)
@@ -191,6 +194,17 @@ fun CardHistory(
                                     text = recipe.name,
                                     onClick = {     // Navigate to Recipe
                                         selectRecipe(recipe.recipeId)
+                                        navController.navigate( Screen.RecipePage.route )
+                                    }
+                                )
+                            }
+                        }
+                        products.forEach{ product ->
+                            item {
+                                CardRecipe(
+                                    text = product.name,
+                                    onClick = {     // Navigate to Recipe
+                                        selectProduct(product.productId)
                                         navController.navigate( Screen.RecipePage.route )
                                     }
                                 )
@@ -247,7 +261,8 @@ fun EmptyCardHistoryView(){
             recipes = emptyList(),
             selectRecipe = {},
             setLog = {},
-            selectMode = {}
+            selectMode = {},
+            selectProduct = {}
         )
     }
 
@@ -272,7 +287,8 @@ fun CardHistoryView(){
             recipes = mockRecipes,
             selectRecipe = {},
             setLog = {},
-            selectMode = {}
+            selectMode = {},
+            selectProduct = {}
         )
     }
 
