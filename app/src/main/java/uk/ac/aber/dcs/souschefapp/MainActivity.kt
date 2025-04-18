@@ -38,6 +38,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.screens.SplashScreen
+import uk.ac.aber.dcs.souschefapp.screens.TopSplashScreen
 
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
@@ -94,11 +95,22 @@ fun Navigation(
 
         /* Splash */
         composable(Screen.Splash.route) {
-            SplashScreen {
-                navController.navigate(Screen.Auth.route) {
-                    popUpTo(Screen.Splash.route) { inclusive = true }
+            TopSplashScreen(
+                authViewModel = authViewModel,
+                logViewModel = logViewModel,
+                recipeViewModel = recipeViewModel,
+                productViewModel = productViewModel,
+                onTimeoutMain = {
+                    navController.navigate(Screen.Auth.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onTimeoutSecond = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
                 }
-            }
+            )
         }
 
         /* Auth */
