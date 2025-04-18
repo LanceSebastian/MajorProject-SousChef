@@ -3,8 +3,8 @@ First Test - Bugs:
 Auth
     * Pressing Sign Up multiple times can create copies of the same account.
 Home
-    * Log isn't initially read, until you move off and on it again.
-    * Add Recipe shouldn't "createRecipe" but "selectRecipe" instead.
+    o Log isn't initially read, until you move off and on it again. (Adding Loading screen to load data before anything happens)
+    O Add Recipe shouldn't "createRecipe" but "selectRecipe" instead. (Unintentional fix, it doesn't do it anymore and I haven't done anything.)
 
 History
     * Center "AddRecipe" Button
