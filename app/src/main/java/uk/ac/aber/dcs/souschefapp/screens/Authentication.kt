@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,27 +49,32 @@ fun TopAuthScreen(
 ){
     val user by authViewModel.user.observeAsState()
     val authStatus by authViewModel.authStatus.observeAsState()
+    val isLoading by authViewModel.isLoading.observeAsState(false)
 
+    // Automatically navigate when auth state changes
+    LaunchedEffect(user) {
+        if (user != null) {
+            navController.navigate(Screen.Home.route)
+        }
+    }
     AuthScreen(
-        user = user,
         authStatus = authStatus,
+        isLoading = isLoading,
         onLogin = { email, password ->
             authViewModel.login(email, password)
                   },
         onRegister = { email, password, username ->
             authViewModel.register(email, password, username)
         },
-        goToMain = { navController.navigate(Screen.Home.route) }
     )
 
 }
 @Composable
 fun AuthScreen(
-    user: FirebaseUser? = null,
     authStatus: String? = null,
+    isLoading: Boolean = false,
     onLogin: (String, String) -> Unit,
     onRegister: (String, String, String) -> Unit,
-    goToMain: () -> Unit
 ){
     val colorStops = arrayOf(
         0.14f to MaterialTheme.colorScheme.primary,
@@ -78,12 +85,7 @@ fun AuthScreen(
     var loginSelected by remember { mutableStateOf(false) }
     var signupSelected by remember { mutableStateOf(false) }
 
-    // Automatically navigate when auth state changes
-    LaunchedEffect(user) {
-        if (user != null) {
-            goToMain()
-        }
-    }
+
 
     Surface(
         modifier = Modifier
@@ -114,7 +116,6 @@ fun AuthScreen(
                     .padding(bottom = 100.dp)
             )
         }
-
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -155,7 +156,21 @@ fun AuthScreen(
             }
         }
 
-        if (loginSelected) {
+        // Show the loading spinner overlay if isLoading is true
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))  // Semi-transparent overlay
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        if (loginSelected && !isLoading) {
             LoginDialogue(
                 onDismissRequest = { loginSelected = false },
                 mainAction = {email, password ->
@@ -165,12 +180,13 @@ fun AuthScreen(
             )
         }
 
-        if (signupSelected) {
+        if (signupSelected && !isLoading) {
             SignUpDialogue(
                 onDismissRequest = { signupSelected = false },
                 mainAction = { email, password, username ->
                     onRegister(email, password, username)
-                }
+                },
+                authStatus = authStatus
             )
         }
     }
@@ -184,7 +200,7 @@ fun AuthScreenPreview(){
         AuthScreen(
             onLogin = {_,_ -> },
             onRegister = {_,_,_ -> },
-            goToMain = {}
+            isLoading = true
         )
     }
 }
