@@ -12,6 +12,9 @@ import uk.ac.aber.dcs.souschefapp.firebase.IngredientRepository
 class IngredientViewModel : ViewModel() {
     private val ingredientRepository = IngredientRepository()
 
+    private val _isLoading = MutableLiveData(true)
+    val isLoading: LiveData<Boolean> = _isLoading
+
     private var ingredientListener: ListenerRegistration? = null
 
     private var _recipeIngredients = MutableLiveData<List<Ingredient>>()
@@ -82,10 +85,13 @@ class IngredientViewModel : ViewModel() {
     fun readIngredients(userId: String?, recipeId: String?){
         if (userId == null || recipeId == null) return
 
+        _isLoading.postValue(true)
+
         ingredientListener?.remove()
 
         ingredientListener = ingredientRepository.listenForIngredients(userId, recipeId) { ingredients ->
             _recipeIngredients.postValue(ingredients)
+            _isLoading.postValue(false)
         }
     }
 

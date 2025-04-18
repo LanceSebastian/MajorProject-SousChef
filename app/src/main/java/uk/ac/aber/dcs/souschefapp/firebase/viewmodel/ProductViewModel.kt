@@ -16,6 +16,9 @@ import uk.ac.aber.dcs.souschefapp.firebase.ProductRepository
 class ProductViewModel : ViewModel() {
     private val productRepository = ProductRepository()
 
+    private val _isLoading = MutableLiveData(true)
+    val isLoading: LiveData<Boolean> = _isLoading
+
     private val _Edit_mode = MutableLiveData(EditMode.View)
     val editMode: LiveData<EditMode> = _Edit_mode
 
@@ -64,10 +67,13 @@ class ProductViewModel : ViewModel() {
     fun readProducts(userId: String?){
         if (userId == null) return
 
+        _isLoading.postValue(true)
+
         productListener?.remove() // Stop previous listener if it exists
 
         productListener = productRepository.listenForProducts(userId) { products ->
             _userProducts.postValue(products)
+            _isLoading.postValue(false)
         }
     }
 

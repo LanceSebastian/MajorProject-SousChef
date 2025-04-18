@@ -17,6 +17,9 @@ import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 class RecipeViewModel : ViewModel() {
     private val recipeRepository = RecipeRepository()
 
+    private val _isLoading = MutableLiveData(true)
+    val isLoading: LiveData<Boolean> = _isLoading
+
     private val _editMode = MutableLiveData(EditMode.View)
     val editMode: LiveData<EditMode> = _editMode
 
@@ -115,10 +118,13 @@ class RecipeViewModel : ViewModel() {
     fun readRecipes(userId: String?) {
         if (userId == null) return
 
+        _isLoading.postValue(true)
+
         recipeListener?.remove() // Stop previous listener if it exists
 
         recipeListener = recipeRepository.listenForRecipes(userId) { recipes ->
             _userRecipes.postValue(recipes)
+            _isLoading.postValue(false)
         }
     }
 
