@@ -1,9 +1,19 @@
 
-First Test:
-1) Login needs feedback for failure
-2) email needs format checkers
-3) signup needs feedback for failure and weak passwords.
-4)
+First Test - Bugs:
+Home
+    Log isn't initially read, until you move off and on it again.
+    Add Recipe shouldn't "createRecipe" but "selectRecipe" instead.
+
+History
+    Center "AddRecipe" Button
+
+RecipePage
+    Ingredient Dialog Doesn't Close. It gets stuck completely.
+    Instruction Dialog doesn't close - except when using the phone's back function
+
+Profile
+    Username isn't being consistently read.
+
 
 Archive:
 
