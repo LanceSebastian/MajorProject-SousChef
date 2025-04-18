@@ -92,7 +92,7 @@ fun HistoryScreen(
     selectRecipe: (String) -> Unit,
     setLog: (Long) -> Unit,
 ){
-    val sortedLogs = logs.sortedBy { it.logId }
+    val sortedLogs = logs.sortedByDescending { it.createdAt }
     BareMainScreen(
         navController = navController,
         mainState = MainState.HISTORY
