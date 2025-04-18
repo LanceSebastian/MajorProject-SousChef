@@ -33,9 +33,13 @@ import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.firebase.Log
+import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.DateViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardHistory
@@ -43,6 +47,7 @@ import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
 
@@ -51,23 +56,30 @@ fun TopHistoryScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel,
     logViewModel: LogViewModel,
-    recipeViewModel: RecipeViewModel
+    recipeViewModel: RecipeViewModel,
+    productViewModel: ProductViewModel,
+    dateViewModel: DateViewModel
 ){
 
     val user by authViewModel.user.observeAsState()
     val userId = user?.uid
 
     val logs by logViewModel.logs.observeAsState(emptyList())
+    val products by productViewModel.userProducts.observeAsState(emptyList())
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
 
     // Listen for logs in real-time when the user exists
     DisposableEffect(userId) {
         if(userId != null){
             logViewModel.readLogs(userId)
+            productViewModel.readProducts(userId)
+            recipeViewModel.readRecipes(userId)
         }
 
         onDispose {
             logViewModel.stopListening()
+            productViewModel.stopListening()
+            recipeViewModel.stopListening()
         }
     }
 
@@ -75,11 +87,21 @@ fun TopHistoryScreen(
         navController = navController,
         logs = logs,
         recipes = recipes,
+        products = products,
         selectRecipe = { recipeId ->
             recipeViewModel.selectRecipe(recipeId)
         },
+        selectProduct = { productId ->
+            productViewModel.selectProduct(productId)
+        },
         setLog = { dateMillis ->
-            logViewModel.readLogFromDate(dateMillis)
+            val localDate = Instant.ofEpochMilli(dateMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+            dateViewModel.onDatePicked(localDate)
+        },
+        setSelectMode = { newMode ->
+            recipeViewModel.setSelectMode(newMode)
         }
     )
 }
@@ -89,10 +111,13 @@ fun HistoryScreen(
     navController: NavHostController,
     logs: List<Log>,
     recipes: List<Recipe>,
+    products: List<Product>,
     selectRecipe: (String) -> Unit,
+    selectProduct: (String) -> Unit,
     setLog: (Long) -> Unit,
+    setSelectMode: (SelectMode) -> Unit,
 ){
-    val sortedLogs = logs.sortedBy { it.logId }
+    val sortedLogs = logs.sortedByDescending { it.createdAt }
     BareMainScreen(
         navController = navController,
         mainState = MainState.HISTORY
@@ -109,17 +134,25 @@ fun HistoryScreen(
                 ) {
                     sortedLogs.forEach { log ->
                         val logRecipes = recipes.filter { log.recipeIdList.contains(it.recipeId) }
+                        val logProducts = products.filter { log.productIdList.contains(it.productId) }
                         item {
                             CardHistory(
                                 navController = navController,
                                 recipes = logRecipes,
+                                products = logProducts,
                                 rating = log.rating,
                                 date = log.createdAt,
                                 selectRecipe = { recipeId ->
                                     selectRecipe(recipeId)
                                 },
+                                selectProduct = { productId ->
+                                    selectProduct(productId)
+                                },
                                 setLog = { dateMillis ->
                                     setLog(dateMillis)
+                                },
+                                selectMode = { newMode ->
+                                    setSelectMode(newMode)
                                 }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -164,7 +197,10 @@ fun EmptyHistoryScreenPreview(){
             logs = emptyList(),
             recipes = emptyList(),
             selectRecipe = {},
-            setLog = {}
+            setLog = {},
+            setSelectMode = {},
+            selectProduct = {},
+            products = emptyList()
         )
     }
 }
@@ -238,7 +274,10 @@ fun HistoryScreenPreview(){
             logs = sampleLogs,
             recipes = sampleRecipes,
             selectRecipe = {},
-            setLog = {}
+            setLog = {},
+            setSelectMode = {},
+            selectProduct = {},
+            products = emptyList()
         )
     }
 }

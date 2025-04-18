@@ -69,12 +69,18 @@ fun ConfirmDialogue(
                     }
                     if (secondButtonText.isNotEmpty()) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        TextButton(onClick = secondAction) {
+                        TextButton(onClick = {
+                            secondAction()
+                            onDismissRequest()
+                        }) {
                             Text(secondButtonText)
                         }
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = mainAction) {
+                    TextButton(onClick = {
+                        mainAction()
+                        onDismissRequest()
+                    }) {
                         Text(mainButtonText)
                     }
                 }

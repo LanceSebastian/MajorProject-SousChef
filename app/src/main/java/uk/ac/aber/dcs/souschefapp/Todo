@@ -1,17 +1,22 @@
 
 First Test - Bugs:
 Auth
-    * Pressing Sign Up multiple times can create copies of the same account.
+    O* Pressing Sign Up multiple times can create copies of the same account. (fixed: disable dialog when loading, still room for bugs tho)
 Home
     o Log isn't initially read, until you move off and on it again. (Adding Loading screen to load data before anything happens)
     O Add Recipe shouldn't "createRecipe" but "selectRecipe" instead. (Unintentional fix, it doesn't do it anymore and I haven't done anything.)
 
 History
-    * Center "AddRecipe" Button
+    o Center "AddRecipe" Button (simply centering with column)
+    o View Log doesn't navigate to the correct Log (had to create a DateViewModel that handles it.)
+    o It doesn't view products
 
 RecipePage
-    * Ingredient Dialog Doesn't Close. It gets stuck completely.
-    * Instruction Dialog doesn't close - except when using the phone's back function
+    o Ingredient Dialog Doesn't Close. It gets stuck completely.
+    o Instruction Dialog doesn't close - except when using the phone's back function
+
+Products
+    * Product Information isn't included in the text fields
 
 Profile
     o Username isn't being read when autologged in. (auth.currentUser is populated but the app needs to fetch the data)

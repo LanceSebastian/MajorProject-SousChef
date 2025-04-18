@@ -180,14 +180,17 @@ fun IngredientDialogue(
                             emptyAmountError = amountText.isEmpty()
                             emptyFieldsError = emptyNameError || emptyUnitError || emptyAmountError
 
-                            if (!emptyFieldsError) mainAction(
-                                Ingredient(
-                                    name = nameText,
-                                    quantity = amountText,
-                                    unit = unitText,
-                                    description = extraText
+                            if (!emptyFieldsError) {
+                                mainAction(
+                                    Ingredient(
+                                        name = nameText,
+                                        quantity = amountText,
+                                        unit = unitText,
+                                        description = extraText
+                                    )
                                 )
-                            )
+                                onDismissRequest()
+                            }
                         }
                     ){
                         Text(

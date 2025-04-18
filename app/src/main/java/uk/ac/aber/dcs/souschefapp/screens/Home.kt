@@ -66,6 +66,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.DateViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
@@ -93,12 +94,16 @@ fun TopHomeScreen(
     logViewModel: LogViewModel,
     recipeViewModel: RecipeViewModel,
     productViewModel: ProductViewModel,
-    noteViewModel: NoteViewModel
+    noteViewModel: NoteViewModel,
+    dateViewModel: DateViewModel
 ){
     val user by authViewModel.user.observeAsState()
     val userId = user?.uid
 
     val logs by logViewModel.logs.observeAsState(emptyList())
+    val date by dateViewModel.datePicked.observeAsState(LocalDate.now())
+    val dayFormat by dateViewModel.dayFormat.observeAsState("")
+    val monthFormat by dateViewModel.monthFormat.observeAsState("")
 
     val isLoadingLogs by logViewModel.isLoading.observeAsState(true)
     val isLoadingRecipes by recipeViewModel.isLoading.observeAsState(true)
@@ -134,6 +139,9 @@ fun TopHomeScreen(
         HomeScreen(
             navController = navController,
             mainState = MainState.HOME,
+            date = date,
+            dayFormat = dayFormat,
+            monthFormat = monthFormat,
             logs = logs,
             log = log,
             recipes = recipes,
@@ -171,6 +179,12 @@ fun TopHomeScreen(
             },
             updateRNotes = { recipeIdList ->
                 noteViewModel.compileNotesFromRecipes(userId, recipeIdList)
+            },
+            shiftDate = { days ->
+                dateViewModel.shiftDatePickedBy(days)
+            },
+            setDate = { date ->
+                dateViewModel.onDatePicked(date)
             }
         )
     }
@@ -180,6 +194,9 @@ fun TopHomeScreen(
 fun HomeScreen(
     navController: NavHostController,
     mainState: MainState = MainState.HOME,
+    date: LocalDate = LocalDate.now(),
+    monthFormat: String,
+    dayFormat: String,
     logs: List<Log>, // This will be used for the calendar
     log: Log? = null,
     recipes: List<Recipe>,
@@ -195,7 +212,9 @@ fun HomeScreen(
     updateRating: (Long, Int) -> Unit,
     updatePNote: (Long, String) -> Unit,
     deleteLog: (Long) -> Unit,
-    updateRNotes: (List<String>?) -> Unit
+    updateRNotes: (List<String>?) -> Unit,
+    shiftDate: (Long) -> Unit,
+    setDate: (LocalDate) -> Unit,
 ){
     // Ratings
     val ratings = listOf(
@@ -234,34 +253,13 @@ fun HomeScreen(
 
     // Dates and Calendars
     var dateDialogState by remember { mutableStateOf(false) }
-    var datePicked by remember {
-        mutableStateOf(LocalDate.now())
-    }
-    val datePickedEpoch by remember {
-        derivedStateOf {
-            datePicked.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        }
-    }
-    // toString
-    val monthFormat by remember {
-        derivedStateOf {
-            DateTimeFormatter
-                .ofPattern("MMMM yyyy")
-                .format(datePicked)
-        }
-    }
-    val dayFormat by remember {
-        derivedStateOf {
-            DateTimeFormatter
-                .ofPattern("EEEE dd")
-                .format(datePicked)
-        }
-    }
 
     // Get Log Data
     val isLogRecipesEmpty = log?.recipeIdList.isNullOrEmpty()
     val isLogMenuEmpty = (isLogRecipesEmpty && log?.productIdList.isNullOrEmpty())
     var previousLog by remember { mutableStateOf<Log?>(null) }
+
+    val datePickedEpoch = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     var logNote by remember { mutableStateOf("") }
     var logRating by remember { mutableStateOf(0) }
@@ -308,8 +306,8 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 DateNavigationBar(
-                    backAction = { datePicked = datePicked.minusDays(1) },
-                    forwardAction = { datePicked = datePicked.plusDays(1) },
+                    backAction = { shiftDate(-1) },
+                    forwardAction = { shiftDate(1) },
                     expandAction = { dateDialogState = true },
                     topString = monthFormat,
                     mainString = dayFormat
@@ -319,7 +317,7 @@ fun HomeScreen(
                 MyCalendar(
                     showDialog = dateDialogState,
                     onDismiss = { dateDialogState = false },
-                    onDateSelected = { datePicked = it },
+                    onDateSelected = { setDate(it) },
                     dateEpoch = datePickedEpoch
                 )
 
@@ -645,6 +643,10 @@ fun HomeScreenEmptyView(){
             updateRNotes = {_ -> },
             setRecipesSelectMode = {},
             setRecipePageMode = {},
+            shiftDate = {},
+            setDate = {},
+            dayFormat = "",
+            monthFormat = ""
         )
     }
 }
@@ -771,6 +773,10 @@ fun HomeScreenView(){
             updateRNotes = {_ -> },
             setRecipesSelectMode = {},
             setRecipePageMode = {},
+            shiftDate = {},
+            setDate = {},
+            dayFormat = "",
+            monthFormat = ""
         )
     }
 }

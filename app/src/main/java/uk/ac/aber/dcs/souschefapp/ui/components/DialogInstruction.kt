@@ -100,7 +100,10 @@ fun InstructionDialogue(
 
                             emptyFieldsError = instructionText.isEmpty()
 
-                            if (emptyFieldsError) mainAction(instructionText)
+                            if (emptyFieldsError) {
+                                mainAction(instructionText)
+                                onDismissRequest()
+                            }
                         }
                     ){
                         Text(

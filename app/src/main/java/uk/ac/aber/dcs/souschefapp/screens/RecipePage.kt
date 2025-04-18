@@ -439,7 +439,7 @@ fun RecipePageScreen(
 
             if (isIngredientDialog){
                 IngredientDialogue(
-                    onDismissRequest = { isInstructionDialog = false },
+                    onDismissRequest = { isIngredientDialog = false },
                     mainAction = { ingredient ->
                         mutableIngredientList.add(ingredient)
                         isModified = true
