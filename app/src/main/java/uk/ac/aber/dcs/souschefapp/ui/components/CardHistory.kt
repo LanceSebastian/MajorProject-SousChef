@@ -40,6 +40,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Timestamp
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.time.Instant
@@ -55,6 +56,7 @@ fun CardHistory(
     recipes: List<Recipe> = emptyList(),
     rating: Int = 0,
     selectRecipe: (String) -> Unit,
+    selectMode: (SelectMode) -> Unit,
     setLog: (Long) -> Unit,
 ) {
     /*      Variables       */
@@ -196,9 +198,9 @@ fun CardHistory(
                         }
                     }
                 } else {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
                         modifier = Modifier
                             .height(150.dp)
                             .fillMaxWidth()
@@ -206,7 +208,8 @@ fun CardHistory(
                         Text("This is looking empty...")
                         Button(
                             onClick = {
-                                TODO("Feat: Select Recipe")
+                                selectMode(SelectMode.Select)
+                                navController.navigate(Screen.Recipes)
                             }
                         ){
                             Text("Add recipe?")
@@ -225,7 +228,7 @@ fun CardHistory(
                             navController.navigate(Screen.Home.route)
                         }
                     ) {
-                        Text("View")
+                        Text("View Log")
                     }
                 }
             }
@@ -243,7 +246,8 @@ fun EmptyCardHistoryView(){
             rating = 2,
             recipes = emptyList(),
             selectRecipe = {},
-            setLog = {}
+            setLog = {},
+            selectMode = {}
         )
     }
 
@@ -267,7 +271,8 @@ fun CardHistoryView(){
             rating = 2,
             recipes = mockRecipes,
             selectRecipe = {},
-            setLog = {}
+            setLog = {},
+            selectMode = {}
         )
     }
 
