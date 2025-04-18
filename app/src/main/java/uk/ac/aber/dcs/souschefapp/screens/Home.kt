@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -96,7 +98,13 @@ fun TopHomeScreen(
     val user by authViewModel.user.observeAsState()
     val userId = user?.uid
 
+    val isLoadingLogs by logViewModel.isLoading.observeAsState(true)
+    val isLoadingRecipes by recipeViewModel.isLoading.observeAsState(true)
+    val isLoadingProducts by productViewModel.isLoading.observeAsState(true)
+    val isEverythingReady = !isLoadingLogs && !isLoadingProducts && !isLoadingRecipes
+
     val logs by logViewModel.logs.observeAsState(emptyList())
+
 
     val log by logViewModel.singleLog.observeAsState(null)
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
@@ -109,56 +117,65 @@ fun TopHomeScreen(
         if(userId != null){
             logViewModel.readLogs(userId)
             productViewModel.readProducts(userId)
+            recipeViewModel.readRecipes(userId)
         }
 
         onDispose {
             logViewModel.stopListening()
             productViewModel.stopListening()
+            recipeViewModel.stopListening()
         }
     }
 
-    HomeScreen(
-        navController = navController,
-        mainState = MainState.HOME,
-        logs = logs,
-        log = log,
-        recipes = recipes,
-        products = products,
-        compiledNotes = compiledNotes,
-        createLog = { dateMillis ->
-            logViewModel.createLog(userId, dateMillis)
-        },
-        selectProduct = { productId ->
-            productViewModel.selectProduct(productId)
-        },
-        getProductsFromList = { productIdList ->
-            productViewModel.getProductsFromList(userId, productIdList)
-        },
-        setProductMode = { mode ->
-            productViewModel.setMode(mode)
-        },
-        setRecipePageMode = {mode ->
-            recipeViewModel.setEditMode(mode)
-        },
-        setRecipesSelectMode = { mode ->
-           recipeViewModel.setSelectMode(mode)
-        },
-        readLogFromDate = { dateMillis ->
-            logViewModel.readLogFromDate(dateMillis)
-        },
-        updateRating = {millis, rating ->
-            logViewModel.updateRating(userId, millis, rating)
-        },
-        updatePNote = { millis, content ->
-            logViewModel.updateNote(userId, millis, content, context)
-        },
-        deleteLog = { millis ->
-            logViewModel.deleteLog(userId, millis)
-        },
-        updateRNotes = { recipeIdList ->
-            noteViewModel.compileNotesFromRecipes(userId, recipeIdList)
+    if (!isEverythingReady){
+        // 🔄 Show loading screen or shimmer
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
-    )
+    } else{
+        HomeScreen(
+            navController = navController,
+            mainState = MainState.HOME,
+            logs = logs,
+            log = log,
+            recipes = recipes,
+            products = products,
+            compiledNotes = compiledNotes,
+            createLog = { dateMillis ->
+                logViewModel.createLog(userId, dateMillis)
+            },
+            selectProduct = { productId ->
+                productViewModel.selectProduct(productId)
+            },
+            getProductsFromList = { productIdList ->
+                productViewModel.getProductsFromList(userId, productIdList)
+            },
+            setProductMode = { mode ->
+                productViewModel.setMode(mode)
+            },
+            setRecipePageMode = {mode ->
+                recipeViewModel.setEditMode(mode)
+            },
+            setRecipesSelectMode = { mode ->
+                recipeViewModel.setSelectMode(mode)
+            },
+            readLogFromDate = { dateMillis ->
+                logViewModel.readLogFromDate(dateMillis)
+            },
+            updateRating = {millis, rating ->
+                logViewModel.updateRating(userId, millis, rating)
+            },
+            updatePNote = { millis, content ->
+                logViewModel.updateNote(userId, millis, content, context)
+            },
+            deleteLog = { millis ->
+                logViewModel.deleteLog(userId, millis)
+            },
+            updateRNotes = { recipeIdList ->
+                noteViewModel.compileNotesFromRecipes(userId, recipeIdList)
+            }
+        )
+    }
 }
 
 @Composable
@@ -222,7 +239,11 @@ fun HomeScreen(
     var datePicked by remember {
         mutableStateOf(LocalDate.now())
     }
-    val datePickedEpoch: Long = datePicked.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val datePickedEpoch by remember {
+        derivedStateOf {
+            datePicked.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        }
+    }
     // toString
     val monthFormat by remember {
         derivedStateOf {
@@ -257,6 +278,7 @@ fun HomeScreen(
         previousLog?.let {
             updateRating(previousLog!!.logId.toLong(), logRating)
         }
+        logNote = log?.note ?: ""
         logRating = log?.rating ?: 0
         previousLog = log
         updateRNotes(log?.recipeIdList)
@@ -368,16 +390,13 @@ fun HomeScreen(
                                 style = MaterialTheme.typography.headlineSmall
                             )
                         }
-
                     } else {
-
                         LazyRow(
                             modifier = Modifier
                                 .background(color = MaterialTheme.colorScheme.surfaceContainer)
                                 .height(150.dp)
                                 .fillMaxWidth()
                         ) {
-
                             logRecipes.forEach { recipe ->
                                 item {
                                     CardRecipe(
@@ -403,10 +422,10 @@ fun HomeScreen(
                                     )
                                 }
                             }
-
                         }
                     }
 
+                    /*      Rating      */
                     Row(
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier
@@ -456,7 +475,6 @@ fun HomeScreen(
                                 Text(
                                     text = "Personal Note",
                                     style = MaterialTheme.typography.headlineSmall,
-
                                     )
                                 if (!personalExpanded) {
                                     Icon(
@@ -494,14 +512,8 @@ fun HomeScreen(
                             }
                             Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                                 if (personalExpanded) {
-                                    if (logNote.isEmpty()) {
-                                        Text(
-                                            text = "What did you think of today?",
-                                            modifier = Modifier.alpha(0.7f)
-                                        )
-                                    }
                                     BasicTextField(
-                                        value = logNote,
+                                        value = logNote.ifEmpty { "What did you think of today?" },
                                         onValueChange = {
                                             logNote = it
                                         },
