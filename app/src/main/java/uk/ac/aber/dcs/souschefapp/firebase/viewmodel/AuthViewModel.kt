@@ -20,17 +20,42 @@ class AuthViewModel : ViewModel() {
     private val _authStatus = MutableLiveData<String>()
     val authStatus: LiveData<String> get() = _authStatus
 
+    private val _isLoading = MutableLiveData(false)
+    val isLoading: LiveData<Boolean> = _isLoading
+
+    private val _isLoadingAutoLogin = MutableLiveData(true) // Track auto-login loading state
+    val isLoadingAutoLogin: LiveData<Boolean> = _isLoadingAutoLogin
+
     init {
-        _user.value = auth.currentUser // Check if user is already logged in
-        _user.value?.let { fetchUsername(it.uid) } // ← Fetch username on startup
+        // Start checking the user authentication status on initialization
+        checkAutoLogin()
+    }
+
+    // Auto-login check (user already logged in?)
+    private fun checkAutoLogin() {
+        _isLoadingAutoLogin.value = true
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            // User is already logged in
+            _user.value = currentUser
+            _authStatus.value = "User auto-logged in!"
+        } else {
+            // No user logged in
+            _authStatus.value = "No user logged in"
+        }
+        _isLoadingAutoLogin.value = false
     }
 
     fun register(email: String, password: String, username: String) {
+        _isLoading.value = true // Set loading to true when operation starts
+
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
+                _isLoading.value = false // Set loading to false when operation ends
+
                 if (task.isSuccessful) {
                     val firebaseUser = auth.currentUser
-                    firebaseUser?.let{
+                    firebaseUser?.let {
                         saveUserToFirestore(it.uid, email, username)
                     }
                     _user.value = auth.currentUser
@@ -57,8 +82,12 @@ class AuthViewModel : ViewModel() {
     }
 
     fun login(email: String, password: String) {
+        _isLoading.value = true // Set loading to true when operation starts
+
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
+                _isLoading.value = false // Set loading to false when operation ends
+
                 if (task.isSuccessful) {
                     _user.value = auth.currentUser
                     _user.value?.let { fetchUsername(it.uid) } // Fetch username after login
