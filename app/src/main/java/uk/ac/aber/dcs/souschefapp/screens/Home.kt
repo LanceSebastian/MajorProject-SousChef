@@ -98,19 +98,17 @@ fun TopHomeScreen(
     val user by authViewModel.user.observeAsState()
     val userId = user?.uid
 
+    val logs by logViewModel.logs.observeAsState(emptyList())
+
     val isLoadingLogs by logViewModel.isLoading.observeAsState(true)
     val isLoadingRecipes by recipeViewModel.isLoading.observeAsState(true)
     val isLoadingProducts by productViewModel.isLoading.observeAsState(true)
     val isEverythingReady = !isLoadingLogs && !isLoadingProducts && !isLoadingRecipes
 
-    val logs by logViewModel.logs.observeAsState(emptyList())
-
-
     val log by logViewModel.singleLog.observeAsState(null)
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
     val products by productViewModel.userProducts.observeAsState(emptyList())
     val compiledNotes by noteViewModel.compiledNotes.observeAsState(null)
-
 
     // Listen for logs in real-time when the user exists
     DisposableEffect(userId) {
@@ -132,7 +130,7 @@ fun TopHomeScreen(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
-    } else{
+    } else {
         HomeScreen(
             navController = navController,
             mainState = MainState.HOME,
@@ -153,7 +151,7 @@ fun TopHomeScreen(
             setProductMode = { mode ->
                 productViewModel.setMode(mode)
             },
-            setRecipePageMode = {mode ->
+            setRecipePageMode = { mode ->
                 recipeViewModel.setEditMode(mode)
             },
             setRecipesSelectMode = { mode ->
@@ -162,7 +160,7 @@ fun TopHomeScreen(
             readLogFromDate = { dateMillis ->
                 logViewModel.readLogFromDate(dateMillis)
             },
-            updateRating = {millis, rating ->
+            updateRating = { millis, rating ->
                 logViewModel.updateRating(userId, millis, rating)
             },
             updatePNote = { millis, content ->
