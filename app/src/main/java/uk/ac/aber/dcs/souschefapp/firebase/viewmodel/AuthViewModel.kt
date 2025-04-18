@@ -39,6 +39,7 @@ class AuthViewModel : ViewModel() {
             // User is already logged in
             _user.value = currentUser
             _authStatus.value = "User auto-logged in!"
+            _user.value?.let{ fetchUsername(it.uid) }
         } else {
             // No user logged in
             _authStatus.value = "No user logged in"
