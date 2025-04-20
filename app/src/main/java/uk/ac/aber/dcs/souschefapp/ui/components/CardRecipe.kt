@@ -25,10 +25,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.request.ImageRequest
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 @Composable
@@ -36,10 +38,12 @@ fun CardRecipe(
     modifier: Modifier = Modifier,
     text: String = "",
     imageUri: Uri? = null,
+    imageUrl: String? = null,
     overlay: Boolean = true,
     onClick: () -> Unit,
 ) {
     val defaultImage = painterResource(id = R.drawable.questionimage)
+    val context = LocalContext.current
 
     Card(
         colors = CardDefaults.cardColors(
@@ -51,21 +55,17 @@ fun CardRecipe(
         shape = RoundedCornerShape(12.dp)
     ) {
         Box {
-            if (imageUri == null) {
-                Image(
-                    painter = defaultImage,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                AsyncImage(
-                    model = imageUri,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentScale = ContentScale.Crop
-                )
-            }
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(imageUrl ?: imageUri)
+                    .crossfade(true)
+                    .placeholder(R.drawable.questionimage)
+                    .error(R.drawable.questionimage)
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Crop
+            )
 
             // Overlay (Shadow)
             if (overlay) {

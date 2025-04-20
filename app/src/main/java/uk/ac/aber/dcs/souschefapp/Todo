@@ -1,4 +1,15 @@
 
+Images:
+* Select / Take Pictures
+* Save to Firebase Storage
+    * Upload Compressed version.
+    * Possibly store offline.
+* Save metadata to Firestore
+
+
+Archive:
+
+-- 20/04/25 --
 First Test - Bugs:
 Auth
     O* Pressing Sign Up multiple times can create copies of the same account. (fixed: disable dialog when loading, still room for bugs tho)
@@ -22,8 +33,6 @@ Products
 Profile
     o Username isn't being read when autologged in. (auth.currentUser is populated but the app needs to fetch the data)
 
-
-Archive:
 
 -- 07/04/25 --
 Account - Currently Done:

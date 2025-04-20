@@ -1,11 +1,14 @@
 package uk.ac.aber.dcs.souschefapp.firebase
 
+import android.net.Uri
 import com.google.apphosting.datastore.testing.DatastoreTestTrace.FirestoreV1Action.Listen
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 class LogRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -181,6 +184,7 @@ class LogRepository {
 
 class ProductRepository {
     private val db = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance()
 
     suspend fun addProduct(userId: String, product: Product): Product? {
         return try {
@@ -253,6 +257,7 @@ class ProductRepository {
 
             val updates = mapOf(
                 "name" to product.name,
+                "imageUrl" to product.imageUrl,
                 "price" to product.price
             )
 
@@ -801,5 +806,17 @@ class IngredientRepository {
             android.util.Log.e("Firestore", "Error deleting ingredient: ${e.message}", e)
             false
         }
+    }
+}
+
+class ImageRepository {
+    private val db = FirebaseFirestore.getInstance()
+    private val storageRef = FirebaseStorage.getInstance().reference
+
+    suspend fun uploadImage(uri: Uri): String {
+        val filename = UUID.randomUUID().toString()
+        val imageRef = storageRef.child("images/$filename")
+        imageRef.putFile(uri).await()
+        return imageRef.downloadUrl.await().toString()
     }
 }
