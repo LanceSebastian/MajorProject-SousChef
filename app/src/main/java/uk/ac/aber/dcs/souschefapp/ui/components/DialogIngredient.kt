@@ -48,6 +48,7 @@ fun IngredientDialogue(
     var emptyNameError by remember { mutableStateOf(false) }
     var emptyAmountError by remember { mutableStateOf(false) }
     var emptyUnitError by remember { mutableStateOf(false) }
+    var emptyExtraError by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
 
     val maxExtraChars = 200
@@ -178,6 +179,7 @@ fun IngredientDialogue(
                             emptyNameError = nameText.isEmpty()
                             emptyUnitError = unitText.isEmpty()
                             emptyAmountError = amountText.isEmpty()
+                            emptyExtraError = extraText.isEmpty()
                             emptyFieldsError = emptyNameError  || emptyAmountError
 
                             if (!emptyFieldsError) {
@@ -185,8 +187,8 @@ fun IngredientDialogue(
                                     Ingredient(
                                         name = nameText,
                                         quantity = amountText,
-                                        unit = unitText,
-                                        description = extraText
+                                        unit = if (emptyUnitError) null else unitText,
+                                        description = if (emptyExtraError) null else extraText
                                     )
                                 )
                                 onDismissRequest()
