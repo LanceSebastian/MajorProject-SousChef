@@ -223,7 +223,8 @@ fun CardHistory(
                         Button(
                             onClick = {
                                 selectMode(SelectMode.Select)
-                                navController.navigate(Screen.Recipes)
+                                setLog(log.logId.toLong())
+                                navController.navigate(Screen.Recipes.route)
                             }
                         ){
                             Text("Add recipe?")
