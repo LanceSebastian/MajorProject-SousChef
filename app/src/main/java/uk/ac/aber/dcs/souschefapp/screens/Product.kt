@@ -1,6 +1,9 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
+import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -39,6 +43,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Product
+import uk.ac.aber.dcs.souschefapp.firebase.UploadState
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
@@ -64,10 +69,13 @@ fun TopProductScreen(
 
     val product by productViewModel.selectProduct.observeAsState(null)
     val editMode by productViewModel.editMode.observeAsState(EditMode.View)
+    val uploadState by productViewModel.uploadState.observeAsState(UploadState.Idle)
+
     val coroutineScope = rememberCoroutineScope()
 
     ProductScreen(
         navController = navController,
+        uploadState = uploadState,
         product = product,
         editMode = editMode,
         setMode = { newMode ->
@@ -76,17 +84,17 @@ fun TopProductScreen(
         clearSelectProduct = {
             productViewModel.clearSelectProduct()
         },
-        createProductToLog = { newProduct ->
+        createProductToLog = { newProduct, imageUri ->
             coroutineScope.launch {
-                val productId = productViewModel.createProductAndId(userId, newProduct, context)
+                val productId = productViewModel.createProductAndId(userId, newProduct, imageUri, context)
                 if (productId != null){
                     logViewModel.addProductToCurrentLog(userId, productId, context)
                     navController.popBackStack()
                 }
             }
         },
-        updateProduct = { newProduct ->
-            productViewModel.updateProduct(userId, newProduct, context)
+        updateProduct = { newProduct, imageUri ->
+            productViewModel.updateProduct(userId, newProduct, imageUri, context)
         },
         archiveProduct = { newProduct ->
             productViewModel.archiveProduct(userId, newProduct.productId, context)
@@ -97,12 +105,13 @@ fun TopProductScreen(
 @Composable
 fun ProductScreen(
     navController: NavHostController,
+    uploadState: UploadState = UploadState.Idle,
     editMode: EditMode = EditMode.View,
     setMode: (EditMode) -> Unit,
     product: Product? = null,
     clearSelectProduct: () -> Unit,
-    createProductToLog: (Product) -> Unit,
-    updateProduct: (Product) -> Unit,
+    createProductToLog: (Product, Uri?) -> Unit,
+    updateProduct: (Product, Uri?) -> Unit,
     archiveProduct: (Product) -> Unit
 ){
     val isProductExist = product != null
@@ -111,6 +120,13 @@ fun ProductScreen(
 
     var nameText by remember { mutableStateOf(product?.name ?: "") }
     var priceText by remember { mutableStateOf((product?.price ?: "").toString()) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        selectedImageUri = uri
+    }
 
     val isModified by remember {
         derivedStateOf {
@@ -147,9 +163,9 @@ fun ProductScreen(
             )
 
             if (editMode == EditMode.Edit) {
-                updateProduct(newProduct)
+                updateProduct(newProduct, selectedImageUri)
             } else {
-                createProductToLog(newProduct)
+                createProductToLog(newProduct, selectedImageUri)
             }
             setMode(EditMode.View)
         },
@@ -179,25 +195,34 @@ fun ProductScreen(
                 ) {
                     CardRecipe(
                         onClick = {},
+                        imageUri = (selectedImageUri),
+                        imageUrl = product?.imageUrl,
                         modifier = Modifier
                             .border(width = 1.dp, color = MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(12.dp))
                             .blur(1.dp)
                             .fillMaxWidth(0.8f)
                     )
                     if (editMode != EditMode.View) {
-                        Button(
-                            onClick = {
-                                TODO("Implement Add image function")
-                            },
-                            enabled = false
-                        ){
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null
-                            )
-                            Text(
-                                text = "Add Image"
-                            )
+                        when (uploadState) {
+                            is UploadState.Loading -> CircularProgressIndicator()
+                            is UploadState.Success -> Text("Product created!")
+                            is UploadState.Error -> Text("Error: ${(uploadState as UploadState.Error).message}")
+                            else -> {
+                                Button(
+                                    onClick = {
+                                        imagePickerLauncher.launch("image/*")
+                                    },
+                                    enabled = true
+                                ){
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null
+                                    )
+                                    Text(
+                                        text = "Add Image"
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -251,7 +276,7 @@ fun ProductScreen(
                 ConfirmDialogue(
                     onDismissRequest = { isBackConfirm = false },
                     mainAction = {
-                        if (isProductExist) updateProduct(newProduct) else createProductToLog(newProduct)
+                        if (isProductExist) updateProduct(newProduct, selectedImageUri) else createProductToLog(newProduct, selectedImageUri)
                         navController.popBackStack()
                                  },
                     secondAction = { navController.popBackStack() },
@@ -274,8 +299,8 @@ fun CreateProductScreenPreview(){
             navController = navController,
             editMode = EditMode.Create,
             setMode = {},
-            createProductToLog = {},
-            updateProduct = {},
+            createProductToLog = {_,_ ->},
+            updateProduct = {_,_ ->},
             archiveProduct = {},
             clearSelectProduct = {},
         )
@@ -297,8 +322,8 @@ fun ViewProductScreenPreview(){
             ),
             editMode = EditMode.View,
             setMode = {},
-            createProductToLog = {},
-            updateProduct = {},
+            createProductToLog = {_,_ ->},
+            updateProduct = {_,_ ->},
             archiveProduct = {},
             clearSelectProduct = {},
         )
@@ -320,8 +345,8 @@ fun EditProductScreenPreview(){
             ),
             editMode = EditMode.Edit,
             setMode = {},
-            createProductToLog = {},
-            updateProduct = {},
+            createProductToLog = {_,_ ->},
+            updateProduct = {_,_ ->},
             archiveProduct = {},
             clearSelectProduct = {},
         )
