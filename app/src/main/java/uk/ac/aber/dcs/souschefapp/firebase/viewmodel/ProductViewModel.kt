@@ -64,6 +64,30 @@ class ProductViewModel : ViewModel() {
         }
     }
 
+    suspend fun createProductAndId(userId: String?, product: Product? = null, context: Context): String? {
+        if (userId == null) {
+            android.util.Log.e("ProductViewModel", "Failed to create product due to null userId")
+            return null
+        }
+
+        val standardProduct = product?.copy(
+            createdBy = userId
+        ) ?: Product(
+            name = "Unnamed",
+            createdBy = userId
+        )
+        val savedProduct = productRepository.addProduct(userId, standardProduct)
+
+        return if (savedProduct != null) {
+            //Toast.makeText(context, "Product saved successfully!", Toast.LENGTH_SHORT).show()
+            savedProduct.productId
+        } else {
+            //Toast.makeText(context, "Failed to save product.", Toast.LENGTH_SHORT).show()
+            null
+        }
+
+    }
+
     fun readProducts(userId: String?){
         if (userId == null) return
 
