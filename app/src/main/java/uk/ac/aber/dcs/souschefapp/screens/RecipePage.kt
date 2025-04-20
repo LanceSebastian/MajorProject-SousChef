@@ -294,10 +294,10 @@ fun RecipePageScreen(
                                     var expanded by remember { mutableStateOf(false) }
                                     val ingredientText = buildString {
                                         append("${ingredient.quantity} ")
-                                        ingredient.unit?.let { append("$it ") }
+                                        if (ingredient.unit != null) append("${ingredient.unit} ")
                                         append(ingredient.name)
-                                        ingredient.description?.let { append(" - $it") }
-                                    }
+                                        if (ingredient.description != null) append(" - ${ingredient.description}")
+                                    }.trim()
 
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically
