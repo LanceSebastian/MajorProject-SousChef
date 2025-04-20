@@ -199,6 +199,7 @@ fun RecipePageScreen(
                 nameText = recipe?.name ?: ""
                 mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf()
                 mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf()
+                setMode(EditMode.View)
             }
         },
     ){ innerPadding ->
@@ -294,9 +295,9 @@ fun RecipePageScreen(
                                     var expanded by remember { mutableStateOf(false) }
                                     val ingredientText = buildString {
                                         append("${ingredient.quantity} ")
-                                        if (ingredient.unit != null) append("${ingredient.unit} ")
+                                        if (ingredient.unit.isNullOrEmpty()) append("${ingredient.unit} ")
                                         append(ingredient.name)
-                                        if (ingredient.description != null) append(" - ${ingredient.description}")
+                                        if (ingredient.description.isNullOrEmpty()) append(" - ${ingredient.description}")
                                     }.trim()
 
                                     Row(
@@ -494,6 +495,7 @@ fun RecipePageScreen(
                         nameText = recipe?.name ?: ""
                         mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf()
                         mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf()
+                        setMode(EditMode.View)
                     },
                     supportingText = "Any unsaved changes will be forgotten.",
                     mainButtonText = "Confirm",
