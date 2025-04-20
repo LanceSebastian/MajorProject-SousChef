@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Timestamp
+import uk.ac.aber.dcs.souschefapp.firebase.Log
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
@@ -53,7 +55,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun CardHistory(
     navController: NavHostController,
-    date: Timestamp = Timestamp.now(),
+    log: Log,
     recipes: List<Recipe> = emptyList(),
     products: List<Product> = emptyList(),
     rating: Int = 0,
@@ -71,8 +73,11 @@ fun CardHistory(
     val unknown = ImageVector.vectorResource(id = R.drawable.unknown)
     val arrowDropUp = ImageVector.vectorResource(id = R.drawable.arrow_drop_up)
 
+    val menu: List<MenuItem> = recipes.map { MenuItem.RecipeItem(it) } +
+            products.map { MenuItem.ProductItem(it) }
+
     val localDateTime = Instant
-        .ofEpochSecond(date.seconds,date.nanoseconds.toLong())
+        .ofEpochSecond(log.createdAt.seconds,log.createdAt.nanoseconds.toLong())
         .atZone(ZoneId.systemDefault())
 
     val topFormat by remember {
@@ -163,17 +168,24 @@ fun CardHistory(
             }
 
             /*      Recipes Content       */
-            if (recipes.isEmpty() || products.isEmpty()){
+            if (menu.isEmpty()){
                 Text(
-                    text = "Recipes: n/a",
+                    text = "Menu: n/a",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall
                 )
             } else {
-                val text = if (!isExpanded) recipes.joinToString(", "){it.name} else ""
+                val text = if (!isExpanded) {
+                    menu.joinToString(", "){
+                        item -> when (item) {
+                            is MenuItem.RecipeItem -> item.recipe.name
+                            is MenuItem.ProductItem -> item.product.name
+                        }
+                    }
+                } else ""
                 Text(
-                    text = "Recipes: $text",
+                    text = "Menu: $text",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall
@@ -182,32 +194,33 @@ fun CardHistory(
 
             /*      Expanded Content       */
             if (isExpanded) {
-                if (recipes.isNotEmpty()|| products.isNotEmpty()) {
+                if (menu.isNotEmpty()) {
                     LazyRow(
                         modifier = Modifier
                             .height(150.dp)
                             .fillMaxWidth()
                     ) {
-                        recipes.forEach { recipe ->
-                            item {
-                                CardRecipe(
-                                    text = recipe.name,
-                                    onClick = {     // Navigate to Recipe
-                                        selectRecipe(recipe.recipeId)
-                                        navController.navigate( Screen.RecipePage.route )
-                                    }
-                                )
-                            }
-                        }
-                        products.forEach{ product ->
-                            item {
-                                CardRecipe(
-                                    text = product.name,
-                                    onClick = {     // Navigate to Recipe
-                                        selectProduct(product.productId)
-                                        navController.navigate( Screen.RecipePage.route )
-                                    }
-                                )
+                        items(menu) { item ->
+                            when (item){
+                                is MenuItem.RecipeItem -> {
+                                    CardRecipe(
+                                        text = item.recipe.name,
+                                        onClick = {     // Navigate to Recipe
+                                            selectRecipe(item.recipe.recipeId)
+                                            navController.navigate( Screen.RecipePage.route )
+                                        }
+                                    )
+                                }
+
+                                is MenuItem.ProductItem -> {
+                                    CardRecipe(
+                                        text = item.product.name,
+                                        onClick = {     // Navigate to Recipe
+                                            selectProduct(item.product.productId)
+                                            navController.navigate( Screen.RecipePage.route )
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -251,6 +264,11 @@ fun CardHistory(
     }
 }
 
+sealed class MenuItem {
+    data class RecipeItem(val recipe: Recipe) : MenuItem()
+    data class ProductItem(val product: Product) : MenuItem()
+}
+
 @Preview
 @Composable
 fun EmptyCardHistoryView(){
@@ -258,6 +276,7 @@ fun EmptyCardHistoryView(){
     AppTheme {
         CardHistory(
             navController = navController,
+            log = Log(),
             rating = 2,
             recipes = emptyList(),
             selectRecipe = {},
@@ -285,6 +304,7 @@ fun CardHistoryView(){
         CardHistory(
             navController = navController,
             rating = 2,
+            log = Log(),
             recipes = mockRecipes,
             selectRecipe = {},
             setLog = {},
