@@ -141,7 +141,7 @@ fun HistoryScreen(
                                 recipes = logRecipes,
                                 products = logProducts,
                                 rating = log.rating,
-                                date = log.createdAt,
+                                log = log,
                                 selectRecipe = { recipeId ->
                                     selectRecipe(recipeId)
                                 },

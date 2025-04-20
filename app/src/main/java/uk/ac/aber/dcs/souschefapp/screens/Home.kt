@@ -152,6 +152,9 @@ fun TopHomeScreen(
             createLog = { dateMillis ->
                 logViewModel.createLog(userId, dateMillis)
             },
+            selectRecipe = { recipeId ->
+                recipeViewModel.selectRecipe(recipeId)
+            },
             selectProduct = { productId ->
                 productViewModel.selectProduct(productId)
             },
@@ -205,6 +208,7 @@ fun HomeScreen(
     products: List<Product>,
     compiledNotes: List<Note>?,
     createLog: (Long) -> Unit,
+    selectRecipe: (String) -> Unit,
     selectProduct: (String) -> Unit,
     getProductsFromList: (List<String>) -> Unit,
     setProductMode: (EditMode) -> Unit,
@@ -394,9 +398,9 @@ fun HomeScreen(
                                     CardRecipe(
                                         text = recipe.name,
                                         onClick = {
-                                            navController.navigate(
-                                                Screen.RecipePage.route + "/recipeId=${recipe.recipeId}"
-                                            )
+                                            selectRecipe(recipe.recipeId)
+                                            setRecipePageMode(EditMode.View)
+                                            navController.navigate(Screen.RecipePage.route)
                                         }
                                     )
                                 }
@@ -628,6 +632,7 @@ fun HomeScreenEmptyView(){
             products = emptyList(),
             compiledNotes = emptyList(),
             createLog = {},
+            selectRecipe = {},
             selectProduct = {},
             getProductsFromList = {},
             setProductMode = {},
@@ -758,6 +763,7 @@ fun HomeScreenView(){
             products = sampleProducts,
             compiledNotes = mockNotes,
             createLog = {},
+            selectRecipe = {},
             selectProduct = {},
             setProductMode = {},
             getProductsFromList = {},

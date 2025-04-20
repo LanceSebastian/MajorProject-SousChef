@@ -48,6 +48,7 @@ fun IngredientDialogue(
     var emptyNameError by remember { mutableStateOf(false) }
     var emptyAmountError by remember { mutableStateOf(false) }
     var emptyUnitError by remember { mutableStateOf(false) }
+    var emptyExtraError by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
 
     val maxExtraChars = 200
@@ -78,7 +79,7 @@ fun IngredientDialogue(
                     },
                     isError = emptyNameError,
                     shape = RoundedCornerShape(25.dp),
-                    label = {Text("Name")},
+                    label = {Text("Name*")},
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent
@@ -103,7 +104,7 @@ fun IngredientDialogue(
                         },
                         isError = emptyAmountError,
                         singleLine = true,
-                        label = { Text("Amount") },
+                        label = { Text("Amount*") },
                         shape = RoundedCornerShape(25.dp),
                         colors = TextFieldDefaults.colors(
                             focusedIndicatorColor = Color.Transparent,
@@ -143,7 +144,7 @@ fun IngredientDialogue(
                         if ( it.length <= maxExtraChars ) extraText = it
                     },
                     shape = RoundedCornerShape(25.dp),
-                    label = {Text("Extra (optional)")},
+                    label = {Text("Extra")},
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent
@@ -178,15 +179,16 @@ fun IngredientDialogue(
                             emptyNameError = nameText.isEmpty()
                             emptyUnitError = unitText.isEmpty()
                             emptyAmountError = amountText.isEmpty()
-                            emptyFieldsError = emptyNameError || emptyUnitError || emptyAmountError
+                            emptyExtraError = extraText.isEmpty()
+                            emptyFieldsError = emptyNameError  || emptyAmountError
 
                             if (!emptyFieldsError) {
                                 mainAction(
                                     Ingredient(
                                         name = nameText,
                                         quantity = amountText,
-                                        unit = unitText,
-                                        description = extraText
+                                        unit = if (emptyUnitError) null else unitText,
+                                        description = if (emptyExtraError) null else extraText
                                     )
                                 )
                                 onDismissRequest()
