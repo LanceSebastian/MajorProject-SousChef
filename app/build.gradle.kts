@@ -100,6 +100,9 @@ dependencies {
     implementation ("androidx.activity:activity-compose:1.8.0")
     implementation ("androidx.core:core-splashscreen:1.0.1")
 
+    // Image Display
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
     implementation(libs.gson)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)
