@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +35,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Product
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
@@ -61,6 +64,7 @@ fun TopProductScreen(
 
     val product by productViewModel.selectProduct.observeAsState(null)
     val editMode by productViewModel.editMode.observeAsState(EditMode.View)
+    val coroutineScope = rememberCoroutineScope()
 
     ProductScreen(
         navController = navController,
@@ -72,11 +76,14 @@ fun TopProductScreen(
         clearSelectProduct = {
             productViewModel.clearSelectProduct()
         },
-        addProductToLog = { newProduct ->
-            logViewModel.addProductToCurrentLog(userId, newProduct.productId, context)
-        },
-        addProduct = { newProduct ->
-            productViewModel.createProduct(userId, newProduct, context)
+        createProductToLog = { newProduct ->
+            coroutineScope.launch {
+                val productId = productViewModel.createProductAndId(userId, newProduct, context)
+                if (productId != null){
+                    logViewModel.addProductToCurrentLog(userId, productId, context)
+                    navController.popBackStack()
+                }
+            }
         },
         updateProduct = { newProduct ->
             productViewModel.updateProduct(userId, newProduct, context)
@@ -94,8 +101,7 @@ fun ProductScreen(
     setMode: (EditMode) -> Unit,
     product: Product? = null,
     clearSelectProduct: () -> Unit,
-    addProductToLog: (Product) -> Unit,
-    addProduct: (Product) -> Unit,
+    createProductToLog: (Product) -> Unit,
     updateProduct: (Product) -> Unit,
     archiveProduct: (Product) -> Unit
 ){
@@ -113,15 +119,6 @@ fun ProductScreen(
             } ?: (nameText.isNotBlank() || priceText.isNotBlank())
         }
     }
-
-    LaunchedEffect(product?.productId) {
-        if (editMode != EditMode.View && product != null && product.productId.isNotBlank()) {
-            addProductToLog(product)
-            navController.popBackStack()
-            clearSelectProduct()
-        }
-    }
-
 
     BareRecipePageScreen(
         navController = navController,
@@ -152,7 +149,7 @@ fun ProductScreen(
             if (editMode == EditMode.Edit) {
                 updateProduct(newProduct)
             } else {
-                addProduct(newProduct)
+                createProductToLog(newProduct)
             }
             setMode(EditMode.View)
         },
@@ -254,7 +251,7 @@ fun ProductScreen(
                 ConfirmDialogue(
                     onDismissRequest = { isBackConfirm = false },
                     mainAction = {
-                        if (isProductExist) updateProduct(newProduct) else addProduct(newProduct)
+                        if (isProductExist) updateProduct(newProduct) else createProductToLog(newProduct)
                         navController.popBackStack()
                                  },
                     secondAction = { navController.popBackStack() },
@@ -277,8 +274,7 @@ fun CreateProductScreenPreview(){
             navController = navController,
             editMode = EditMode.Create,
             setMode = {},
-            addProductToLog = {},
-            addProduct = {},
+            createProductToLog = {},
             updateProduct = {},
             archiveProduct = {},
             clearSelectProduct = {},
@@ -301,8 +297,7 @@ fun ViewProductScreenPreview(){
             ),
             editMode = EditMode.View,
             setMode = {},
-            addProductToLog = {},
-            addProduct = {},
+            createProductToLog = {},
             updateProduct = {},
             archiveProduct = {},
             clearSelectProduct = {},
@@ -325,8 +320,7 @@ fun EditProductScreenPreview(){
             ),
             editMode = EditMode.Edit,
             setMode = {},
-            addProductToLog = {},
-            addProduct = {},
+            createProductToLog = {},
             updateProduct = {},
             archiveProduct = {},
             clearSelectProduct = {},
