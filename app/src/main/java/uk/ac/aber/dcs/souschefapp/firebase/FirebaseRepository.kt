@@ -442,7 +442,7 @@ class RecipeRepository {
                 true
             } else {
                 android.util.Log.d("Firestore", "No changes detected — update skipped.")
-                false
+                true
             }
         } catch (e: Exception){
             android.util.Log.e("Firestore", "Error updating recipe: ${e.message}", e)
