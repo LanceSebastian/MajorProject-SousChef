@@ -1,6 +1,9 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
+import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -54,6 +58,7 @@ import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
 import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
+import uk.ac.aber.dcs.souschefapp.firebase.UploadState
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
@@ -79,6 +84,7 @@ fun TopRecipePageScreen(
     val recipe by recipeViewModel.selectRecipe.observeAsState()
     val ingredients by ingredientViewModel.recipeIngredient.observeAsState()
     val editMode by recipeViewModel.editMode.observeAsState(EditMode.View)
+    val uploadState by recipeViewModel.uploadState.observeAsState(UploadState.Idle)
     val coroutineScope = rememberCoroutineScope()
 
     // Listen for ingredients in real-time when the recipe exists
@@ -96,6 +102,7 @@ fun TopRecipePageScreen(
     RecipePageScreen(
         navController = navController,
         editMode = editMode,
+        uploadState = uploadState,
         recipe = recipe,
         ingredients = ingredients,
         setMode = { newMode ->
@@ -104,16 +111,16 @@ fun TopRecipePageScreen(
         clearSelectRecipe = {
             recipeViewModel.clearSelectRecipe()
         },
-        addRecipe = { newRecipe, newIngredients ->
+        addRecipe = { newRecipe, newIngredients, imageUri ->
             coroutineScope.launch {
-                val recipeId = recipeViewModel.createRecipeAndId(userId, newRecipe, context)
+                val recipeId = recipeViewModel.createRecipeAndId(userId, newRecipe, imageUri, context)
                 if(recipeId != null){
                     ingredientViewModel.createIngredients(userId, recipeId, newIngredients)
                 }
             }
         },
-        updateRecipe = { newRecipe, newIngredients ->
-            recipeViewModel.updateRecipe(userId, newRecipe)
+        updateRecipe = { newRecipe, newIngredients, imageUri ->
+            recipeViewModel.updateRecipe(userId, newRecipe, imageUri)
             ingredientViewModel.updateIngredients(userId, newRecipe.recipeId, newIngredients)
         },
         archiveRecipe = { newRecipe ->
@@ -127,12 +134,13 @@ fun TopRecipePageScreen(
 fun RecipePageScreen(
     navController: NavHostController,
     editMode: EditMode = EditMode.View,
+    uploadState: UploadState = UploadState.Idle,
     recipe: Recipe? = null,
     ingredients: List<Ingredient>? = null,
     setMode: (EditMode) -> Unit,
     clearSelectRecipe: () -> Unit,
-    addRecipe: (Recipe, List<Ingredient>) -> Unit,
-    updateRecipe: (Recipe, List<Ingredient>) -> Unit,
+    addRecipe: (Recipe, List<Ingredient>, Uri?) -> Unit,
+    updateRecipe: (Recipe, List<Ingredient>, Uri?) -> Unit,
     archiveRecipe: (Recipe) -> Unit,
 
     ){
@@ -150,8 +158,15 @@ fun RecipePageScreen(
 
     var isBackConfirm by remember { mutableStateOf(false) }
 
-    var isEdit by remember { mutableStateOf(false) }
     var isModified by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        selectedImageUri = uri
+        isModified = true
+    }
 
     var editIngredient: Ingredient? = null
     var editInstruction: String = ""
@@ -182,9 +197,9 @@ fun RecipePageScreen(
                 instructions = mutableInstructions
             )
             if (editMode == EditMode.Edit) {
-                updateRecipe(newRecipe, mutableIngredientList.toList())
+                updateRecipe(newRecipe, mutableIngredientList.toList(), selectedImageUri)
             } else {
-                addRecipe(newRecipe, mutableIngredientList)
+                addRecipe(newRecipe, mutableIngredientList, selectedImageUri)
                 navController.popBackStack()
             }
             setMode(EditMode.View)
@@ -199,6 +214,7 @@ fun RecipePageScreen(
                 nameText = recipe?.name ?: ""
                 mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf()
                 mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf()
+                selectedImageUri = null
                 setMode(EditMode.View)
             }
         },
@@ -221,22 +237,38 @@ fun RecipePageScreen(
                 ) {
                     CardRecipe(
                         onClick = {},
+                        imageUri = selectedImageUri,
+                        imageUrl = recipe?.imageUrl,
                         modifier = Modifier
                             .border(width = 1.dp, color = MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(12.dp))
                             .blur(1.dp)
                             .fillMaxWidth(0.8f)
                     )
-                    Button(
-                        onClick = { TODO("Implement Add image function") },
-                        enabled = false
-                    ){
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null
+
+                    when (uploadState) {
+                        is UploadState.Loading -> CircularProgressIndicator()
+                        is UploadState.Success -> Text(
+                            text = "Recipe created!",
+                            color = MaterialTheme.colorScheme.onSurface)
+                        is UploadState.Error -> Text(
+                            text = "Error: ${uploadState.message}",
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            text = "Add Image"
-                        )
+                        else -> {
+                            if (editMode != EditMode.View) {
+                                Button(
+                                    onClick = { imagePickerLauncher.launch("image/*") }
+                                ){
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null
+                                    )
+                                    Text(
+                                        text = "Add Image"
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -295,9 +327,9 @@ fun RecipePageScreen(
                                     var expanded by remember { mutableStateOf(false) }
                                     val ingredientText = buildString {
                                         append("${ingredient.quantity} ")
-                                        if (ingredient.unit.isNullOrEmpty()) append("${ingredient.unit} ")
+                                        if (!ingredient.unit.isNullOrEmpty()) append("${ingredient.unit} ")
                                         append(ingredient.name)
-                                        if (ingredient.description.isNullOrEmpty()) append(" - ${ingredient.description}")
+                                        if (!ingredient.description.isNullOrEmpty()) append(" - ${ingredient.description}")
                                     }.trim()
 
                                     Row(
@@ -495,6 +527,7 @@ fun RecipePageScreen(
                         nameText = recipe?.name ?: ""
                         mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf()
                         mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf()
+                        selectedImageUri = null
                         setMode(EditMode.View)
                     },
                     supportingText = "Any unsaved changes will be forgotten.",
@@ -515,7 +548,8 @@ fun RecipePageScreen(
                 ConfirmDialogue(
                     onDismissRequest = { isBackConfirm = false },
                     mainAction = {
-                        if (isRecipeExist) updateRecipe(newRecipe, mutableIngredientList) else addRecipe(newRecipe, mutableIngredientList)
+                        if (isRecipeExist) updateRecipe(newRecipe, mutableIngredientList, selectedImageUri)
+                        else addRecipe(newRecipe, mutableIngredientList, selectedImageUri)
                         navController.popBackStack()
                         setMode(EditMode.View)
                     },
@@ -542,8 +576,8 @@ fun CreateRecipePageScreenPreview(){
         RecipePageScreen(
             navController = navController,
             editMode = EditMode.Create,
-            addRecipe = {_,_ ->},
-            updateRecipe = {_,_ ->},
+            addRecipe = {_,_,_ ->},
+            updateRecipe = {_,_,_ ->},
             archiveRecipe = {},
             setMode = {},
             clearSelectRecipe = {}
@@ -592,8 +626,8 @@ fun EditRecipePageScreenPreview(){
             editMode = EditMode.Edit,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,
-            addRecipe = {_,_ ->},
-            updateRecipe = {_,_ ->},
+            addRecipe = {_,_,_ ->},
+            updateRecipe = {_,_,_ ->},
             archiveRecipe = {},
             setMode = {},
             clearSelectRecipe = {}
@@ -642,8 +676,8 @@ fun ViewRecipePageScreenPreview(){
             editMode = EditMode.View,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,
-            addRecipe = {_,_ ->},
-            updateRecipe = {_,_ ->},
+            addRecipe = {_,_,_ ->},
+            updateRecipe = {_,_,_ ->},
             archiveRecipe = {},
             setMode = {},
             clearSelectRecipe = {}

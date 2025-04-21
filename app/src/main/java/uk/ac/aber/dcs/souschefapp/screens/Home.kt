@@ -401,7 +401,8 @@ fun HomeScreen(
                                             selectRecipe(recipe.recipeId)
                                             setRecipePageMode(EditMode.View)
                                             navController.navigate(Screen.RecipePage.route)
-                                        }
+                                        },
+                                        imageUrl = recipe.imageUrl
                                     )
                                 }
                             }
@@ -414,7 +415,8 @@ fun HomeScreen(
                                             selectProduct(product.productId)
                                             setProductMode(EditMode.View)
                                             navController.navigate(Screen.Product.route)
-                                        }
+                                        },
+                                        imageUrl = product.imageUrl
                                     )
                                 }
                             }

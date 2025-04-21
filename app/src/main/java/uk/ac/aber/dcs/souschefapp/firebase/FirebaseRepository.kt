@@ -305,12 +305,12 @@ class ProductRepository {
         }
     }
 
-    suspend fun deleteProduct(userId: String, productId: String): Boolean {
+    suspend fun deleteProduct(userId: String, product: Product): Boolean {
         return try {
             val productRef = db.collection("users")
                 .document(userId)
                 .collection("products")
-                .document(productId)
+                .document(product.productId)
 
             // Get the document snapshot
             val snapshot = productRef.get().await()
@@ -425,8 +425,12 @@ class RecipeRepository {
             if (original.name != updated.name) updates["name"] = updated.name
             if (original.instructions != updated.instructions) updates["instructions"] =
                 updated.instructions ?: emptyList<String>()
+
             if (original.tags != updated.tags) updates["tags"] = updated.tags ?: emptyList<String>()
             if (original.isArchive != updated.isArchive) updates["isArchive"] = updated.isArchive
+            if (original.imageUrl != updated.imageUrl)
+                updated.imageUrl?.let { updates["imageUrl"] = it }
+                    ?: updates.remove("imageUrl")
 
             if (updates.isNotEmpty()) {
                 val recipeRef = db.collection("users")
@@ -571,12 +575,12 @@ class RecipeRepository {
         }
     }
 
-    suspend fun deleteRecipe(userId: String, recipeId: String): Boolean {
+    suspend fun deleteRecipe(userId: String, recipe: Recipe): Boolean {
         return try {
             val recipeRef = db.collection("users")
                 .document(userId)
                 .collection("recipes")
-                .document(recipeId)
+                .document(recipe.recipeId)
 
             // Get the document snapshot
             val snapshot = recipeRef.get().await()
@@ -818,5 +822,30 @@ class ImageRepository {
         val imageRef = storageRef.child("images/$filename")
         imageRef.putFile(uri).await()
         return imageRef.downloadUrl.await().toString()
+    }
+
+    suspend fun updateImage(imageUrl: String?, uri: Uri): String {
+        if (imageUrl == null) return uploadImage(uri)
+
+        return try {
+            val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl)
+            storageRef.putFile(uri).await() // This overwrites the existing file
+            storageRef.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseStorage", "Image update failed: ${e.message}", e)
+            imageUrl // fallback: return the original if upload fails
+        }
+    }
+
+    suspend fun deleteImageByUrl(imageUrl: String?) {
+        if (imageUrl.isNullOrEmpty()) return // No image to delete
+
+        try {
+            val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl)
+            storageRef.delete().await()
+            android.util.Log.d("Storage", "Image deleted successfully.")
+        } catch (e: Exception) {
+            android.util.Log.e("Storage", "Failed to delete image: ${e.message}", e)
+        }
     }
 }
