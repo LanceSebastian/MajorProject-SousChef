@@ -39,12 +39,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,14 +74,13 @@ import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.components.DateNavigationBar
-import uk.ac.aber.dcs.souschefapp.ui.components.HomeAddDialogue
+import uk.ac.aber.dcs.souschefapp.ui.components.ChoiceDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.MyCalendar
 import uk.ac.aber.dcs.souschefapp.ui.components.RecipeNote
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Date
 
 // Add Product
@@ -596,7 +593,7 @@ fun HomeScreen(
                 }
 
                 if (addSelected) {
-                    HomeAddDialogue(
+                    ChoiceDialogue(
                         onDismissRequest = { addSelected = false },
                         mainAction = {
                             setProductMode(EditMode.Create)
@@ -605,7 +602,9 @@ fun HomeScreen(
                         secondAction = {
                             setRecipesSelectMode(SelectMode.Select)
                             navController.navigate(Screen.Recipes.route)
-                        }
+                        },
+                        mainText = "Product",
+                        secondText = "Recipe"
                     )
                 }
             }
