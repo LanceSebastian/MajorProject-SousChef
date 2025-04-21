@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -86,7 +88,7 @@ fun TopRecipePageScreen(
     val userId = user?.uid
 
     val recipe by recipeViewModel.selectRecipe.observeAsState()
-    val ingredients by ingredientViewModel.recipeIngredient.observeAsState()
+    val ingredients by ingredientViewModel.recipeIngredients.observeAsState()
     val editMode by recipeViewModel.editMode.observeAsState(EditMode.View)
     val uploadState by recipeViewModel.uploadState.observeAsState(UploadState.Idle)
     val coroutineScope = rememberCoroutineScope()
@@ -163,8 +165,10 @@ fun RecipePageScreen(
     val isRecipeExist = recipe != null
 
     var nameText by remember { mutableStateOf(recipe?.name ?: "") }
-    var mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf<String>()
-    var mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf<Ingredient>()
+    var mutableInstructions by remember { mutableStateOf( listOf<String>() ) }
+    LaunchedEffect(ingredients) { mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf() }
+    var mutableIngredientList by remember { mutableStateOf(listOf<Ingredient>()) }
+    LaunchedEffect(ingredients) { mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf() }
 
     var isIngredientDialog by remember { mutableStateOf(false) }
     var isInstructionDialog by remember { mutableStateOf(false) }
@@ -192,8 +196,8 @@ fun RecipePageScreen(
         isModified = true
     }
 
-    var editIngredient: Ingredient? = null
-    var editInstruction: String = ""
+    var editIngredient by remember { mutableStateOf<Ingredient?>(null) }
+    var editInstruction by remember {mutableStateOf("")}
 
     BareRecipePageScreen(
         navController = navController,
@@ -346,8 +350,7 @@ fun RecipePageScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         LazyColumn {
-                            mutableIngredientList.forEach{ ingredient ->
-                                item{
+                            items(mutableIngredientList){ ingredient ->
                                     var expanded by remember { mutableStateOf(false) }
                                     val ingredientText = buildString {
                                         append("${ingredient.quantity} ")
@@ -389,6 +392,7 @@ fun RecipePageScreen(
                                                     text = { Text("Edit") },
                                                     onClick = {
                                                         editIngredient = ingredient
+                                                        println("editIngredient - Edit: ${editIngredient}")
                                                         isIngredientDialog = true
                                                     }
                                                 )
@@ -396,10 +400,10 @@ fun RecipePageScreen(
                                                     text = { Text("Delete") },
                                                     onClick = {
                                                         editIngredient = ingredient
+                                                        println("editIngredient - Delete: ${editIngredient}")
                                                         isIngredientDelete = true
                                                     }
                                                 )
-                                            }
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -512,56 +516,71 @@ fun RecipePageScreen(
             if (isIngredientDialog){
                 IngredientDialogue(
                     onDismissRequest = { isIngredientDialog = false },
-                    mainAction = { ingredient ->
-                        val existingIndex = mutableIngredientList.indexOfFirst { it.ingredientId == ingredient.ingredientId }
-                        if (existingIndex != -1) {
-                            mutableIngredientList[existingIndex] = ingredient // update
+                    mainAction = { updatedIngredient ->
+                        if (editIngredient == null) {
+                            // Adding new ingredient
+                            mutableIngredientList = mutableIngredientList + updatedIngredient
                         } else {
-                            mutableIngredientList.add(ingredient) // add new
+                            // Editing existing ingredient
+                            mutableIngredientList = mutableIngredientList.map {
+                                if (it.ingredientId == updatedIngredient.ingredientId) updatedIngredient else it
+                            }
                         }
                         isModified = true
+                        editIngredient = null
                     },
                     ingredient = editIngredient
                 )
-                editIngredient = null
             }
 
             if (isIngredientDelete){
                 ConfirmDialogue(
                     onDismissRequest = { isIngredientDelete = false },
                     mainAction = {
-                        mutableIngredientList.removeIf { it.ingredientId == editIngredient?.ingredientId }
+                        editIngredient?.let { ingredientToDelete ->
+                            mutableIngredientList = mutableIngredientList.filterNot {
+                                it.ingredientId == ingredientToDelete.ingredientId
+                            }.toMutableList()
+                        }
+
                         isModified = true
+                        editIngredient = null
                                  },
                     supportingText = "Deleting an ingredient is permanent.",
-                    mainButtonText = "Delete"
+                    mainButtonText = "Delete",
                 )
-                editIngredient = null
             }
 
             if (isInstructionDialog){
                 InstructionDialogue(
                     onDismissRequest = { isInstructionDialog = false },
-                    mainAction = { instruction ->
-                        mutableInstructions.add(0, instruction)
+                    mainAction = { newInstruction ->
+                        if (editInstruction.isEmpty()) mutableInstructions = mutableInstructions + newInstruction
+                        else mutableInstructions = mutableInstructions.map {
+                            if (it == editInstruction) newInstruction else it
+                        }
                         isModified = true
+                        editInstruction = ""
                     },
                     instruction = editInstruction
                 )
-                editInstruction = ""
             }
 
             if (isInstructionDelete){
                 ConfirmDialogue(
-                    onDismissRequest = { isIngredientDelete = false },
+                    onDismissRequest = { isInstructionDelete = false },
                     mainAction = {
-                        mutableInstructions.remove(editInstruction)
+                        if(editInstruction.isNotEmpty()){
+                            mutableInstructions = mutableInstructions.filterNot {
+                                it == editInstruction
+                            }
+                        }
                         isModified = true
+                        editInstruction = ""
                                  },
                     supportingText = "Deleting an instruction is permanent.",
                     mainButtonText = "Delete"
                 )
-                editInstruction = ""
             }
 
             if (isCancelEditDialog){
