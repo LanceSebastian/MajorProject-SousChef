@@ -104,7 +104,6 @@ fun TopRecipePageScreen(
     }
 
     RecipePageScreen(
-        context = context,
         navController = navController,
         editMode = editMode,
         uploadState = uploadState,
@@ -131,13 +130,23 @@ fun TopRecipePageScreen(
         archiveRecipe = { newRecipe ->
             recipeViewModel.archiveRecipe(userId, newRecipe.recipeId, context)
         },
+        prepareCamera = {
+            val photoFile = File.createTempFile("temp_image", ".jpg", context.cacheDir).apply {
+                createNewFile()
+                deleteOnExit()
+            }
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                photoFile
+            )
+        }
 
     )
 }
 
 @Composable
 fun RecipePageScreen(
-    context: ComponentActivity,
     navController: NavHostController,
     editMode: EditMode = EditMode.View,
     uploadState: UploadState = UploadState.Idle,
@@ -148,8 +157,9 @@ fun RecipePageScreen(
     addRecipe: (Recipe, List<Ingredient>, Uri?) -> Unit,
     updateRecipe: (Recipe, List<Ingredient>, Uri?) -> Unit,
     archiveRecipe: (Recipe) -> Unit,
-
+    prepareCamera: () -> Uri,
     ){
+
     val isRecipeExist = recipe != null
 
     var nameText by remember { mutableStateOf(recipe?.name ?: "") }
@@ -489,15 +499,7 @@ fun RecipePageScreen(
                     onDismissRequest = { isMediaChoiceDialog = false },
                     mainAction = { imagePickerLauncher.launch("image/*") },
                     secondAction = {
-                        val photoFile = File.createTempFile("temp_image", ".jpg", context.cacheDir).apply {
-                            createNewFile()
-                            deleteOnExit()
-                        }
-                        cameraUri = FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            photoFile
-                        )
+                        cameraUri = prepareCamera()
                         cameraUri?.let { uri ->
                             cameraLauncher.launch(uri)
                         }
@@ -511,7 +513,12 @@ fun RecipePageScreen(
                 IngredientDialogue(
                     onDismissRequest = { isIngredientDialog = false },
                     mainAction = { ingredient ->
-                        mutableIngredientList.add(ingredient)
+                        val existingIndex = mutableIngredientList.indexOfFirst { it.ingredientId == ingredient.ingredientId }
+                        if (existingIndex != -1) {
+                            mutableIngredientList[existingIndex] = ingredient // update
+                        } else {
+                            mutableIngredientList.add(ingredient) // add new
+                        }
                         isModified = true
                     },
                     ingredient = editIngredient
@@ -523,7 +530,7 @@ fun RecipePageScreen(
                 ConfirmDialogue(
                     onDismissRequest = { isIngredientDelete = false },
                     mainAction = {
-                        mutableIngredientList.remove(editIngredient)
+                        mutableIngredientList.removeIf { it.ingredientId == editIngredient?.ingredientId }
                         isModified = true
                                  },
                     supportingText = "Deleting an ingredient is permanent.",
@@ -609,18 +616,17 @@ fun RecipePageScreen(
 @Composable
 fun CreateRecipePageScreenPreview(){
     val navController = rememberNavController()
-    val context = LocalContext.current
-    val activity = context as ComponentActivity
+
     AppTheme {
         RecipePageScreen(
-            context = activity,
             navController = navController,
             editMode = EditMode.Create,
             addRecipe = {_,_,_ ->},
             updateRecipe = {_,_,_ ->},
             archiveRecipe = {},
             setMode = {},
-            clearSelectRecipe = {}
+            clearSelectRecipe = {},
+            prepareCamera = { Uri.parse("file://mock") }
         )
     }
 }
@@ -629,8 +635,6 @@ fun CreateRecipePageScreenPreview(){
 @Composable
 fun EditRecipePageScreenPreview(){
     val navController = rememberNavController()
-    val context = LocalContext.current
-    val activity = context as ComponentActivity
     val englishBreakfastRecipe = Recipe(
         recipeId = "1",
         name = "Full English Breakfast",
@@ -665,7 +669,6 @@ fun EditRecipePageScreenPreview(){
     AppTheme {
         RecipePageScreen(
             navController = navController,
-            context = activity,
             editMode = EditMode.Edit,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,
@@ -673,7 +676,8 @@ fun EditRecipePageScreenPreview(){
             updateRecipe = {_,_,_ ->},
             archiveRecipe = {},
             setMode = {},
-            clearSelectRecipe = {}
+            clearSelectRecipe = {},
+            prepareCamera = { Uri.parse("file://mock") }
         )
     }
 }
@@ -682,8 +686,6 @@ fun EditRecipePageScreenPreview(){
 @Composable
 fun ViewRecipePageScreenPreview(){
     val navController = rememberNavController()
-    val context = LocalContext.current
-    val activity = context as ComponentActivity
     val englishBreakfastRecipe = Recipe(
         recipeId = "1",
         name = "Full English Breakfast",
@@ -718,7 +720,6 @@ fun ViewRecipePageScreenPreview(){
     AppTheme {
         RecipePageScreen(
             navController = navController,
-            context = activity,
             editMode = EditMode.View,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,
@@ -726,7 +727,8 @@ fun ViewRecipePageScreenPreview(){
             updateRecipe = {_,_,_ ->},
             archiveRecipe = {},
             setMode = {},
-            clearSelectRecipe = {}
+            clearSelectRecipe = { },
+            prepareCamera = {Uri.parse("file://mock")}
         )
     }
 }
