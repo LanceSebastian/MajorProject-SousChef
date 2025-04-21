@@ -212,7 +212,7 @@ class RecipeViewModel : ViewModel() {
 
         viewModelScope.launch {
             val imageUrl = try {
-                imageUri?.let { imageRepository.uploadImage(it) }
+                if (imageUri != null) imageRepository.updateImage(newRecipe.imageUrl, imageUri) else null
             } catch (e: Exception) {
                 android.util.Log.e("ProductViewModel", "Image upload failed: ${e.message}")
                 _uploadState.value = UploadState.Error("Image upload failed")
@@ -226,10 +226,10 @@ class RecipeViewModel : ViewModel() {
             val isSuccess = recipeRepository.updateRecipeIfChanged(userId, currentRecipe, standardRecipe)
 
             if (isSuccess) {
-                _uploadState.value = UploadState.Success("Product updated successfully")
+                _uploadState.value = UploadState.Success("Recipe updated successfully")
             } else {
                 android.util.Log.e("RecipeViewModel", "Failed to update recipe")
-                _uploadState.value = UploadState.Error("Failed to update product")
+                _uploadState.value = UploadState.Error("Failed to update recipe")
             }
 
             resetUploadStateAfterDelay()
