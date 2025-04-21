@@ -57,7 +57,7 @@ fun CardRecipe(
         Box {
             AsyncImage(
                 model = ImageRequest.Builder(context)
-                    .data(imageUrl ?: imageUri)
+                    .data(imageUri ?: imageUrl)
                     .crossfade(true)
                     .placeholder(R.drawable.questionimage)
                     .error(R.drawable.questionimage)
