@@ -208,7 +208,8 @@ fun CardHistory(
                                         onClick = {     // Navigate to Recipe
                                             selectRecipe(item.recipe.recipeId)
                                             navController.navigate( Screen.RecipePage.route )
-                                        }
+                                        },
+                                        imageUrl = item.recipe.imageUrl
                                     )
                                 }
 
@@ -217,8 +218,9 @@ fun CardHistory(
                                         text = item.product.name,
                                         onClick = {     // Navigate to Recipe
                                             selectProduct(item.product.productId)
-                                            navController.navigate( Screen.RecipePage.route )
-                                        }
+                                            navController.navigate( Screen.Product.route )
+                                        },
+                                        imageUrl = item.product.imageUrl
                                     )
                                 }
                             }
