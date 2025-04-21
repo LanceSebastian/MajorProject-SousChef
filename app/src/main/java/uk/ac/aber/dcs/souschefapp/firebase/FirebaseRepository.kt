@@ -823,6 +823,20 @@ class ImageRepository {
         imageRef.putFile(uri).await()
         return imageRef.downloadUrl.await().toString()
     }
+
+    suspend fun updateImage(imageUrl: String?, uri: Uri): String {
+        if (imageUrl == null) return uploadImage(uri)
+
+        return try {
+            val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl)
+            storageRef.putFile(uri).await() // This overwrites the existing file
+            storageRef.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            android.util.Log.e("FirebaseStorage", "Image update failed: ${e.message}", e)
+            imageUrl // fallback: return the original if upload fails
+        }
+    }
+
     suspend fun deleteImageByUrl(imageUrl: String?) {
         if (imageUrl.isNullOrEmpty()) return // No image to delete
 
