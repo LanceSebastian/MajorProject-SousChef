@@ -1,13 +1,17 @@
 
-Images:
-* Select / Take Pictures
-* Save to Firebase Storage
-    * Upload Compressed version.
-    * Possibly store offline.
-* Save metadata to Firestore
 
+RecipePage:
+    * Ingredients don't update properly nor delete.
+    * Instructions don't drag to reorder
 
 Archive:
+
+Images:
+o Select / Take Pictures
+o Save to Firebase Storage
+    * Upload Compressed version.
+    o* Possibly store offline.
+o Save metadata to Firestore
 
 -- 20/04/25 --
 First Test - Bugs:
