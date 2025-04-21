@@ -18,7 +18,7 @@ class IngredientViewModel : ViewModel() {
     private var ingredientListener: ListenerRegistration? = null
 
     private var _recipeIngredients = MutableLiveData<List<Ingredient>>()
-    var recipeIngredient: LiveData<List<Ingredient>> = _recipeIngredients
+    var recipeIngredients: LiveData<List<Ingredient>> = _recipeIngredients
 
     fun createIngredient(userId: String?, recipeId: String?, ingredient: Ingredient){
         if (userId == null || recipeId == null) return
