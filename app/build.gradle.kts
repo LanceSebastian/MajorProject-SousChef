@@ -72,6 +72,7 @@ dependencies {
     implementation (libs.lifecycle.livedata.ktx)  // Use the latest version
     implementation (libs.androidx.lifecycle.viewmodel.ktx.v287)  // ViewModel KTX for better LiveData handling
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.ui.test.android)
     kapt(libs.androidx.room.compiler)
     implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
 
@@ -102,6 +103,9 @@ dependencies {
 
     // Image Display
     implementation("io.coil-kt:coil-compose:2.4.0")
+
+    // Reorderable LazyList
+    implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
 
     implementation(libs.gson)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
