@@ -305,12 +305,12 @@ class ProductRepository {
         }
     }
 
-    suspend fun deleteProduct(userId: String, productId: String): Boolean {
+    suspend fun deleteProduct(userId: String, product: Product): Boolean {
         return try {
             val productRef = db.collection("users")
                 .document(userId)
                 .collection("products")
-                .document(productId)
+                .document(product.productId)
 
             // Get the document snapshot
             val snapshot = productRef.get().await()
@@ -577,12 +577,12 @@ class RecipeRepository {
         }
     }
 
-    suspend fun deleteRecipe(userId: String, recipeId: String): Boolean {
+    suspend fun deleteRecipe(userId: String, recipe: Recipe): Boolean {
         return try {
             val recipeRef = db.collection("users")
                 .document(userId)
                 .collection("recipes")
-                .document(recipeId)
+                .document(recipe.recipeId)
 
             // Get the document snapshot
             val snapshot = recipeRef.get().await()
