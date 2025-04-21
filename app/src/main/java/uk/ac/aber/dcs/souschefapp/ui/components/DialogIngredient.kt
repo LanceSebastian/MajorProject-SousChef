@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
+import java.util.UUID
 
 @Composable
 fun IngredientDialogue(
@@ -185,6 +186,7 @@ fun IngredientDialogue(
                             if (!emptyFieldsError) {
                                 mainAction(
                                     Ingredient(
+                                        ingredientId = ingredient?.ingredientId ?: UUID.randomUUID().toString(),
                                         name = nameText,
                                         quantity = amountText,
                                         unit = if (emptyUnitError) null else unitText,

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -52,10 +54,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import org.burnoutcrew.reorderable.*
+import org.burnoutcrew.reorderable.detectReorderAfterLongPress
+import org.burnoutcrew.reorderable.rememberReorderableLazyListState
+import org.burnoutcrew.reorderable.reorderable
 import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
 import uk.ac.aber.dcs.souschefapp.firebase.EditMode
@@ -86,7 +93,7 @@ fun TopRecipePageScreen(
     val userId = user?.uid
 
     val recipe by recipeViewModel.selectRecipe.observeAsState()
-    val ingredients by ingredientViewModel.recipeIngredient.observeAsState()
+    val ingredients by ingredientViewModel.recipeIngredients.observeAsState()
     val editMode by recipeViewModel.editMode.observeAsState(EditMode.View)
     val uploadState by recipeViewModel.uploadState.observeAsState(UploadState.Idle)
     val coroutineScope = rememberCoroutineScope()
@@ -145,6 +152,13 @@ fun TopRecipePageScreen(
     )
 }
 
+fun <T> MutableList<T>.move(fromIndex: Int, toIndex: Int) {
+    if (fromIndex == toIndex || fromIndex !in indices || toIndex !in indices) return
+    val item = this[fromIndex]
+    removeAt(fromIndex)
+    add(toIndex, item)
+}
+
 @Composable
 fun RecipePageScreen(
     navController: NavHostController,
@@ -163,8 +177,16 @@ fun RecipePageScreen(
     val isRecipeExist = recipe != null
 
     var nameText by remember { mutableStateOf(recipe?.name ?: "") }
-    var mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf<String>()
-    var mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf<Ingredient>()
+    var mutableInstructions by remember { mutableStateOf( mutableListOf<String>() ) }
+    LaunchedEffect(recipe?.recipeId) { mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf() }
+    var mutableIngredientList by remember { mutableStateOf(listOf<Ingredient>()) }
+    LaunchedEffect(ingredients) { mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf() }
+
+    val state = rememberReorderableLazyListState(onMove = { from, to ->
+        mutableInstructions = mutableInstructions.toMutableList().apply {
+            move(from.index, to.index)
+        }
+    })
 
     var isIngredientDialog by remember { mutableStateOf(false) }
     var isInstructionDialog by remember { mutableStateOf(false) }
@@ -192,8 +214,8 @@ fun RecipePageScreen(
         isModified = true
     }
 
-    var editIngredient: Ingredient? = null
-    var editInstruction: String = ""
+    var editIngredient by remember { mutableStateOf<Ingredient?>(null) }
+    var editInstruction by remember {mutableStateOf("")}
 
     BareRecipePageScreen(
         navController = navController,
@@ -346,64 +368,60 @@ fun RecipePageScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         LazyColumn {
-                            mutableIngredientList.forEach{ ingredient ->
-                                item{
-                                    var expanded by remember { mutableStateOf(false) }
-                                    val ingredientText = buildString {
-                                        append("${ingredient.quantity} ")
-                                        if (!ingredient.unit.isNullOrEmpty()) append("${ingredient.unit} ")
-                                        append(ingredient.name)
-                                        if (!ingredient.description.isNullOrEmpty()) append(" - ${ingredient.description}")
-                                    }.trim()
+                            items(mutableIngredientList){ ingredient ->
+                                var expanded by remember { mutableStateOf(false) }
+                                val ingredientText = buildString {
+                                    append("\u2022 ")
+                                    append("${ingredient.quantity} ")
+                                    if (!ingredient.unit.isNullOrEmpty()) append("${ingredient.unit} ")
+                                    append(ingredient.name)
+                                    if (!ingredient.description.isNullOrEmpty()) append(" - ${ingredient.description}")
+                                }.trim()
 
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ){
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ){
+                                    Text(
+                                        text = ingredientText,
+                                        lineHeight = 20.sp,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                    )
+                                    if (editMode != EditMode.View)Box(
+                                        modifier = Modifier
+                                            .wrapContentSize(Alignment.TopStart)
+                                            .weight(0.1f)
+                                    ) {
                                         Icon(
-                                            imageVector = Icons.AutoMirrored.Default.List,
+                                            imageVector = Icons.Default.ArrowDropDown,
                                             contentDescription = null,
                                             modifier = Modifier
-                                                .weight(0.1f)
+                                                .clickable { expanded = true }
                                         )
-                                        Text(
-                                            text = ingredientText,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                        )
-                                        if (editMode != EditMode.View)Box(
-                                            modifier = Modifier
-                                                .wrapContentSize(Alignment.TopStart)
-                                                .weight(0.1f)
+                                        DropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false }
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.ArrowDropDown,
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .clickable { expanded = true }
+                                            DropdownMenuItem(
+                                                text = { Text("Edit") },
+                                                onClick = {
+                                                    editIngredient = ingredient
+                                                    println("editIngredient - Edit: ${editIngredient}")
+                                                    isIngredientDialog = true
+                                                }
                                             )
-                                            DropdownMenu(
-                                                expanded = expanded,
-                                                onDismissRequest = { expanded = false }
-                                            ) {
-                                                DropdownMenuItem(
-                                                    text = { Text("Edit") },
-                                                    onClick = {
-                                                        editIngredient = ingredient
-                                                        isIngredientDialog = true
-                                                    }
-                                                )
-                                                DropdownMenuItem(
-                                                    text = { Text("Delete") },
-                                                    onClick = {
-                                                        editIngredient = ingredient
-                                                        isIngredientDelete = true
-                                                    }
-                                                )
-                                            }
+                                            DropdownMenuItem(
+                                                text = { Text("Delete") },
+                                                onClick = {
+                                                    editIngredient = ingredient
+                                                    println("editIngredient - Delete: ${editIngredient}")
+                                                    isIngredientDelete = true
+                                                }
+                                            )
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(4.dp))
                                 }
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
                     }
@@ -440,50 +458,63 @@ fun RecipePageScreen(
                                     .clickable { isInstructionDialog = true }
                             )
                         }
-                        LazyColumn {
-                            mutableInstructions.forEach{ instruction ->
-                                item{
+                        LazyColumn (
+                            state = state.listState,
+                            modifier = Modifier
+                                .reorderable(state)
+                                .detectReorderAfterLongPress(state)
+                        ){
+                            items(mutableInstructions, key = { it }){ instruction ->
+                                ReorderableItem(reorderableState = state, key = instruction){ isDragging ->
                                     var expanded by remember { mutableStateOf(false) }
-                                    Row{
-                                        if (editMode != EditMode.View)Icon(
-                                            imageVector = ImageVector.vectorResource(R.drawable.draggable),
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .weight(0.1f)
-
-                                        )
-                                        Text(
-                                            text = instruction,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                        )
-                                        Box(modifier = Modifier
-                                            .wrapContentSize(Alignment.TopStart)
-                                            .weight(0.1f)) {
-                                            Icon(
-                                                imageVector = Icons.Default.ArrowDropDown,
+                                    val elevation = if (isDragging) 8.dp else 0.dp
+                                    Card(
+                                        elevation = CardDefaults.cardElevation(defaultElevation = elevation),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp, horizontal = 8.dp)
+                                    ){
+                                        Row{
+                                            if (editMode != EditMode.View)Icon(
+                                                imageVector = ImageVector.vectorResource(R.drawable.draggable),
                                                 contentDescription = null,
                                                 modifier = Modifier
-                                                    .clickable { expanded = true }
+                                                    .weight(0.1f)
+
                                             )
-                                            DropdownMenu(
-                                                expanded = expanded,
-                                                onDismissRequest = { expanded = false }
-                                            ) {
-                                                DropdownMenuItem(
-                                                    text = { Text("Edit") },
-                                                    onClick = {
-                                                        editInstruction = instruction
-                                                        isInstructionDialog = true
-                                                    }
+                                            Text(
+                                                text = instruction,
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                            )
+                                            Box(modifier = Modifier
+                                                .wrapContentSize(Alignment.TopStart)
+                                                .weight(0.1f)) {
+                                                Icon(
+                                                    imageVector = Icons.Default.ArrowDropDown,
+                                                    contentDescription = null,
+                                                    modifier = Modifier
+                                                        .clickable { expanded = true }
                                                 )
-                                                DropdownMenuItem(
-                                                    text = { Text("Delete") },
-                                                    onClick = {
-                                                        editInstruction = instruction
-                                                        isInstructionDelete = true
-                                                    }
-                                                )
+                                                DropdownMenu(
+                                                    expanded = expanded,
+                                                    onDismissRequest = { expanded = false }
+                                                ) {
+                                                    DropdownMenuItem(
+                                                        text = { Text("Edit") },
+                                                        onClick = {
+                                                            editInstruction = instruction
+                                                            isInstructionDialog = true
+                                                        }
+                                                    )
+                                                    DropdownMenuItem(
+                                                        text = { Text("Delete") },
+                                                        onClick = {
+                                                            editInstruction = instruction
+                                                            isInstructionDelete = true
+                                                        }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -512,56 +543,76 @@ fun RecipePageScreen(
             if (isIngredientDialog){
                 IngredientDialogue(
                     onDismissRequest = { isIngredientDialog = false },
-                    mainAction = { ingredient ->
-                        val existingIndex = mutableIngredientList.indexOfFirst { it.ingredientId == ingredient.ingredientId }
-                        if (existingIndex != -1) {
-                            mutableIngredientList[existingIndex] = ingredient // update
+                    mainAction = { updatedIngredient ->
+                        if (editIngredient == null) {
+                            // Adding new ingredient
+                            mutableIngredientList = mutableIngredientList + updatedIngredient
                         } else {
-                            mutableIngredientList.add(ingredient) // add new
+                            // Editing existing ingredient
+                            mutableIngredientList = mutableIngredientList.map {
+                                if (it.ingredientId == updatedIngredient.ingredientId) updatedIngredient else it
+                            }
                         }
                         isModified = true
+                        editIngredient = null
                     },
                     ingredient = editIngredient
                 )
-                editIngredient = null
             }
 
             if (isIngredientDelete){
                 ConfirmDialogue(
                     onDismissRequest = { isIngredientDelete = false },
                     mainAction = {
-                        mutableIngredientList.removeIf { it.ingredientId == editIngredient?.ingredientId }
+                        editIngredient?.let { ingredientToDelete ->
+                            mutableIngredientList = mutableIngredientList.filterNot {
+                                it.ingredientId == ingredientToDelete.ingredientId
+                            }.toMutableList()
+                        }
+
                         isModified = true
+                        editIngredient = null
                                  },
                     supportingText = "Deleting an ingredient is permanent.",
-                    mainButtonText = "Delete"
+                    mainButtonText = "Delete",
                 )
-                editIngredient = null
             }
 
             if (isInstructionDialog){
                 InstructionDialogue(
                     onDismissRequest = { isInstructionDialog = false },
-                    mainAction = { instruction ->
-                        mutableInstructions.add(0, instruction)
+                    mainAction = { newInstruction ->
+                        if (editInstruction.isEmpty()) {
+                            // Add to top
+                            mutableInstructions.add(0, newInstruction)
+                        } else {
+                            // Replace existing
+                            mutableInstructions.replaceAll {
+                                if (it == editInstruction) newInstruction else it
+                            }
+                        }
                         isModified = true
+                        editInstruction = ""
                     },
                     instruction = editInstruction
                 )
-                editInstruction = ""
             }
 
             if (isInstructionDelete){
                 ConfirmDialogue(
-                    onDismissRequest = { isIngredientDelete = false },
+                    onDismissRequest = { isInstructionDelete = false },
                     mainAction = {
-                        mutableInstructions.remove(editInstruction)
+                        if (editInstruction.isNotEmpty()) {
+                            mutableInstructions.removeIf { it == editInstruction }
+                        }
                         isModified = true
+                        editInstruction = ""
+                        isModified = true
+                        editInstruction = ""
                                  },
                     supportingText = "Deleting an instruction is permanent.",
                     mainButtonText = "Delete"
                 )
-                editInstruction = ""
             }
 
             if (isCancelEditDialog){
