@@ -105,6 +105,17 @@ fun TopProductScreen(
         archiveProduct = { newProduct ->
             productViewModel.archiveProduct(userId, newProduct.productId, context)
         },
+        prepareCamera = {
+            val photoFile = File.createTempFile("temp_image", ".jpg", context.cacheDir).apply {
+                createNewFile()
+                deleteOnExit()
+            }
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                photoFile
+            )
+        }
     )
 }
 
@@ -119,7 +130,8 @@ fun ProductScreen(
     clearSelectProduct: () -> Unit,
     createProductToLog: (Product, Uri?) -> Unit,
     updateProduct: (Product, Uri?) -> Unit,
-    archiveProduct: (Product) -> Unit
+    archiveProduct: (Product) -> Unit,
+    prepareCamera: () -> Uri,
 ){
     val isProductExist = product != null
 
@@ -289,15 +301,7 @@ fun ProductScreen(
                     onDismissRequest = { isMediaChoiceDialog = false },
                     mainAction = { imagePickerLauncher.launch("image/*") },
                     secondAction = {
-                        val photoFile = File.createTempFile("temp_image", ".jpg", context.cacheDir).apply {
-                            createNewFile()
-                            deleteOnExit()
-                        }
-                        cameraUri = FileProvider.getUriForFile(
-                            context,
-                            "${context.packageName}.fileprovider",
-                            photoFile
-                        )
+                        cameraUri = prepareCamera()
                         cameraUri?.let { uri ->
                             cameraLauncher.launch(uri)
                         }
@@ -352,6 +356,7 @@ fun CreateProductScreenPreview(){
             updateProduct = {_,_ ->},
             archiveProduct = {},
             clearSelectProduct = {},
+            prepareCamera = {Uri.parse("file://mock")}
         )
     }
 }
@@ -378,6 +383,7 @@ fun ViewProductScreenPreview(){
             updateProduct = {_,_ ->},
             archiveProduct = {},
             clearSelectProduct = {},
+            prepareCamera = {Uri.parse("file://mock")}
         )
     }
 }
@@ -404,6 +410,7 @@ fun EditProductScreenPreview(){
             updateProduct = {_,_ ->},
             archiveProduct = {},
             clearSelectProduct = {},
+            prepareCamera = {Uri.parse("file://mock")}
         )
     }
 }
