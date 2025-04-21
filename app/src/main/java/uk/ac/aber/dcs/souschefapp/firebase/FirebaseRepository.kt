@@ -848,5 +848,4 @@ class ImageRepository {
             android.util.Log.e("Storage", "Failed to delete image: ${e.message}", e)
         }
     }
-
 }
