@@ -201,7 +201,6 @@ class ProductViewModel : ViewModel() {
 
             val finalImageUrl = imageUrl ?: product.imageUrl
             val standardProduct = product.copy(imageUrl = finalImageUrl)
-
             val isSuccess = productRepository.updateProduct(userId, standardProduct)
 
             if (isSuccess) {
@@ -243,13 +242,13 @@ class ProductViewModel : ViewModel() {
         }
     }
 
-    fun deleteProduct(userId: String?, productId: String, context: Context){
+    fun deleteProduct(userId: String?, product: Product, context: Context){
         if (userId == null) return
 
         viewModelScope.launch {
             val isSuccess = productRepository.deleteProduct(
                 userId = userId,
-                productId = productId,
+                product = product,
             )
             val message = if (isSuccess) "Product deleted successfully!" else "Failed to delete product."
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
