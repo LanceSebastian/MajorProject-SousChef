@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.coroutineScope
@@ -121,11 +122,13 @@ fun ProductScreen(
     var nameText by remember { mutableStateOf(product?.name ?: "") }
     var priceText by remember { mutableStateOf((product?.price ?: "").toString()) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var isImageChanged by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         selectedImageUri = uri
+        isImageChanged = true
     }
 
     val isModified by remember {
@@ -144,9 +147,10 @@ fun ProductScreen(
 
         // Check if there are unsaved changes
         backFunction = {
-            if (editMode == EditMode.View || !isModified) {
+            if (editMode == EditMode.View || !isModified || !isImageChanged) {
                 navController.popBackStack()
                 clearSelectProduct()
+                setMode(EditMode.View)
             } else {
                 isBackConfirm = true
             }
@@ -202,17 +206,22 @@ fun ProductScreen(
                             .blur(1.dp)
                             .fillMaxWidth(0.8f)
                     )
-                    if (editMode != EditMode.View) {
-                        when (uploadState) {
-                            is UploadState.Loading -> CircularProgressIndicator()
-                            is UploadState.Success -> Text("Product created!")
-                            is UploadState.Error -> Text("Error: ${(uploadState as UploadState.Error).message}")
-                            else -> {
+
+                    when (uploadState) {
+                        is UploadState.Loading -> CircularProgressIndicator()
+                        is UploadState.Success -> Text(
+                            text = "Product created!",
+                            color = MaterialTheme.colorScheme.onSurface)
+                        is UploadState.Error -> Text(
+                            text = "Error: ${uploadState.message}",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        else -> {
+                            if (editMode != EditMode.View) {
                                 Button(
                                     onClick = {
                                         imagePickerLauncher.launch("image/*")
                                     },
-                                    enabled = true
                                 ){
                                     Icon(
                                         imageVector = Icons.Default.Add,
