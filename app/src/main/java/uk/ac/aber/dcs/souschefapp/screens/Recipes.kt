@@ -199,6 +199,7 @@ fun RecipesScreen(
                                                 }
                                             }
                                         },
+                                        imageUrl = recipe.imageUrl,
                                         modifier = if (isSelected) Modifier.border(8.dp, MaterialTheme.colorScheme.tertiary, RoundedCornerShape(12.dp)) else Modifier
                                     )
                                 }
