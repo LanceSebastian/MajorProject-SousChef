@@ -825,4 +825,16 @@ class ImageRepository {
         imageRef.putFile(uri).await()
         return imageRef.downloadUrl.await().toString()
     }
+    suspend fun deleteImageByUrl(imageUrl: String?) {
+        if (imageUrl.isNullOrEmpty()) return // No image to delete
+
+        try {
+            val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl)
+            storageRef.delete().await()
+            android.util.Log.d("Storage", "Image deleted successfully.")
+        } catch (e: Exception) {
+            android.util.Log.e("Storage", "Failed to delete image: ${e.message}", e)
+        }
+    }
+
 }
