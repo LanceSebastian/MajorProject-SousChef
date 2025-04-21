@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -351,63 +352,59 @@ fun RecipePageScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         LazyColumn {
                             items(mutableIngredientList){ ingredient ->
-                                    var expanded by remember { mutableStateOf(false) }
-                                    val ingredientText = buildString {
-                                        append("${ingredient.quantity} ")
-                                        if (!ingredient.unit.isNullOrEmpty()) append("${ingredient.unit} ")
-                                        append(ingredient.name)
-                                        if (!ingredient.description.isNullOrEmpty()) append(" - ${ingredient.description}")
-                                    }.trim()
+                                var expanded by remember { mutableStateOf(false) }
+                                val ingredientText = buildString {
+                                    append("\u2022 ")
+                                    append("${ingredient.quantity} ")
+                                    if (!ingredient.unit.isNullOrEmpty()) append("${ingredient.unit} ")
+                                    append(ingredient.name)
+                                    if (!ingredient.description.isNullOrEmpty()) append(" - ${ingredient.description}")
+                                }.trim()
 
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ){
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ){
+                                    Text(
+                                        text = ingredientText,
+                                        lineHeight = 20.sp,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                    )
+                                    if (editMode != EditMode.View)Box(
+                                        modifier = Modifier
+                                            .wrapContentSize(Alignment.TopStart)
+                                            .weight(0.1f)
+                                    ) {
                                         Icon(
-                                            imageVector = Icons.AutoMirrored.Default.List,
+                                            imageVector = Icons.Default.ArrowDropDown,
                                             contentDescription = null,
                                             modifier = Modifier
-                                                .weight(0.1f)
+                                                .clickable { expanded = true }
                                         )
-                                        Text(
-                                            text = ingredientText,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                        )
-                                        if (editMode != EditMode.View)Box(
-                                            modifier = Modifier
-                                                .wrapContentSize(Alignment.TopStart)
-                                                .weight(0.1f)
+                                        DropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false }
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.ArrowDropDown,
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .clickable { expanded = true }
+                                            DropdownMenuItem(
+                                                text = { Text("Edit") },
+                                                onClick = {
+                                                    editIngredient = ingredient
+                                                    println("editIngredient - Edit: ${editIngredient}")
+                                                    isIngredientDialog = true
+                                                }
                                             )
-                                            DropdownMenu(
-                                                expanded = expanded,
-                                                onDismissRequest = { expanded = false }
-                                            ) {
-                                                DropdownMenuItem(
-                                                    text = { Text("Edit") },
-                                                    onClick = {
-                                                        editIngredient = ingredient
-                                                        println("editIngredient - Edit: ${editIngredient}")
-                                                        isIngredientDialog = true
-                                                    }
-                                                )
-                                                DropdownMenuItem(
-                                                    text = { Text("Delete") },
-                                                    onClick = {
-                                                        editIngredient = ingredient
-                                                        println("editIngredient - Delete: ${editIngredient}")
-                                                        isIngredientDelete = true
-                                                    }
-                                                )
+                                            DropdownMenuItem(
+                                                text = { Text("Delete") },
+                                                onClick = {
+                                                    editIngredient = ingredient
+                                                    println("editIngredient - Delete: ${editIngredient}")
+                                                    isIngredientDelete = true
+                                                }
+                                            )
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(4.dp))
                                 }
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
                     }
