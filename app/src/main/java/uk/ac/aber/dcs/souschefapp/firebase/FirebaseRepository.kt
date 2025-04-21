@@ -425,14 +425,12 @@ class RecipeRepository {
             if (original.name != updated.name) updates["name"] = updated.name
             if (original.instructions != updated.instructions) updates["instructions"] =
                 updated.instructions ?: emptyList<String>()
-            if (original.imageUrl != updated.imageUrl) updates["imageUrl"] =
-                updated.imageUrl?.let{
-                    updates["imageUrl"] = it
-            } ?: run {
-                updates["imageUrl"] = FieldValue.delete()
-                }
+
             if (original.tags != updated.tags) updates["tags"] = updated.tags ?: emptyList<String>()
             if (original.isArchive != updated.isArchive) updates["isArchive"] = updated.isArchive
+            if (original.imageUrl != updated.imageUrl)
+                updated.imageUrl?.let { updates["imageUrl"] = it }
+                    ?: updates.remove("imageUrl")
 
             if (updates.isNotEmpty()) {
                 val recipeRef = db.collection("users")
