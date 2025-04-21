@@ -48,9 +48,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
@@ -64,10 +66,12 @@ import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareRecipePageScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
+import uk.ac.aber.dcs.souschefapp.ui.components.ChoiceDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.ConfirmDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.IngredientDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.InstructionDialogue
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
+import java.io.File
 
 // Add Ingredient
 @Composable
@@ -100,6 +104,7 @@ fun TopRecipePageScreen(
     }
 
     RecipePageScreen(
+        context = context,
         navController = navController,
         editMode = editMode,
         uploadState = uploadState,
@@ -132,6 +137,7 @@ fun TopRecipePageScreen(
 
 @Composable
 fun RecipePageScreen(
+    context: ComponentActivity,
     navController: NavHostController,
     editMode: EditMode = EditMode.View,
     uploadState: UploadState = UploadState.Idle,
@@ -155,12 +161,20 @@ fun RecipePageScreen(
     var isIngredientDelete by remember { mutableStateOf(false) }
     var isInstructionDelete by remember { mutableStateOf(false) }
     var isCancelEditDialog by remember{ mutableStateOf(false) }
+    var isMediaChoiceDialog by remember { mutableStateOf(false) }
 
     var isBackConfirm by remember { mutableStateOf(false) }
 
     var isModified by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
 
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) cameraUri?.let { selectedImageUri = it }
+    }
+
+    // Gallery launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -257,7 +271,7 @@ fun RecipePageScreen(
                         else -> {
                             if (editMode != EditMode.View) {
                                 Button(
-                                    onClick = { imagePickerLauncher.launch("image/*") }
+                                    onClick = { isMediaChoiceDialog = true }
                                 ){
                                     Icon(
                                         imageVector = Icons.Default.Add,
@@ -470,6 +484,29 @@ fun RecipePageScreen(
                 }
             }
 
+            if (isMediaChoiceDialog){
+                ChoiceDialogue(
+                    onDismissRequest = { isMediaChoiceDialog = false },
+                    mainAction = { imagePickerLauncher.launch("image/*") },
+                    secondAction = {
+                        val photoFile = File.createTempFile("temp_image", ".jpg", context.cacheDir).apply {
+                            createNewFile()
+                            deleteOnExit()
+                        }
+                        cameraUri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            photoFile
+                        )
+                        cameraUri?.let { uri ->
+                            cameraLauncher.launch(uri)
+                        }
+                    },
+                    mainText = "Gallery",
+                    secondText = "Camera"
+                )
+            }
+
             if (isIngredientDialog){
                 IngredientDialogue(
                     onDismissRequest = { isIngredientDialog = false },
@@ -572,8 +609,11 @@ fun RecipePageScreen(
 @Composable
 fun CreateRecipePageScreenPreview(){
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
     AppTheme {
         RecipePageScreen(
+            context = activity,
             navController = navController,
             editMode = EditMode.Create,
             addRecipe = {_,_,_ ->},
@@ -589,6 +629,8 @@ fun CreateRecipePageScreenPreview(){
 @Composable
 fun EditRecipePageScreenPreview(){
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
     val englishBreakfastRecipe = Recipe(
         recipeId = "1",
         name = "Full English Breakfast",
@@ -623,6 +665,7 @@ fun EditRecipePageScreenPreview(){
     AppTheme {
         RecipePageScreen(
             navController = navController,
+            context = activity,
             editMode = EditMode.Edit,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,
@@ -639,6 +682,8 @@ fun EditRecipePageScreenPreview(){
 @Composable
 fun ViewRecipePageScreenPreview(){
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
     val englishBreakfastRecipe = Recipe(
         recipeId = "1",
         name = "Full English Breakfast",
@@ -673,6 +718,7 @@ fun ViewRecipePageScreenPreview(){
     AppTheme {
         RecipePageScreen(
             navController = navController,
+            context = activity,
             editMode = EditMode.View,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,

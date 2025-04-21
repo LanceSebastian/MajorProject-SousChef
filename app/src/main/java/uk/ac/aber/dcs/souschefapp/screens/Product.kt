@@ -34,9 +34,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -50,8 +52,10 @@ import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareRecipePageScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
+import uk.ac.aber.dcs.souschefapp.ui.components.ChoiceDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.ConfirmDialogue
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
+import java.io.File
 
 // Add Context
 // if product == null, addProduct else updateProduct
@@ -75,6 +79,7 @@ fun TopProductScreen(
     val coroutineScope = rememberCoroutineScope()
 
     ProductScreen(
+        context = context,
         navController = navController,
         uploadState = uploadState,
         product = product,
@@ -105,6 +110,7 @@ fun TopProductScreen(
 
 @Composable
 fun ProductScreen(
+    context: ComponentActivity,
     navController: NavHostController,
     uploadState: UploadState = UploadState.Idle,
     editMode: EditMode = EditMode.View,
@@ -123,7 +129,15 @@ fun ProductScreen(
     var priceText by remember { mutableStateOf((product?.price ?: "").toString()) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isImageChanged by remember { mutableStateOf(false) }
+    var isMediaChoiceDialog by remember { mutableStateOf(false) }
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
 
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) cameraUri?.let { selectedImageUri = it }
+    }
+
+    // Gallery launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -220,7 +234,7 @@ fun ProductScreen(
                             if (editMode != EditMode.View) {
                                 Button(
                                     onClick = {
-                                        imagePickerLauncher.launch("image/*")
+                                        isMediaChoiceDialog = true
                                     },
                                 ){
                                     Icon(
@@ -270,6 +284,29 @@ fun ProductScreen(
                 )
             }
 
+            if (isMediaChoiceDialog){
+                ChoiceDialogue(
+                    onDismissRequest = { isMediaChoiceDialog = false },
+                    mainAction = { imagePickerLauncher.launch("image/*") },
+                    secondAction = {
+                        val photoFile = File.createTempFile("temp_image", ".jpg", context.cacheDir).apply {
+                            createNewFile()
+                            deleteOnExit()
+                        }
+                        cameraUri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            photoFile
+                        )
+                        cameraUri?.let { uri ->
+                            cameraLauncher.launch(uri)
+                        }
+                    },
+                    mainText = "Gallery",
+                    secondText = "Camera"
+                )
+            }
+
             if (isBackConfirm){
                 val updatedName = nameText
                 val updatedPrice = priceText.toDouble()
@@ -303,8 +340,11 @@ fun ProductScreen(
 @Composable
 fun CreateProductScreenPreview(){
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
     AppTheme {
         ProductScreen(
+            context = activity,
             navController = navController,
             editMode = EditMode.Create,
             setMode = {},
@@ -320,8 +360,11 @@ fun CreateProductScreenPreview(){
 @Composable
 fun ViewProductScreenPreview(){
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
     AppTheme {
         ProductScreen(
+            context = activity,
             navController = navController,
             product = Product(
                 productId = "",
@@ -343,8 +386,11 @@ fun ViewProductScreenPreview(){
 @Composable
 fun EditProductScreenPreview(){
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val activity = context as ComponentActivity
     AppTheme {
         ProductScreen(
+            context = activity,
             navController = navController,
             product = Product(
                 productId = "",
