@@ -191,7 +191,7 @@ class ProductViewModel : ViewModel() {
 
         viewModelScope.launch {
             val imageUrl = try {
-                imageUri?.let { imageRepository.uploadImage(it) }
+                imageUri?.let { imageRepository.updateImage(product.imageUrl, it) }
             } catch (e: Exception) {
                 android.util.Log.e("ProductViewModel", "Image upload failed: ${e.message}")
                 _uploadState.value = UploadState.Error("Image upload failed")
