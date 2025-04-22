@@ -75,6 +75,7 @@ import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.components.DateNavigationBar
 import uk.ac.aber.dcs.souschefapp.ui.components.ChoiceDialogue
+import uk.ac.aber.dcs.souschefapp.ui.components.CustomCalendar
 import uk.ac.aber.dcs.souschefapp.ui.components.MyCalendar
 import uk.ac.aber.dcs.souschefapp.ui.components.RecipeNote
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
@@ -311,11 +312,12 @@ fun HomeScreen(
                 )
 
                 // Show Calendar
-                MyCalendar(
+                CustomCalendar(
                     showDialog = dateDialogState,
                     onDismiss = { dateDialogState = false },
                     onDateSelected = { setDate(it) },
-                    dateEpoch = datePickedEpoch
+                    date = date,
+                    logs = logs
                 )
 
                 if (log == null) {
