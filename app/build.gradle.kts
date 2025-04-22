@@ -88,6 +88,9 @@ dependencies {
     // Google Play Services Base
     implementation("com.google.android.gms:play-services-base")
 
+    // Google ML Kit
+    implementation ("com.google.mlkit:text-recognition:16.0.0")
+
     // ViewModel and LiveData (for MVVM)
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")

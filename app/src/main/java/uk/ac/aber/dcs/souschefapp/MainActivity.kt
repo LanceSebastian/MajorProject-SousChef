@@ -32,6 +32,7 @@ import uk.ac.aber.dcs.souschefapp.screens.TopRecipesScreen
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.BudgetViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.DateViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
@@ -39,6 +40,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.screens.SplashScreen
+import uk.ac.aber.dcs.souschefapp.screens.TopBudgetScreen
 import uk.ac.aber.dcs.souschefapp.screens.TopSplashScreen
 
 class MainActivity : ComponentActivity() {
@@ -49,6 +51,7 @@ class MainActivity : ComponentActivity() {
     private val productViewModel: ProductViewModel by viewModels()
     private val ingredientViewModel: IngredientViewModel by viewModels()
     private val dateViewModel: DateViewModel by viewModels()
+    private val budgetViewModel: BudgetViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -65,7 +68,8 @@ class MainActivity : ComponentActivity() {
                     noteViewModel = noteViewModel,
                     productViewModel = productViewModel,
                     ingredientViewModel = ingredientViewModel,
-                    dateViewModel = dateViewModel
+                    dateViewModel = dateViewModel,
+                    budgetViewModel = budgetViewModel
                 )
             }
         }
@@ -81,7 +85,8 @@ fun Navigation(
     noteViewModel: NoteViewModel,
     productViewModel: ProductViewModel,
     ingredientViewModel: IngredientViewModel,
-    dateViewModel: DateViewModel
+    dateViewModel: DateViewModel,
+    budgetViewModel: BudgetViewModel
 ) {
     val navController = rememberNavController()
     val user by authViewModel.user.observeAsState()
@@ -189,6 +194,15 @@ fun Navigation(
                 authViewModel = authViewModel,
                 recipeViewModel = recipeViewModel,
                 ingredientViewModel = ingredientViewModel
+            )
+        }
+
+        /* Budget Screen */
+        composable(Screen.Budget.route){
+            TopBudgetScreen(
+                context = context,
+                navController = navController,
+                budgetViewModel = budgetViewModel
             )
         }
 

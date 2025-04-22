@@ -54,3 +54,21 @@ data class Log(
     constructor() : this("",Timestamp.now(), "",0, null, emptyList(), emptyList())
 }
 
+data class Receipt(
+    val storeName: String = "",
+    val date: Timestamp = Timestamp.now(), // ISO 8601 String is safest (use Instant or LocalDateTime if you serialize manually)
+    val items: List<ReceiptItem> = emptyList(),
+    val subtotal: Double = 0.0,
+    val tax: Double = 0.0,
+    val total: Double = 0.0,
+    val paymentMethod: String? = null,
+    val rawText: String = ""
+)
+
+data class ReceiptItem(
+    val name: String = "",
+    val quantity: Int = 1,
+    val unitPrice: Double = 0.0,
+    val totalPrice: Double = 0.0
+)
+

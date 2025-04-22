@@ -507,7 +507,7 @@ fun HomeScreen(
                             Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                                 if (personalExpanded) {
                                     BasicTextField(
-                                        value = logNote.ifEmpty { "What did you think of today?" },
+                                        value = logNote.ifEmpty { if (!editNoteSelected) "What did you think of today?" else ""},
                                         onValueChange = {
                                             logNote = it
                                         },
@@ -586,10 +586,13 @@ fun HomeScreen(
                                             }
                                         }
                                     }
+                                } else {
+                                    Text("There are no notes.")
                                 }
                             }
                         }
                     }
+
                 }
 
                 if (addSelected) {

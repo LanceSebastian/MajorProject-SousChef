@@ -39,6 +39,7 @@ fun HomeTopAppBar(
     navController: NavHostController,
     onSearch: () -> Unit,
     onNavBack: () -> Unit = {},
+    onSous: () -> Unit = {}
 ){
     Column {
         if (selectMode == SelectMode.View) CenterAlignedTopAppBar(
@@ -46,7 +47,7 @@ fun HomeTopAppBar(
                 Text("Sous Chef", fontWeight = FontWeight.Bold)
             },
             navigationIcon = {
-                IconButton(onClick = {}) {
+                IconButton( onClick = onSous ) {
                     Icon(
                         painter = painterResource(id = R.drawable.chef),
                         contentDescription = null,

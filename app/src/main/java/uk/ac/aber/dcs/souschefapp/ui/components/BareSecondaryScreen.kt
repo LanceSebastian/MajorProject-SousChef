@@ -12,9 +12,10 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 
 
 @Composable
-fun BareRecipePageScreen(
+fun BareSecondaryScreen(
     navController: NavHostController,
     editMode: EditMode = EditMode.View,
+    mainState: MainState = MainState.HOME,
     editFunction: () -> Unit,
     backFunction: () -> Unit,
     saveFunction: () -> Unit,
@@ -33,16 +34,16 @@ fun BareRecipePageScreen(
                 crossFunction = crossFunction,
             ) },
         content = { innerPadding -> pageContent(innerPadding) },
-        bottomBar = { if (isBottomBar) HomeNavigationBar(mainState = MainState.RECIPES, navController = navController) },
+        bottomBar = { if (isBottomBar) HomeNavigationBar(mainState = mainState, navController = navController) },
     )
 }
 
 @Preview(showBackground = true)
 @Composable
-fun BareRecipePageView(){
+fun BareSecondaryView(){
     val navController = rememberNavController()
     AppTheme {
-        BareRecipePageScreen(
+        BareSecondaryScreen(
             navController = navController,
             editFunction = {},
             backFunction = {},
@@ -54,10 +55,10 @@ fun BareRecipePageView(){
 
 @Preview(showBackground = true)
 @Composable
-fun EditBareRecipePageView(){
+fun EditBareSecondaryView(){
     val navController = rememberNavController()
     AppTheme {
-        BareRecipePageScreen(
+        BareSecondaryScreen(
             navController = navController,
             editFunction = {},
             backFunction = {},
