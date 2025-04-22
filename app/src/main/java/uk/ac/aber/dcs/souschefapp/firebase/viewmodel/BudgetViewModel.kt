@@ -10,6 +10,10 @@ import androidx.lifecycle.ViewModel
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import android.graphics.Canvas
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 
 class BudgetViewModel : ViewModel() {
 
@@ -20,8 +24,9 @@ class BudgetViewModel : ViewModel() {
     val ocrText: LiveData<String> = _ocrText
 
     fun setBitmap(bitmap: Bitmap) {
-        _receiptBitmap.value = bitmap
-        recognizeTextFromImage(bitmap)
+        val processedBitmap = preprocessBitmap(bitmap)
+        _receiptBitmap.value = processedBitmap
+        recognizeTextFromImage(processedBitmap)
     }
 
     private fun recognizeTextFromImage(bitmap: Bitmap) {
@@ -30,10 +35,29 @@ class BudgetViewModel : ViewModel() {
 
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                _ocrText.value = visionText.text
+                val filteredText = visionText.textBlocks
+                    .filter { it.boundingBox?.width() ?: 0 > 50 } // ignore tiny text
+                    .joinToString("\n") { it.text }
+
+                _ocrText.value = filteredText
             }
             .addOnFailureListener { e ->
                 _ocrText.value = "Error: ${e.localizedMessage}"
             }
+    }
+
+    private fun preprocessBitmap(original: Bitmap): Bitmap {
+        val targetWidth = 1080
+        val targetHeight = (original.height.toFloat() / original.width * targetWidth).toInt()
+        val resized = Bitmap.createScaledBitmap(original, targetWidth, targetHeight, true)
+
+        val grayBitmap = Bitmap.createBitmap(resized.width, resized.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(grayBitmap)
+        val paint = Paint().apply {
+            colorFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) }) // grayscale
+        }
+
+        canvas.drawBitmap(resized, 0f, 0f, paint)
+        return grayBitmap
     }
 }

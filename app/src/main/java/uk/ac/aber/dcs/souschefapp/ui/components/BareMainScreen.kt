@@ -70,14 +70,6 @@ fun BareMainScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // Simulate drawer peeking open on first launch
-    LaunchedEffect(Unit) {
-        delay(300) // slight delay to let the screen load
-        drawerState.open()
-        delay(800) // stay open briefly
-        drawerState.close()
-    }
-
     // Calculate drawer opening progress manually
     val isOpening = drawerState.targetValue == DrawerValue.Open
     val progress = when {
