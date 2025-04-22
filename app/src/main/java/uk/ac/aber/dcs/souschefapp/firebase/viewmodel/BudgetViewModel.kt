@@ -30,7 +30,6 @@ class BudgetViewModel : ViewModel() {
         recognizeTextFromImage(processed)
     }
 
-    // Preprocess the bitmap (resize, grayscale, adjust contrast/brightness)
     private fun preprocessBitmap(bitmap: Bitmap): Bitmap {
         val width = 1080
         val scale = width.toFloat() / bitmap.width
@@ -39,7 +38,7 @@ class BudgetViewModel : ViewModel() {
         // Resize
         val resized = Bitmap.createScaledBitmap(bitmap, width, height, true)
 
-        // Grayscale
+        // Convert to grayscale
         val grayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(grayscale)
         val paint = Paint().apply {
@@ -47,29 +46,58 @@ class BudgetViewModel : ViewModel() {
         }
         canvas.drawBitmap(resized, 0f, 0f, paint)
 
-        // Apply binarization after grayscale conversion
-        val binarized = binarizeImage(grayscale) // Apply binarization
+        // Apply dynamic thresholding
+        val thresholded = dynamicThreshold(grayscale)
 
-        // Contrast & Brightness
-        val contrast = 1.5f
-        val brightness = -30f
-        val contrastMatrix = ColorMatrix(
-            floatArrayOf(
-                contrast, 0f, 0f, 0f, brightness,
-                0f, contrast, 0f, 0f, brightness,
-                0f, 0f, contrast, 0f, brightness,
-                0f, 0f, 0f, 1f, 0f
-            )
-        )
+        return thresholded
+    }
 
-        val finalOutput = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val finalCanvas = Canvas(finalOutput)
-        val finalPaint = Paint().apply {
-            colorFilter = ColorMatrixColorFilter(contrastMatrix)
+    // Dynamic thresholding (adaptive thresholding)
+    private fun dynamicThreshold(bitmap: Bitmap): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+
+        val outputBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                // Get pixel color
+                val pixel = bitmap.getPixel(x, y)
+                // Convert to grayscale intensity (using the luminance formula)
+                val gray = (Color.red(pixel) * 0.2989 + Color.green(pixel) * 0.587 + Color.blue(pixel) * 0.114).toInt()
+
+                // Calculate adaptive thresholding (mean value in a window)
+                val threshold = calculateLocalThreshold(bitmap, x, y, 15)  // Using a 15x15 window for local threshold
+
+                // Apply the threshold to the pixel
+                val newPixel = if (gray > threshold) Color.WHITE else Color.BLACK
+                outputBitmap.setPixel(x, y, newPixel)
+            }
         }
-        finalCanvas.drawBitmap(binarized, 0f, 0f, finalPaint)
 
-        return finalOutput
+        return outputBitmap
+    }
+
+    // Function to calculate the local threshold using mean intensity in a window around the pixel
+    private fun calculateLocalThreshold(bitmap: Bitmap, x: Int, y: Int, windowSize: Int): Int {
+        val halfWindow = windowSize / 2
+        var sum = 0
+        var count = 0
+
+        for (dy in -halfWindow..halfWindow) {
+            for (dx in -halfWindow..halfWindow) {
+                val nx = x + dx
+                val ny = y + dy
+                if (nx >= 0 && nx < bitmap.width && ny >= 0 && ny < bitmap.height) {
+                    val pixel = bitmap.getPixel(nx, ny)
+                    val gray = (Color.red(pixel) * 0.2989 + Color.green(pixel) * 0.587 + Color.blue(pixel) * 0.114).toInt()
+                    sum += gray
+                    count++
+                }
+            }
+        }
+
+        return if (count > 0) sum / count else 0
     }
 
     // Recognize text from image
@@ -84,35 +112,6 @@ class BudgetViewModel : ViewModel() {
             .addOnFailureListener { e ->
                 _ocrText.value = "Error: ${e.localizedMessage}"
             }
-    }
-
-    private fun binarizeImage(bitmap: Bitmap): Bitmap {
-        val width = bitmap.width
-        val height = bitmap.height
-        val threshold = 127 // This is a fixed threshold, you can adjust it dynamically if needed
-
-        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-
-        for (x in 0 until width) {
-            for (y in 0 until height) {
-                // Get pixel color
-                val pixelColor = bitmap.getPixel(x, y)
-
-                // Convert color to grayscale using the RGB values
-                val red = Color.red(pixelColor)
-                val green = Color.green(pixelColor)
-                val blue = Color.blue(pixelColor)
-                val gray = (0.299 * red + 0.587 * green + 0.114 * blue).toInt() // Grayscale formula
-
-                // Apply the threshold
-                val newColor = if (gray < threshold) Color.BLACK else Color.WHITE
-
-                // Set the pixel to either black or white based on the threshold
-                result.setPixel(x, y, newColor)
-            }
-        }
-
-        return result
     }
 
     // Parse blocks from OCR results
