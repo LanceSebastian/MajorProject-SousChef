@@ -29,24 +29,27 @@ class BudgetViewModel : ViewModel() {
         recognizeTextFromImage(processed)
     }
 
-    // Preprocess the bitmap (resize, grayscale, adjust contrast/brightness)
+    // Preprocess the bitmap (resize, grayscale, adjust contrast/brightness, sharpen)
     private fun preprocessBitmap(bitmap: Bitmap): Bitmap {
         val width = 1080
         val scale = width.toFloat() / bitmap.width
         val height = (bitmap.height * scale).toInt()
 
-        // Resize
+        // Resize the bitmap to make the image smaller
         val resized = Bitmap.createScaledBitmap(bitmap, width, height, true)
 
-        // Grayscale
-        val grayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        // Convert to grayscale
+        val grayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888) // Corrected: no nullable config
         val canvas = Canvas(grayscale)
         val paint = Paint().apply {
             colorFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
         }
         canvas.drawBitmap(resized, 0f, 0f, paint)
 
-        // Contrast & Brightness
+        // Apply sharpening
+        val sharpened = sharpenImage(grayscale)
+
+        // Contrast & Brightness adjustment
         val contrast = 1.5f
         val brightness = -30f
         val contrastMatrix = ColorMatrix(
@@ -58,14 +61,40 @@ class BudgetViewModel : ViewModel() {
             )
         )
 
-        val finalOutput = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val finalOutput = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888) // Corrected: no nullable config
         val finalCanvas = Canvas(finalOutput)
         val finalPaint = Paint().apply {
             colorFilter = ColorMatrixColorFilter(contrastMatrix)
         }
-        finalCanvas.drawBitmap(grayscale, 0f, 0f, finalPaint)
+        finalCanvas.drawBitmap(sharpened, 0f, 0f, finalPaint)
 
         return finalOutput
+    }
+
+    // Sharpen image function
+    private fun sharpenImage(bitmap: Bitmap): Bitmap {
+        // Create a color matrix for sharpening the image
+        val sharpenMatrix = floatArrayOf(
+            0f, -1f, 0f, 0f, 0f,
+            -1f, 5f, -1f, 0f, 0f,
+            0f, -1f, 0f, 0f, 0f
+        )
+
+        val matrix = ColorMatrix(sharpenMatrix)  // Initialize the ColorMatrix with the sharpen matrix
+
+        // Create a new bitmap with non-null config
+        val outputBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+
+        // Create a canvas and apply the sharpened effect
+        val canvas = Canvas(outputBitmap)
+        val paint = Paint().apply {
+            colorFilter = ColorMatrixColorFilter(matrix)  // Apply the sharpened ColorMatrix via a ColorMatrixColorFilter
+        }
+
+        // Draw the bitmap on the canvas with the sharpen effect
+        canvas.drawBitmap(bitmap, 0f, 0f, paint)
+
+        return outputBitmap
     }
 
     // Recognize text from image
@@ -88,28 +117,33 @@ class BudgetViewModel : ViewModel() {
 
         // Iterate over text blocks
         for (block in visionText.textBlocks) {
-            // Exclude small blocks of text
-            if (block.text.length < 4) continue
+            // Exclude blocks that are too small or consist of non-informative characters
+            if (block.text.length < 4 || containsNonAlphanumeric(block.text)) continue
 
             extractedText.append("Block: ${block.text}\n")
 
             // Process lines within the block
             for (line in block.lines) {
-                // Exclude very short lines
-                if (line.text.length < 4) continue
+                // Exclude short lines or lines with only numbers or symbols
+                if (line.text.length < 3 || containsNonAlphanumeric(line.text)) continue
 
                 extractedText.append("Line: ${line.text}\n")
 
                 // Process words in the line
                 for (element in line.elements) {
-                    // Exclude small words
-                    if (element.text.length < 4) continue
+                    // Exclude short words or words with just symbols/numbers
+                    if (element.text.length < 3 || containsNonAlphanumeric(element.text)) continue
 
                     extractedText.append("Word: ${element.text}\n")
                 }
             }
         }
 
-        _ocrText.value = extractedText.toString()
+        _ocrText.value = extractedText.toString().ifBlank { "No readable text found." }
+    }
+
+    // Helper function to check if the text contains non-alphanumeric characters
+    private fun containsNonAlphanumeric(text: String): Boolean {
+        return text.any { !it.isLetterOrDigit() && it != ' ' }
     }
 }
