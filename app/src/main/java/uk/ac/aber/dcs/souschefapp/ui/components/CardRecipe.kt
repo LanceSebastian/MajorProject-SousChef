@@ -24,6 +24,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -39,10 +40,11 @@ fun CardRecipe(
     text: String = "",
     imageUri: Uri? = null,
     imageUrl: String? = null,
+    image: Int? = null,
     overlay: Boolean = true,
     onClick: () -> Unit,
 ) {
-    val defaultImage = painterResource(id = R.drawable.questionimage)
+    val defaultImage = if (image == null) R.drawable.questionimage else image
     val context = LocalContext.current
 
     Card(
@@ -59,7 +61,7 @@ fun CardRecipe(
                 model = ImageRequest.Builder(context)
                     .data(imageUri ?: imageUrl)
                     .crossfade(true)
-                    .placeholder(R.drawable.questionimage)
+                    .placeholder(defaultImage)
                     .error(R.drawable.questionimage)
                     .build(),
                 contentDescription = null,
