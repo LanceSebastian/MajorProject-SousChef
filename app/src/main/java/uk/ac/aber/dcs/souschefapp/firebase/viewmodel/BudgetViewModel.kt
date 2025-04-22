@@ -14,9 +14,9 @@ import android.graphics.Canvas
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
+import com.google.mlkit.vision.text.Text
 
 class BudgetViewModel : ViewModel() {
-
     private val _receiptBitmap = MutableLiveData<Bitmap?>()
     val receiptBitmap: LiveData<Bitmap?> = _receiptBitmap
 
@@ -29,6 +29,7 @@ class BudgetViewModel : ViewModel() {
         recognizeTextFromImage(processed)
     }
 
+    // Preprocess the bitmap (resize, grayscale, adjust contrast/brightness)
     private fun preprocessBitmap(bitmap: Bitmap): Bitmap {
         val width = 1080
         val scale = width.toFloat() / bitmap.width
@@ -67,21 +68,48 @@ class BudgetViewModel : ViewModel() {
         return finalOutput
     }
 
+    // Recognize text from image
     private fun recognizeTextFromImage(bitmap: Bitmap) {
         val image = InputImage.fromBitmap(bitmap, 0)
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                val filteredText = visionText.textBlocks
-                    .flatMap { it.lines }
-                    .filter { it.text.length > 3 && (it.boundingBox?.width() ?: 0) > 50 }
-                    .joinToString("\n") { it.text }
-
-                _ocrText.value = filteredText.ifBlank { "No readable text found." }
+                parseBlocks(visionText)
             }
             .addOnFailureListener { e ->
                 _ocrText.value = "Error: ${e.localizedMessage}"
             }
+    }
+
+    // Parse blocks from OCR results
+    private fun parseBlocks(visionText: Text) {
+        val extractedText = StringBuilder()
+
+        // Iterate over text blocks
+        for (block in visionText.textBlocks) {
+            // Exclude small blocks of text
+            if (block.text.length < 4) continue
+
+            extractedText.append("Block: ${block.text}\n")
+
+            // Process lines within the block
+            for (line in block.lines) {
+                // Exclude very short lines
+                if (line.text.length < 4) continue
+
+                extractedText.append("Line: ${line.text}\n")
+
+                // Process words in the line
+                for (element in line.elements) {
+                    // Exclude small words
+                    if (element.text.length < 4) continue
+
+                    extractedText.append("Word: ${element.text}\n")
+                }
+            }
+        }
+
+        _ocrText.value = extractedText.toString()
     }
 }
