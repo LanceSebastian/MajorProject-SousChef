@@ -46,6 +46,9 @@ class BudgetViewModel : ViewModel() {
         }
         canvas.drawBitmap(resized, 0f, 0f, paint)
 
+        // Apply binarization after grayscale conversion
+        val binarized = binarizeImage(grayscale) // Apply binarization
+
         // Contrast & Brightness
         val contrast = 1.5f
         val brightness = -30f
@@ -63,7 +66,7 @@ class BudgetViewModel : ViewModel() {
         val finalPaint = Paint().apply {
             colorFilter = ColorMatrixColorFilter(contrastMatrix)
         }
-        finalCanvas.drawBitmap(grayscale, 0f, 0f, finalPaint)
+        finalCanvas.drawBitmap(binarized, 0f, 0f, finalPaint)
 
         return finalOutput
     }
@@ -80,6 +83,35 @@ class BudgetViewModel : ViewModel() {
             .addOnFailureListener { e ->
                 _ocrText.value = "Error: ${e.localizedMessage}"
             }
+    }
+
+    private fun binarizeImage(bitmap: Bitmap): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+        val threshold = 127 // This is a fixed threshold, you can adjust it dynamically if needed
+
+        val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        for (x in 0 until width) {
+            for (y in 0 until height) {
+                // Get pixel color
+                val pixelColor = bitmap.getPixel(x, y)
+
+                // Convert color to grayscale using the RGB values
+                val red = Color.red(pixelColor)
+                val green = Color.green(pixelColor)
+                val blue = Color.blue(pixelColor)
+                val gray = (0.299 * red + 0.587 * green + 0.114 * blue).toInt() // Grayscale formula
+
+                // Apply the threshold
+                val newColor = if (gray < threshold) Color.BLACK else Color.WHITE
+
+                // Set the pixel to either black or white based on the threshold
+                result.setPixel(x, y, newColor)
+            }
+        }
+
+        return result
     }
 
     // Parse blocks from OCR results
