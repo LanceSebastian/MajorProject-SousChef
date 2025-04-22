@@ -22,7 +22,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -50,7 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -64,6 +62,7 @@ import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
 import uk.ac.aber.dcs.souschefapp.R
+import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
 import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
@@ -71,7 +70,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.UploadState
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
-import uk.ac.aber.dcs.souschefapp.ui.components.BareRecipePageScreen
+import uk.ac.aber.dcs.souschefapp.ui.components.BareSecondaryScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.components.ChoiceDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.ConfirmDialogue
@@ -217,10 +216,11 @@ fun RecipePageScreen(
     var editIngredient by remember { mutableStateOf<Ingredient?>(null) }
     var editInstruction by remember {mutableStateOf("")}
 
-    BareRecipePageScreen(
+    BareSecondaryScreen(
         navController = navController,
         isBottomBar = false,
         editMode = editMode,
+        mainState = MainState.RECIPES,
         editFunction = { setMode(EditMode.Edit) },
         // Check for unsaved edits
         backFunction = {
