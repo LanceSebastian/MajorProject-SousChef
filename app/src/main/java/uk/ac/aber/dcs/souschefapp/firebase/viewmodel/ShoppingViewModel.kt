@@ -19,10 +19,10 @@ class ShoppingViewModel : ViewModel(){
     val ingredientRepository = IngredientRepository()
     val shoppingRepository = ShoppingRepository()
 
+    private var listenerRegistration: ListenerRegistration? = null
+
     private val _uploadState = MutableLiveData<UploadState>(UploadState.Idle)
     val uploadState: LiveData<UploadState> = _uploadState
-
-    private var shoppingListener: ListenerRegistration? = null
 
     private var _shoppingItems = MutableLiveData<List<ShoppingItem>>(emptyList())
     var shoppingItems: LiveData<List<ShoppingItem>> = _shoppingItems
@@ -63,9 +63,6 @@ class ShoppingViewModel : ViewModel(){
             }
         }
     }
-
-    // Optional: Listen for real-time updates
-    private var listenerRegistration: ListenerRegistration? = null
 
     fun startListening(userId: String) {
         listenerRegistration?.remove() // remove old listener
