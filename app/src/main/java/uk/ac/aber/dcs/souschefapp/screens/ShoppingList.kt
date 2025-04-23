@@ -98,6 +98,7 @@ fun TopShoppingListScreen(
 
     ShoppingListScreen(
         navController = navController,
+        logs = logs,
         shoppingList = shoppingList,
         selectLogs = { list ->
             logViewModel.readLogsByDates(userId, list)
@@ -111,6 +112,7 @@ fun TopShoppingListScreen(
 @Composable
 fun ShoppingListScreen(
     navController: NavHostController,
+    logs: List<Log> = emptyList(),
     shoppingList: List<ShoppingItem> = emptyList(),
     selectLogs: (List<LocalDate>) -> Unit = {},
     onSave: (List<ShoppingItem>) -> Unit = {} // <- Add this
@@ -125,18 +127,6 @@ fun ShoppingListScreen(
     }
     val coroutineScope = rememberCoroutineScope()
 
-    DisposableEffect(Unit) {
-        onDispose {
-            coroutineScope.launch {
-                try {
-                    onSave(localShoppingList.toList())
-                } catch (e: Exception) {
-                    android.util.Log.e("ShoppingList", "Failed to save items on dispose", e)
-                }
-            } // Save when composable is removed
-        }
-    }
-
     var isCalendar by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
     var isEdit by remember { mutableStateOf(false) }
@@ -149,142 +139,140 @@ fun ShoppingListScreen(
             isCalendar = true
         },
         onSecond = {
+            if (isEdit) onSave(localShoppingList)
             isEdit = !isEdit
         }
     ){ innerPadding ->
         Surface(modifier = Modifier.padding(innerPadding)){
-            Column{
-                LazyColumn {
-                    items(uncheckedList) { item ->
-                        val index = localShoppingList.indexOfFirst { it.itemId == item.itemId }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+            LazyColumn{
+                items(uncheckedList) { item ->
+                    val index = localShoppingList.indexOfFirst { it.itemId == item.itemId }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        Checkbox(
+                            checked = item.checked,
+                            onCheckedChange = {
+                                if (index != -1) localShoppingList[index] = item.copy(checked = it)
+                            },
                             modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            Checkbox(
-                                checked = item.checked,
-                                onCheckedChange = {
-                                    if (index != -1) localShoppingList[index] = item.copy(checked = it)
+                                .weight(0.1f)
+                        )
+                        if (isEdit) {
+                            BasicTextField(
+                                value = item.content,
+                                onValueChange = {
+                                    if (index != -1) localShoppingList[index] =
+                                        item.copy(content = it)
                                 },
                                 modifier = Modifier
+                                    .weight(0.8f)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .clickable {
+                                        localShoppingList.remove(item)
+                                    }
                                     .weight(0.1f)
                             )
-                            if (isEdit) {
-                                BasicTextField(
-                                    value = item.content,
-                                    onValueChange = {
-                                        if (index != -1) localShoppingList[index] =
-                                            item.copy(content = it)
-                                    },
-                                    modifier = Modifier
-                                        .weight(0.8f)
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .clickable {
-                                            localShoppingList.remove(item)
-                                        }
-                                        .weight(0.1f)
-                                )
-                            } else {
-                                Text(
-                                    text = item.content,
-                                    modifier = Modifier.weight(0.9f)
-                                )
-                            }
+                        } else {
+                            Text(
+                                text = item.content,
+                                modifier = Modifier.weight(0.9f)
+                            )
                         }
                     }
-                    item {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    localShoppingList.add(
-                                        ShoppingItem(
-                                            itemId = UUID.randomUUID().toString(),
-                                            content = "• New Item"
-                                        )
+                }
+                item {
+                    Row(
+                        horizontalArrangement = Arrangement.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(
+                            onClick = {
+                                localShoppingList.add(
+                                    ShoppingItem(
+                                        itemId = UUID.randomUUID().toString(),
+                                        content = "• New Item"
                                     )
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = null
                                 )
-                                Text("List Item")
                             }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null
+                            )
+                            Text("List Item")
                         }
                     }
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(32.dp)
-                        .clickable { isExpanded = !isExpanded }
-                        .padding(horizontal = 8.dp)
-                ) {
-                    if (isExpanded) Icon(
-                        painter = painterResource(R.drawable.arrow_drop_up),
-                        contentDescription = null
-                    )
-                    else Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = null
-                    )
-                    Text(
-                        text = "${checkedList.size} Checked Items",
-                        style = MaterialTheme.typography.bodyLarge
+                if(checkedList.isNotEmpty()) item{
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp)
+                            .clickable { isExpanded = !isExpanded }
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        if (isExpanded) Icon(
+                            painter = painterResource(R.drawable.arrow_drop_up),
+                            contentDescription = null
                         )
+                        else Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null
+                        )
+                        Text(
+                            text = "${checkedList.size} Checked Items",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
-                if (isExpanded)
-                    LazyColumn {
-                        items(checkedList) { item ->
-                        val index = localShoppingList.indexOfFirst { it.itemId == item.itemId }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                if (isExpanded) items(checkedList) { item ->
+                    val index = localShoppingList.indexOfFirst { it.itemId == item.itemId }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        Checkbox(
+                            checked = item.checked,
+                            onCheckedChange = {
+                                if (index != -1) localShoppingList[index] = item.copy(checked = it)
+                            },
                             modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            Checkbox(
-                                checked = item.checked,
-                                onCheckedChange = {
-                                    if (index != -1) localShoppingList[index] = item.copy(checked = it)
+                                .weight(0.1f)
+                        )
+                        if (isEdit) {
+                            BasicTextField(
+                                value = item.content,
+                                onValueChange = {
+                                    if (index != -1) localShoppingList[index] =
+                                        item.copy(content = it)
                                 },
                                 modifier = Modifier
+                                    .weight(0.8f)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .clickable {
+                                        localShoppingList.remove(item)
+                                    }
                                     .weight(0.1f)
                             )
-                            if (isEdit) {
-                                BasicTextField(
-                                    value = item.content,
-                                    onValueChange = {
-                                        if (index != -1) localShoppingList[index] =
-                                            item.copy(content = it)
-                                    },
-                                    modifier = Modifier
-                                        .weight(0.8f)
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .clickable {
-                                            localShoppingList.remove(item)
-                                        }
-                                        .weight(0.1f)
-                                )
-                            } else {
-                                Text(
-                                    text = item.content,
-                                    modifier = Modifier
-                                        .weight(0.8f))
-                            }
+                        } else {
+                            Text(
+                                text = item.content,
+                                modifier = Modifier
+                                    .weight(0.8f))
                         }
                     }
                 }
@@ -297,6 +285,7 @@ fun ShoppingListScreen(
             onDatesSelected = { list ->
                 selectLogs(list)
             },
+            logs = logs,
             isMany = true
         )
     }
