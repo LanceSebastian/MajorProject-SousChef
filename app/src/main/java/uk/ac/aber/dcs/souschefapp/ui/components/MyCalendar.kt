@@ -336,7 +336,17 @@ fun CustomCalendarView(){
             recipeIdList = listOf("4"),
             productIdList = listOf("2", "3"),
             note = "Had a bad experience with this recipe."
-        )
+        ),
+        Log(
+            logId = "",
+            createdBy = "",
+            createdAt = Timestamp(Date(System.currentTimeMillis() + 86_400_000)),
+            rating = 2,
+            recipeIdList = listOf("1", "2"),
+            productIdList = listOf("0", "2"),
+            note = "Tried a new recipe, turned out great!"
+        ),
+
     )
     AppTheme{
         CustomCalendar(
