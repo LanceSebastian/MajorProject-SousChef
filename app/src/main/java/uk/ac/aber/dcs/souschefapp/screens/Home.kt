@@ -294,7 +294,8 @@ fun HomeScreen(
 
     BareMainScreen(
         mainState = mainState,
-        navController = navController
+        navController = navController,
+        onSearch = { navController.navigate(Screen.Recipes.route) }
     ) { innerPadding ->
         Surface(
             modifier = Modifier
