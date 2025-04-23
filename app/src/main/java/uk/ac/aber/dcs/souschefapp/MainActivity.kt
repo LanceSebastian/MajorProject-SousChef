@@ -39,8 +39,10 @@ import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.LogViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ProductViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.ShoppingViewModel
 import uk.ac.aber.dcs.souschefapp.screens.SplashScreen
 import uk.ac.aber.dcs.souschefapp.screens.TopBudgetScreen
+import uk.ac.aber.dcs.souschefapp.screens.TopShoppingListScreen
 import uk.ac.aber.dcs.souschefapp.screens.TopSplashScreen
 
 class MainActivity : ComponentActivity() {
@@ -52,6 +54,7 @@ class MainActivity : ComponentActivity() {
     private val ingredientViewModel: IngredientViewModel by viewModels()
     private val dateViewModel: DateViewModel by viewModels()
     private val budgetViewModel: BudgetViewModel by viewModels()
+    private val shoppingViewModel: ShoppingViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -69,7 +72,8 @@ class MainActivity : ComponentActivity() {
                     productViewModel = productViewModel,
                     ingredientViewModel = ingredientViewModel,
                     dateViewModel = dateViewModel,
-                    budgetViewModel = budgetViewModel
+                    budgetViewModel = budgetViewModel,
+                    shoppingViewModel = shoppingViewModel
                 )
             }
         }
@@ -86,7 +90,8 @@ fun Navigation(
     productViewModel: ProductViewModel,
     ingredientViewModel: IngredientViewModel,
     dateViewModel: DateViewModel,
-    budgetViewModel: BudgetViewModel
+    budgetViewModel: BudgetViewModel,
+    shoppingViewModel: ShoppingViewModel
 ) {
     val navController = rememberNavController()
     val user by authViewModel.user.observeAsState()
@@ -203,6 +208,16 @@ fun Navigation(
                 context = context,
                 navController = navController,
                 budgetViewModel = budgetViewModel
+            )
+        }
+
+        /* Shopping List Screen*/
+        composable(Screen.ShoppingList.route) {
+            TopShoppingListScreen(
+                navController = navController,
+                authViewModel = authViewModel,
+                logViewModel = logViewModel,
+                shoppingViewModel = shoppingViewModel
             )
         }
 
