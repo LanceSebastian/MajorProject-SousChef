@@ -148,7 +148,7 @@ fun DrawerContent(
                 }
             )
             DrawerItem(
-                title = "Scan Receipt",
+                title = "Scan Receipt*",
                 onClick = {
                     onClose()
                     navController.navigate(Screen.Budget.route)
@@ -164,6 +164,7 @@ fun DrawerContent(
                 title = "Shopping List",
                 onClick = {
                     onClose()
+                    navController.navigate(Screen.ShoppingList.route)
                 }
             )
         }
