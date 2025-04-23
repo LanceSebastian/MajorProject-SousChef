@@ -118,7 +118,7 @@ fun RecipesScreen(
         mainState = MainState.RECIPES,
         selectMode = selectMode,
         onSearch = { isSearch = !isSearch },
-        onNavBack = {
+        onNavIcon = {
             setSelectMode(SelectMode.View)
         },
         floatButton = {

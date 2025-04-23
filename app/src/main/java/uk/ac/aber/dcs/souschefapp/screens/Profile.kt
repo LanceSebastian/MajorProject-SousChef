@@ -59,7 +59,8 @@ fun ProfileScreen(
 ){
     BareMainScreen(
         navController = navController,
-        mainState = MainState.PROFILE
+        mainState = MainState.PROFILE,
+        onSearch = { navController.navigate(Screen.Recipes.route) }
     ){ innerPadding ->
         Surface(
             modifier = Modifier

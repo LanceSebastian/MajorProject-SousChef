@@ -72,3 +72,10 @@ data class ReceiptItem(
     val totalPrice: Double = 0.0
 )
 
+data class ShoppingItem(
+    val itemId: String = "",
+    val checked: Boolean = false,
+    val content: String = ""
+)
+
+

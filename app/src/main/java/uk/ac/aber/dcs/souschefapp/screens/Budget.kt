@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -59,7 +60,7 @@ fun BudgetScreen (
 ){
 
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    
+
     // Camera
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { result ->
         result?.let { setBitmap(it) }
@@ -73,25 +74,31 @@ fun BudgetScreen (
             modifier = Modifier
                 .padding(innerPadding)
         ){
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Button(onClick = { launcher.launch() }) {
-                    Text("Scan Receipt")
-                }
-
-                bitmap?.let {
-                    Image(bitmap = it.asImageBitmap(), contentDescription = null)
-                }
-
-                if (ocrText != null) {
-                    if (ocrText.isNotBlank()) {
-                        Text(text = ocrText)
+                item{
+                    Button(onClick = { launcher.launch() }) {
+                        Text("Scan Receipt")
                     }
                 }
+                item{
+                    bitmap?.let {
+                        Image(bitmap = it.asImageBitmap(), contentDescription = null)
+                    }
+
+                }
+                item{
+                    if (ocrText != null) {
+                        if (ocrText.isNotBlank()) {
+                            Text(text = ocrText)
+                        }
+                    }
+                }
+
             }
         }
     }

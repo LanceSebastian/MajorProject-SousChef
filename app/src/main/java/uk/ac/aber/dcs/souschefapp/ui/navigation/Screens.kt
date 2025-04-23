@@ -10,6 +10,7 @@ sealed class Screen (val route: String) {
     object Auth : Screen("auth")
     object Product : Screen("product")
     object Budget : Screen("budget")
+    object ShoppingList : Screen("shopping_list")
 
     /*
     Easier method to write arguments.

@@ -120,7 +120,8 @@ fun HistoryScreen(
     val sortedLogs = logs.sortedByDescending { it.createdAt }
     BareMainScreen(
         navController = navController,
-        mainState = MainState.HISTORY
+        mainState = MainState.HISTORY,
+        onSearch = { navController.navigate(Screen.Recipes.route) }
     ){ innerPadding ->
         Surface(
             modifier = Modifier

@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,8 +41,8 @@ fun HomeTopAppBar(
     selectMode: SelectMode = SelectMode.View,
     navController: NavHostController,
     onSearch: () -> Unit,
-    onNavBack: () -> Unit = {},
-    onSous: () -> Unit = {}
+    onNavIcon: () -> Unit = {},
+    onSecond: () -> Unit = {}
 ){
     Column {
         if (selectMode == SelectMode.View) CenterAlignedTopAppBar(
@@ -47,7 +50,7 @@ fun HomeTopAppBar(
                 Text("Sous Chef", fontWeight = FontWeight.Bold)
             },
             navigationIcon = {
-                IconButton( onClick = onSous ) {
+                IconButton( onClick = onNavIcon ) {
                     Icon(
                         painter = painterResource(id = R.drawable.chef),
                         contentDescription = null,
@@ -59,11 +62,10 @@ fun HomeTopAppBar(
 
             actions = {
                 IconButton(onClick = {
-                    if (mainState != MainState.RECIPES) navController.navigate(Screen.Recipes.route)
                     onSearch()
                 }) {
                     Icon(
-                        imageVector = Icons.Rounded.Search,
+                        imageVector =  Icons.Rounded.Search,
                         contentDescription = "Search"
                     )
                 }
@@ -82,7 +84,7 @@ fun HomeTopAppBar(
             },
             navigationIcon = {
                 IconButton(onClick = {
-                    onNavBack()
+                    onNavIcon()
                     navController.popBackStack()
                 }) {
                     Icon(
@@ -111,6 +113,78 @@ fun HomeTopAppBar(
             )
 
         )
+        if (selectMode == SelectMode.Shopping) TopAppBar(
+            title = {
+                Text("Shopping List", fontWeight = FontWeight.Bold)
+            },
+            navigationIcon = {
+                IconButton( onClick = onNavIcon ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.chef),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .height(24.dp)
+                    )
+                }
+            },
+
+            actions = {
+                IconButton(onClick = {
+                    onSecond()
+                }) {
+                    Icon(
+                        imageVector =  Icons.Rounded.Edit,
+                        contentDescription = "Search"
+                    )
+                }
+                IconButton(onClick = {
+                    onSearch()
+                }) {
+                    Icon(
+                        imageVector =  Icons.Rounded.DateRange,
+                        contentDescription = "Search"
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                actionIconContentColor = MaterialTheme.colorScheme.onSurface
+            )
+        )
+        if (selectMode == SelectMode.Shopping_Edit) TopAppBar(
+            title = {
+                Text("Shopping List", fontWeight = FontWeight.Bold)
+            },
+            navigationIcon = {
+                IconButton( onClick = onNavIcon ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.chef),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .height(24.dp)
+                    )
+                }
+            },
+
+            actions = {
+                IconButton(onClick = {
+                    onSecond()
+                }) {
+                    Icon(
+                        imageVector =  Icons.Rounded.Check,
+                        contentDescription = "Search"
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                actionIconContentColor = MaterialTheme.colorScheme.onSurface
+            )
+        )
     }
 
 }
@@ -136,6 +210,34 @@ fun SelectTopAppBarPreview(){
         HomeTopAppBar(
             mainState = MainState.HOME,
             selectMode = SelectMode.Select,
+            navController = navController,
+            onSearch = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ShoppingTopAppBarPreview(){
+    val navController = rememberNavController()
+    AppTheme {
+        HomeTopAppBar(
+            mainState = MainState.HOME,
+            selectMode = SelectMode.Shopping,
+            navController = navController,
+            onSearch = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ShoppingEditTopAppBarPreview(){
+    val navController = rememberNavController()
+    AppTheme {
+        HomeTopAppBar(
+            mainState = MainState.HOME,
+            selectMode = SelectMode.Shopping_Edit,
             navController = navController,
             onSearch = {}
         )

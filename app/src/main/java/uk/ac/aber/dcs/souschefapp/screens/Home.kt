@@ -75,6 +75,7 @@ import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
 import uk.ac.aber.dcs.souschefapp.ui.components.DateNavigationBar
 import uk.ac.aber.dcs.souschefapp.ui.components.ChoiceDialogue
+import uk.ac.aber.dcs.souschefapp.ui.components.CustomCalendar
 import uk.ac.aber.dcs.souschefapp.ui.components.MyCalendar
 import uk.ac.aber.dcs.souschefapp.ui.components.RecipeNote
 import uk.ac.aber.dcs.souschefapp.ui.navigation.Screen
@@ -293,7 +294,8 @@ fun HomeScreen(
 
     BareMainScreen(
         mainState = mainState,
-        navController = navController
+        navController = navController,
+        onSearch = { navController.navigate(Screen.Recipes.route) }
     ) { innerPadding ->
         Surface(
             modifier = Modifier
@@ -311,11 +313,12 @@ fun HomeScreen(
                 )
 
                 // Show Calendar
-                MyCalendar(
+                CustomCalendar(
                     showDialog = dateDialogState,
                     onDismiss = { dateDialogState = false },
                     onDateSelected = { setDate(it) },
-                    dateEpoch = datePickedEpoch
+                    date = date,
+                    logs = logs
                 )
 
                 if (log == null) {
@@ -572,7 +575,7 @@ fun HomeScreen(
                                         modifier = Modifier
                                             .padding(horizontal = 8.dp)
                                     ) {
-                                        notesList.forEach() { note ->
+                                        notesList.forEach { note ->
                                             item {
                                                 RecipeNote(
                                                     recipeName = note.recipeName,
