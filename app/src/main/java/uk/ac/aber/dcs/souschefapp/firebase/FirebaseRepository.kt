@@ -880,6 +880,7 @@ class ShoppingRepository {
                 .document(userId)
                 .collection("shopping")
                 .document()
+
             val newItem = item.copy(itemId = docRef.id)
             docRef.set(newItem).await()
             android.util.Log.d("Firestore", "Item added successfully")
@@ -891,20 +892,21 @@ class ShoppingRepository {
     }
 
     suspend fun upsertItem(userId: String, item: ShoppingItem): Boolean {
-        // Firestore reference like: users/{userId}/shopping/{itemId}
-        return try{
+        return try {
+            val itemId = item.itemId.ifBlank { db.collection("users").document(userId).collection("shopping").document().id }
             val docRef = db.collection("users")
                 .document(userId)
                 .collection("shopping")
-                .document(item.itemId)
-            docRef.set(item).await() // Automatically adds or updates
+                .document(itemId)
+
+            val newItem = item.copy(itemId = itemId)
+            docRef.set(newItem).await()
             android.util.Log.d("Firestore", "Item upserted successfully")
             true
-        } catch (e: Exception){
+        } catch (e: Exception) {
             android.util.Log.e("Firestore", "Error upserting item: ${e.message}", e)
             false
         }
-
     }
 
     // Read
@@ -956,13 +958,13 @@ class ShoppingRepository {
         }
     }
 
-    fun listenToItems(userId: String, onItemsChanged: (List<ShoppingItem>) -> Unit): ListenerRegistration {
+    fun listenToItems(userId: String, onResult: (List<ShoppingItem>) -> Unit): ListenerRegistration {
         return db.collection("users")
             .document(userId)
             .collection("shopping")
             .addSnapshotListener { snapshot, exception ->
                 if (exception != null) {
-                    android.util.Log.e("Firestore", "Error fetching recipes: ${exception.message}")
+                    android.util.Log.e("Firestore", "Error fetching items: ${exception.message}")
                     return@addSnapshotListener
                 }
 
@@ -971,7 +973,7 @@ class ShoppingRepository {
                     document.toObject(ShoppingItem::class.java)  // This returns a nullable Recipe? object
                 } ?: emptyList()
 
-                onItemsChanged(shopping)  // Send the filtered recipes back to the caller via the callback
+                onResult(shopping)  // Send the filtered recipes back to the caller via the callback
             }
     }
 }
