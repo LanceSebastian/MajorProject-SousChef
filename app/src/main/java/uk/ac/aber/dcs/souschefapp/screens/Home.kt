@@ -575,7 +575,7 @@ fun HomeScreen(
                                         modifier = Modifier
                                             .padding(horizontal = 8.dp)
                                     ) {
-                                        notesList.forEach() { note ->
+                                        notesList.forEach { note ->
                                             item {
                                                 RecipeNote(
                                                     recipeName = note.recipeName,
