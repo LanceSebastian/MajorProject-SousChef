@@ -185,7 +185,7 @@ fun ShoppingListScreen(
                                     contentDescription = null,
                                     modifier = Modifier
                                         .clickable {
-
+                                            localShoppingList.remove(item)
                                         }
                                         .weight(0.1f)
                                 )
@@ -275,7 +275,7 @@ fun ShoppingListScreen(
                                     contentDescription = null,
                                     modifier = Modifier
                                         .clickable {
-
+                                            localShoppingList.remove(item)
                                         }
                                         .weight(0.1f)
                                 )
