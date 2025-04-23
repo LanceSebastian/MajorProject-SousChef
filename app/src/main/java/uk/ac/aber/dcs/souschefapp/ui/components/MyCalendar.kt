@@ -187,6 +187,12 @@ fun CustomCalendar(
                                 isSelected -> dateColors[date] ?: colorScheme.primary
                                 else ->  Color.Transparent
                             }
+                            val borderColor = when {
+                                date == null -> Color.Transparent // For if the date is out of range
+                                date > today -> Color.Transparent
+                                dateColors[date] != null -> dateColors[date]!!
+                                else -> Color.Transparent
+                            }
                             val textColor = when {
                                 isSelected -> colorScheme.onPrimary
                                 today == date -> colorScheme.primary
