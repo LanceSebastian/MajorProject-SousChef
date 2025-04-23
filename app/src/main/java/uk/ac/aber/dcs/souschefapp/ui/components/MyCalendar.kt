@@ -196,7 +196,8 @@ fun CustomCalendar(
                             val textColor = when {
                                 isSelected -> colorScheme.onPrimary
                                 today == date -> colorScheme.primary
-                                else -> colorScheme.onSurface
+                                dateColors[date] != null -> colorScheme.onSurface
+                                else -> Color.Gray
                             }
 
                             Box(
@@ -225,7 +226,10 @@ fun CustomCalendar(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(text = date?.dayOfMonth?.toString() ?: "", color = textColor)
+                                Text(
+                                    text = date?.dayOfMonth?.toString() ?: "",
+                                    color = textColor
+                                )
                             }
                         }
                     }
