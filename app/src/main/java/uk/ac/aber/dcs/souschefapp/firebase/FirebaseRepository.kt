@@ -48,25 +48,22 @@ class LogRepository {
             }
     }
 
-    fun listenForSelectedLogs(userId: String, startDate: Timestamp, endDate: Timestamp, onResult: (List<Log>) -> Unit): ListenerRegistration {
-        return db.collection("users")
-            .document(userId)
-            .collection("logs")
-            .whereGreaterThanOrEqualTo("createdBy", startDate)
-            .whereLessThan("createdBy", endDate)
-            .addSnapshotListener { snapshot, exception ->
-                if (exception != null) {
-                    android.util.Log.e("Firestore", "Error fetching logs: ${exception.message}")
-                    return@addSnapshotListener
-                }
+    suspend fun fetchLogsByTimestamps(userId: String, timestamps: List<Timestamp>): List<Log> {
+        val logsCollection = db.collection("logs")
+        val query = logsCollection
+            .whereIn("createdAt", timestamps)
 
-                // Convert Firestore documents to Post objects
-                val logs = snapshot?.documents?.mapNotNull { document ->
-                    document.toObject(Log::class.java)  // This returns a nullable Post? object
-                } ?: emptyList()
-
-                onResult(logs)  // Send the filtered posts back to the caller via the callback
+        return try {
+            // Fetch the logs asynchronously
+            val querySnapshot = query.get().await() // Await the result asynchronously
+            querySnapshot.documents.mapNotNull { document ->
+                document.toObject(Log::class.java)
             }
+        } catch (e: Exception) {
+            // Handle error (e.g., log the error)
+            println("Error fetching logs: ${e.message}")
+            emptyList() // Return an empty list in case of failure
+        }
     }
 
     suspend fun addRecipeToLog(userId: String, logId: String, recipeId: String): Boolean {
@@ -768,6 +765,28 @@ class IngredientRepository {
             }
     }
 
+    suspend fun getIngredients(userId: String, recipeId: String): List<Ingredient> {
+        return try {
+            // Get all the notes from the subcollection
+            val notesSnapshot = db.collection("users")
+                .document(userId)
+                .collection("recipes")
+                .document(recipeId)
+                .collection("ingredients")
+                .get()
+                .await()
+
+            // Map the snapshot to Note data class, now that each Note has a recipeName
+            val ingredients = notesSnapshot.documents.mapNotNull { it.toObject(Ingredient::class.java) }
+
+            android.util.Log.d("Firestore", "Ingredients found: ${ingredients.size}")
+            ingredients
+        } catch (e: Exception) {
+            android.util.Log.e("Firestore", "Error finding ingredients: ${e.message}", e)
+            emptyList() // Return a default name with empty notes if error
+        }
+    }
+
     suspend fun updateIngredient(userId: String, recipeId: String, ingredient: Ingredient): Boolean {
         return try {
             val ingredientRef = db.collection("users")
@@ -847,5 +866,63 @@ class ImageRepository {
         } catch (e: Exception) {
             android.util.Log.e("Storage", "Failed to delete image: ${e.message}", e)
         }
+    }
+}
+
+class ShoppingRepository {
+
+    private val db = FirebaseFirestore.getInstance()
+    private val shoppingCollection = db.collection("shopping_items")
+
+    // Create
+    suspend fun addItem(userId: String, item: ShoppingItem) {
+        val docRef = shoppingCollection.document(userId).collection("items").document()
+        val newItem = item.copy(itemId = docRef.id)
+        docRef.set(newItem).await()
+    }
+
+    suspend fun upsertItem(userId: String, item: ShoppingItem) {
+        // Firestore reference like: users/{userId}/shopping/{itemId}
+        val docRef = shoppingCollection.firestore
+            .collection("users")
+            .document(userId)
+            .collection("shopping")
+            .document(item.itemId)
+
+        docRef.set(item).await() // Automatically adds or updates
+    }
+
+    // Read
+    suspend fun getItems(userId: String): List<ShoppingItem> {
+        val snapshot = shoppingCollection.document(userId).collection("items")
+            .get().await()
+        return snapshot.toObjects(ShoppingItem::class.java)
+    }
+
+    // Update
+    suspend fun updateItem(userId: String, item: ShoppingItem) {
+        shoppingCollection.document(userId).collection("items")
+            .document(item.itemId)
+            .set(item)
+            .await()
+    }
+
+    // Delete
+    suspend fun deleteItem(userId: String, itemId: String) {
+        shoppingCollection.document(userId).collection("items")
+            .document(itemId)
+            .delete()
+            .await()
+    }
+
+    // Optional: Listen for realtime updates
+    fun listenToItems(userId: String, onItemsChanged: (List<ShoppingItem>) -> Unit): ListenerRegistration {
+        return shoppingCollection.document(userId).collection("items")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    val items = snapshot.toObjects(ShoppingItem::class.java)
+                    onItemsChanged(items)
+                }
+            }
     }
 }
