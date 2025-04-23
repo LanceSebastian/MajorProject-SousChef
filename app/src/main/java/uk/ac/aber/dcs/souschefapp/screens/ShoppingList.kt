@@ -100,7 +100,10 @@ fun TopShoppingListScreen(
         navController = navController,
         shoppingList = shoppingList,
         selectLogs = { list ->
-            logViewModel.readLogsByDates(user?.uid, list)
+            logViewModel.readLogsByDates(userId, list)
+        },
+        onSave = { newList ->
+            shoppingViewModel.syncShoppingList(userId, newList)
         }
     )
 }
