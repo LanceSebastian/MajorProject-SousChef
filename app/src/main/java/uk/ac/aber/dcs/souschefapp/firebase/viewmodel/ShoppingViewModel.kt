@@ -90,26 +90,34 @@ class ShoppingViewModel : ViewModel(){
         val currentList = _shoppingItems.value ?: emptyList()
 
         val currentMap = currentList.associateBy { it.itemId }
+        val newMap = newList.associateBy { it.itemId }
 
         val itemsToAddOrUpdate = mutableListOf<ShoppingItem>()
+        val itemsToDelete = mutableListOf<String>()
 
+        // Determine which to add or update
         newList.forEach { newItem ->
             val existing = currentMap[newItem.itemId]
-
-            if (existing == null) {
-                // New item
-                itemsToAddOrUpdate.add(newItem)
-            } else if (existing != newItem) {
-                // Item exists but changed
+            if (existing == null || existing != newItem) {
                 itemsToAddOrUpdate.add(newItem)
             }
-            // Else: unchanged, no action needed
         }
 
-        // Update or insert items
+        // Determine which to delete
+        currentList.forEach { existingItem ->
+            if (!newMap.containsKey(existingItem.itemId)) {
+                itemsToDelete.add(existingItem.itemId)
+            }
+        }
+
+        // Perform the operations
         viewModelScope.launch {
             itemsToAddOrUpdate.forEach { item ->
                 shoppingRepository.upsertItem(userId, item)
+            }
+
+            itemsToDelete.forEach { itemId ->
+                shoppingRepository.deleteItem(userId, itemId)
             }
         }
     }
