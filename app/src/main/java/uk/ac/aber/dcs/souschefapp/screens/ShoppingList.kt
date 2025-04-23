@@ -63,7 +63,7 @@ import uk.ac.aber.dcs.souschefapp.ui.components.BareMainScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CustomCalendar
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.time.LocalDate
-import java.util.UUID
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun TopShoppingListScreen(
@@ -78,16 +78,11 @@ fun TopShoppingListScreen(
     val logs by logViewModel.logs.observeAsState(emptyList())
     val shoppingList by shoppingViewModel.shoppingItems.observeAsState(emptyList())
 
-    LaunchedEffect (logs){
-        if (!userId.isNullOrEmpty() && logs.isNotEmpty()) {
-            shoppingViewModel.fetchCompiledIngredients(userId, logs)
-        }
-    }
     // Listen for logs in real-time when the user exists
-    DisposableEffect(userId) {
-        if(userId != null){
+    DisposableEffect(Unit) {
+        if (userId != null){
             logViewModel.readLogs(userId)
-            shoppingViewModel.startListening(userId)
+            shoppingViewModel.readItems(userId)
         }
 
         onDispose {
@@ -105,6 +100,11 @@ fun TopShoppingListScreen(
         },
         onSave = { newList ->
             shoppingViewModel.syncShoppingList(userId, newList)
+        },
+        fetchIngredients = { dates ->
+            if (dates.isNotEmpty()) {
+                shoppingViewModel.fetchCompiledIngredients(userId, logs, dates)
+            }
         }
     )
 }
@@ -115,9 +115,16 @@ fun ShoppingListScreen(
     logs: List<Log> = emptyList(),
     shoppingList: List<ShoppingItem> = emptyList(),
     selectLogs: (List<LocalDate>) -> Unit = {},
-    onSave: (List<ShoppingItem>) -> Unit = {} // <- Add this
-){
-    val localShoppingList = remember { mutableStateListOf<ShoppingItem>().apply { addAll(shoppingList) } }
+    onSave: (List<ShoppingItem>) -> Unit = {},
+    fetchIngredients: (List<LocalDate>) -> Unit,
+) {
+    val localShoppingList = remember { mutableStateListOf<ShoppingItem>() }
+
+    LaunchedEffect(shoppingList) {
+        localShoppingList.clear()
+        localShoppingList.addAll(shoppingList)
+    }
+
 
     val checkedList by remember {
         derivedStateOf { localShoppingList.filter { it.checked } }
@@ -125,7 +132,6 @@ fun ShoppingListScreen(
     val uncheckedList by remember {
         derivedStateOf { localShoppingList.filterNot { it.checked } }
     }
-    val coroutineScope = rememberCoroutineScope()
 
     var isCalendar by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
@@ -142,9 +148,9 @@ fun ShoppingListScreen(
             if (isEdit) onSave(localShoppingList)
             isEdit = !isEdit
         }
-    ){ innerPadding ->
-        Surface(modifier = Modifier.padding(innerPadding)){
-            LazyColumn{
+    ) { innerPadding ->
+        Surface(modifier = Modifier.padding(innerPadding)) {
+            LazyColumn {
                 items(uncheckedList) { item ->
                     val index = localShoppingList.indexOfFirst { it.itemId == item.itemId }
                     Row(
@@ -196,8 +202,7 @@ fun ShoppingListScreen(
                             onClick = {
                                 localShoppingList.add(
                                     ShoppingItem(
-                                        itemId = UUID.randomUUID().toString(),
-                                        content = "• New Item"
+                                        content = "New Item"
                                     )
                                 )
                             }
@@ -211,7 +216,7 @@ fun ShoppingListScreen(
                     }
                 }
 
-                if(checkedList.isNotEmpty()) item{
+                if (checkedList.isNotEmpty()) item {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -249,6 +254,7 @@ fun ShoppingListScreen(
                             modifier = Modifier
                                 .weight(0.1f)
                         )
+
                         if (isEdit) {
                             BasicTextField(
                                 value = item.content,
@@ -272,18 +278,19 @@ fun ShoppingListScreen(
                             Text(
                                 text = item.content,
                                 modifier = Modifier
-                                    .weight(0.8f))
+                                    .weight(0.8f)
+                            )
                         }
                     }
                 }
             }
         }
 
-        if(isCalendar) CustomCalendar(
+        if (isCalendar) CustomCalendar(
             showDialog = isCalendar,
-            onDismiss = {isCalendar = false},
+            onDismiss = { isCalendar = false },
             onDatesSelected = { list ->
-                selectLogs(list)
+                fetchIngredients(list)
             },
             logs = logs,
             isMany = true
@@ -299,33 +306,34 @@ fun ShoppingListScreenPreview(){
         ShoppingItem(
             itemId = "1",
             checked = false,
-            content = "• 2 cups Flour - All-purpose flour"
+            content = "2 cups Flour - All-purpose flour"
         ),
         ShoppingItem(
             itemId = "2",
             checked = false,
-            content = "• 3 pieces Eggs - Large eggs"
+            content = "3 pieces Eggs - Large eggs"
         ),
         ShoppingItem(
             itemId = "3",
             checked = true,
-            content = "• 1.5 cups Sugar - Granulated white sugar"
+            content = "1.5 cups Sugar - Granulated white sugar"
         ),
         ShoppingItem(
             itemId = "4",
             checked = false,
-            content = "• 100 grams Butter - Unsalted, melted"
+            content = "100 grams Butter - Unsalted, melted"
         ),
         ShoppingItem(
             itemId = "5",
             checked = true,
-            content = "• 1 tbsp Baking Powder - Leavening agent"
+            content = "1 tbsp Baking Powder - Leavening agent"
         )
     )
     AppTheme {
         ShoppingListScreen(
             navController = navController,
-            shoppingList = sampleShoppingItems
+            shoppingList = sampleShoppingItems,
+            fetchIngredients = {},
         )
     }
 }
