@@ -63,7 +63,8 @@ fun BareMainScreen(
     mainState: MainState = MainState.HOME,
     selectMode: SelectMode = SelectMode.View,
     onSearch: () -> Unit = {},
-    onNavBack: () -> Unit = {},
+    onSecond: () -> Unit = {},
+    onNavIcon: () -> Unit = {},
     floatButton: @Composable () -> Unit = {},
     pageContent: @Composable (innerPadding: PaddingValues) -> Unit = {}
 ){
@@ -92,13 +93,14 @@ fun BareMainScreen(
             topBar = {
                 HomeTopAppBar(
                     mainState = mainState,
-                    onNavBack = onNavBack,
                     selectMode = selectMode,
                     navController = navController,
                     onSearch = onSearch,
-                    onSous = {
-                        scope.launch { drawerState.open() }
-                    }
+                    onNavIcon = {
+                        if (selectMode != SelectMode.Select) scope.launch { drawerState.open() }
+                        else onNavIcon()
+                    },
+                    onSecond = onSecond,
 
                 )
             },
@@ -134,6 +136,7 @@ fun DrawerContent(
             modifier = Modifier
                 .padding(16.dp)
         ) {
+            Spacer(modifier = Modifier.height(32.dp))
             Text("Menu", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
             Spacer(modifier = Modifier.height(16.dp))
 
