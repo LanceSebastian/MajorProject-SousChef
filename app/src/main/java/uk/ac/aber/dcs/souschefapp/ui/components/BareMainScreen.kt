@@ -141,7 +141,7 @@ fun DrawerContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             DrawerItem(
-                title = "Planner",
+                title = "Sous Chef",
                 onClick = {
                     onClose()
                     navController.navigate(Screen.Home.route)
@@ -152,13 +152,15 @@ fun DrawerContent(
                 onClick = {
                     onClose()
                     navController.navigate(Screen.Budget.route)
-                }
+                },
+                ready = false
             )
             DrawerItem(
                 title = "Timer",
                 onClick = {
                     onClose()
-                }
+                },
+                ready = false
             )
             DrawerItem(
                 title = "Shopping List",
@@ -172,14 +174,17 @@ fun DrawerContent(
 }
 
 @Composable
-fun DrawerItem(title: String, onClick: () -> Unit) {
+fun DrawerItem(title: String, onClick: () -> Unit, ready: Boolean = true) {
     Text(
         text = title,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable{
+                if(!ready) onClick()
+            }
             .padding(vertical = 8.dp),
-        fontSize = 16.sp
+        fontSize = 16.sp,
+        color = if (!ready) Color.Gray else MaterialTheme.colorScheme.onSurface
     )
 }
 
