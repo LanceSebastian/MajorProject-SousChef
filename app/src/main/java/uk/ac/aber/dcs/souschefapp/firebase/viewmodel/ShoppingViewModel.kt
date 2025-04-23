@@ -14,18 +14,23 @@ import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.ShoppingItem
 import uk.ac.aber.dcs.souschefapp.firebase.ShoppingRepository
 import uk.ac.aber.dcs.souschefapp.firebase.UploadState
+import java.time.LocalDate
+import java.time.ZoneId
 
 class ShoppingViewModel : ViewModel(){
-    val ingredientRepository = IngredientRepository()
-    val shoppingRepository = ShoppingRepository()
+    private val ingredientRepository = IngredientRepository()
+    private val shoppingRepository = ShoppingRepository()
+
+    private var listenerRegistration: ListenerRegistration? = null
 
     private val _uploadState = MutableLiveData<UploadState>(UploadState.Idle)
     val uploadState: LiveData<UploadState> = _uploadState
 
-    private var shoppingListener: ListenerRegistration? = null
-
-    private var _shoppingItems = MutableLiveData<List<ShoppingItem>>(emptyList())
+    private var _shoppingItems = MutableLiveData<List<ShoppingItem>>()
     var shoppingItems: LiveData<List<ShoppingItem>> = _shoppingItems
+
+    private var _selectedLogs = MutableLiveData<List<Log>>()
+    var selectedLogs: LiveData<List<Log>> = _selectedLogs
 
     private var _compiledIngredients = MutableLiveData<List<Ingredient>>(emptyList())
     val compiledIngredients: LiveData<List<Ingredient>> = _compiledIngredients
@@ -64,11 +69,11 @@ class ShoppingViewModel : ViewModel(){
         }
     }
 
-    // Optional: Listen for real-time updates
-    private var listenerRegistration: ListenerRegistration? = null
+    fun readItems(userId: String?) {
+        if (userId == null) return
 
-    fun startListening(userId: String) {
         listenerRegistration?.remove() // remove old listener
+
         listenerRegistration = shoppingRepository.listenToItems(userId) { items ->
             _shoppingItems.postValue(items)
         }
@@ -122,11 +127,22 @@ class ShoppingViewModel : ViewModel(){
         }
     }
 
-    fun fetchCompiledIngredients(userId: String?, logs: List<Log>) {
+    fun fetchCompiledIngredients(userId: String?, logs: List<Log>, selectedDates: List<LocalDate>) {
         if (userId == null) return
 
         _uploadState.value = UploadState.Loading
-        val recipeMap: Map<String, Int> = logs  // id, multiple
+
+        val filteredLogs = logs.filter { log ->
+            val logDate = log.createdAt.toDate()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+            logDate in selectedDates
+        }
+
+        android.util.Log.d("ShoppingViewMode", "filteredLogs ${filteredLogs.joinToString("\n") { it.logId }} ")
+
+        val recipeMap: Map<String, Int> = filteredLogs  // id, multiple
             .flatMap { it.recipeIdList }
             .groupingBy { it }
             .eachCount()
@@ -144,6 +160,7 @@ class ShoppingViewModel : ViewModel(){
 
                 newIngredients.addAll(scaledIngredients)
             }
+            android.util.Log.d("ShoppingViewMode", "newIngredients ${newIngredients.joinToString("\n") { "${it.quantity} ${it.name}" }} ")
             addItems(userId, newIngredients)
             _compiledIngredients.postValue(newIngredients)
             _uploadState.value = UploadState.Success("Compilation complete!")
@@ -156,14 +173,13 @@ class ShoppingViewModel : ViewModel(){
                 val shoppingItem = ShoppingItem(
                     content = buildString(ingredient)
                 )
-                shoppingRepository.addItem(userId, shoppingItem)
+                shoppingRepository.upsertItem(userId, shoppingItem)
             }
         }
     }
 
     private fun buildString(ingredient: Ingredient): String{
         val ingredientText = buildString {
-            append("\u2022 ")
             append("${ingredient.quantity} ")
             if (!ingredient.unit.isNullOrEmpty()) append("${ingredient.unit} ")
             append(ingredient.name)
