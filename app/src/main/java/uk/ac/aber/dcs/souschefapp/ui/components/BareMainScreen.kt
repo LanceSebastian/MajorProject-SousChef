@@ -180,7 +180,7 @@ fun DrawerItem(title: String, onClick: () -> Unit, ready: Boolean = true) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable{
-                if(!ready) onClick()
+                if(ready) onClick()
             }
             .padding(vertical = 8.dp),
         fontSize = 16.sp,
