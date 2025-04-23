@@ -207,7 +207,7 @@ fun CustomCalendar(
                                     .background(bgColor, shape = CircleShape)
                                     .border(
                                         width = 1.dp,
-                                        color = dateColors[date] ?: Color.Transparent,
+                                        color = borderColor,
                                         shape = CircleShape
                                     )
                                     .clickable(enabled = date != null) {
