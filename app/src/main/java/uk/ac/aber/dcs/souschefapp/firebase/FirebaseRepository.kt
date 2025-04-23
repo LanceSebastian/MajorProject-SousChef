@@ -872,57 +872,106 @@ class ImageRepository {
 class ShoppingRepository {
 
     private val db = FirebaseFirestore.getInstance()
-    private val shoppingCollection = db.collection("shopping_items")
 
     // Create
-    suspend fun addItem(userId: String, item: ShoppingItem) {
-        val docRef = shoppingCollection.document(userId).collection("items").document()
-        val newItem = item.copy(itemId = docRef.id)
-        docRef.set(newItem).await()
+    suspend fun addItem(userId: String, item: ShoppingItem): Boolean{
+        return try{
+            val docRef = db.collection("users")
+                .document(userId)
+                .collection("shopping")
+                .document()
+            val newItem = item.copy(itemId = docRef.id)
+            docRef.set(newItem).await()
+            android.util.Log.d("Firestore", "Item added successfully")
+            true
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error adding item: ${e.message}", e)
+            false
+        }
     }
 
-    suspend fun upsertItem(userId: String, item: ShoppingItem) {
+    suspend fun upsertItem(userId: String, item: ShoppingItem): Boolean {
         // Firestore reference like: users/{userId}/shopping/{itemId}
-        val docRef = shoppingCollection.firestore
-            .collection("users")
-            .document(userId)
-            .collection("shopping")
-            .document(item.itemId)
+        return try{
+            val docRef = db.collection("users")
+                .document(userId)
+                .collection("shopping")
+                .document(item.itemId)
+            docRef.set(item).await() // Automatically adds or updates
+            android.util.Log.d("Firestore", "Item upserted successfully")
+            true
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error upserting item: ${e.message}", e)
+            false
+        }
 
-        docRef.set(item).await() // Automatically adds or updates
     }
 
     // Read
-    suspend fun getItems(userId: String): List<ShoppingItem> {
-        val snapshot = shoppingCollection.document(userId).collection("items")
-            .get().await()
-        return snapshot.toObjects(ShoppingItem::class.java)
+    suspend fun fetchItems(userId: String): List<ShoppingItem> {
+        return try{
+            val snapshot = db.collection("users")
+                .document(userId)
+                .collection("shopping")
+                .get().await()
+            android.util.Log.d("Firestore", "Items fetched successfully")
+            snapshot.toObjects(ShoppingItem::class.java)
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error fetch item: ${e.message}", e)
+            emptyList()
+        }
     }
 
     // Update
-    suspend fun updateItem(userId: String, item: ShoppingItem) {
-        shoppingCollection.document(userId).collection("items")
-            .document(item.itemId)
-            .set(item)
-            .await()
+    suspend fun updateItem(userId: String, item: ShoppingItem): Boolean {
+        return try {
+            db.collection("users")
+                .document(userId)
+                .collection("shopping")
+                .document(item.itemId)
+                .set(item)
+                .await()
+            android.util.Log.d("Firestore", "Item updated successfully")
+            true
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error updating item: ${e.message}", e)
+            false
+        }
     }
 
     // Delete
-    suspend fun deleteItem(userId: String, itemId: String) {
-        shoppingCollection.document(userId).collection("items")
-            .document(itemId)
-            .delete()
-            .await()
+    suspend fun deleteItem(userId: String, itemId: String): Boolean {
+        return try {
+            db.collection("users")
+                .document(userId)
+                .collection("shopping")
+                .document(itemId)
+                .delete()
+                .await()
+            android.util.Log.d("Firestore", "Item added successfully")
+            true
+        } catch (e: Exception){
+            android.util.Log.e("Firestore", "Error deleting item: ${e.message}", e)
+            false
+        }
     }
 
-    // Optional: Listen for realtime updates
     fun listenToItems(userId: String, onItemsChanged: (List<ShoppingItem>) -> Unit): ListenerRegistration {
-        return shoppingCollection.document(userId).collection("items")
-            .addSnapshotListener { snapshot, _ ->
-                if (snapshot != null) {
-                    val items = snapshot.toObjects(ShoppingItem::class.java)
-                    onItemsChanged(items)
+        return db.collection("users")
+            .document(userId)
+            .collection("shopping")
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    android.util.Log.e("Firestore", "Error fetching recipes: ${exception.message}")
+                    return@addSnapshotListener
                 }
+
+                // Convert Firestore documents to Post objects
+                val shopping = snapshot?.documents?.mapNotNull { document ->
+                    document.toObject(ShoppingItem::class.java)  // This returns a nullable Recipe? object
+                } ?: emptyList()
+
+                onItemsChanged(shopping)  // Send the filtered recipes back to the caller via the callback
             }
     }
 }
