@@ -13,6 +13,8 @@ import uk.ac.aber.dcs.souschefapp.firebase.LogRepository
 import uk.ac.aber.dcs.souschefapp.firebase.Log
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.Date
 
@@ -86,13 +88,27 @@ class LogViewModel: ViewModel() {
         }
     }
 
-    fun readLogByDates(userId: String?, start: Timestamp, end: Timestamp){
+    fun readLogsByDates(userId: String?, dateList: List<LocalDate>){
         if (userId == null) return
 
-        logListenerSelected?.remove() // Stop previous listener if it exists
+        try {
+            // Convert LocalDates to Timestamps
+            val timestamps: List<Timestamp> = dateList.map { localDate ->
+                val zonedDateTime = localDate.atStartOfDay(ZoneId.systemDefault())
+                val instant = zonedDateTime.toInstant()
+                val date = Date.from(instant)
+                Timestamp(date)
+            }
 
-        logListenerSelected = logRepository.listenForSelectedLogs(userId, start, end) { logs ->
-            _selectedLogs.postValue(logs)
+            // Perform the fetching of logs in the background using viewModelScope
+            viewModelScope.launch {
+                val logs = logRepository.fetchLogsByTimestamps(userId, timestamps)
+                _selectedLogs.postValue(logs)
+            }
+        } catch (e: Exception) {
+            // Handle any exceptions that may occur
+            println("Error fetching logs: ${e.message}")
+            // Optionally, notify the user of the error
         }
     }
 
