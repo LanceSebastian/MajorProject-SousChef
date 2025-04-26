@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.launch
 import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.database.MainState
@@ -64,6 +65,7 @@ import uk.ac.aber.dcs.souschefapp.ui.components.CustomCalendar
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Date
 
 @Composable
 fun TopShoppingListScreen(
@@ -329,11 +331,55 @@ fun ShoppingListScreenPreview(){
             content = "1 tbsp Baking Powder - Leavening agent"
         )
     )
+    val sampleLogs = listOf(
+        Log(
+            logId = "",
+            createdBy = "",
+            createdAt = Timestamp(Date(System.currentTimeMillis())),
+            rating = 2,
+            recipeIdList = listOf("1", "2"),
+            productIdList = listOf("0", "2"),
+            note = "Tried a new recipe, turned out great!"
+        ),
+        Log(
+            createdBy = "",
+            createdAt = Timestamp(Date(System.currentTimeMillis() - 86_400_000)), // 1 day ago
+            rating = -1,
+            recipeIdList = listOf("3"),
+            productIdList = listOf("3", "4"),
+            note = "Didn't like the taste, will try adjusting ingredients."
+        ),
+        Log(
+            createdBy = "",
+            createdAt = Timestamp(Date(System.currentTimeMillis() - 172_800_000)), // 2 days ago
+            rating = 1,
+            recipeIdList = listOf("6", "5"),
+            productIdList = listOf("5"),
+            note = "A decent meal, but could use more seasoning."
+        ),
+        Log(
+            createdBy = "",
+            createdAt = Timestamp(Date(System.currentTimeMillis() - 259_200_000)), // 3 days ago
+            rating = 0,
+            recipeIdList = emptyList(),
+            productIdList = listOf("5", "4"),
+            note = "Tried a new product, unsure about it yet."
+        ),
+        Log(
+            createdBy = "",
+            createdAt = Timestamp(Date(System.currentTimeMillis() - 345_600_000)), // 4 days ago
+            rating = -2,
+            recipeIdList = listOf("4"),
+            productIdList = listOf("2", "3"),
+            note = "Had a bad experience with this recipe."
+        )
+    )
     AppTheme {
         ShoppingListScreen(
             navController = navController,
             shoppingList = sampleShoppingItems,
             fetchIngredients = {},
+            logs = sampleLogs
         )
     }
 }
