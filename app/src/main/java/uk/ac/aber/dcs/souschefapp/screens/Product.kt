@@ -312,7 +312,7 @@ fun ProductScreen(
 
             if (isBackConfirm){
                 val updatedName = nameText
-                val updatedPrice = priceText.toDouble()
+                val updatedPrice = priceText.toDoubleOrNull() ?: 0.0
 
                 val newProduct = product?.copy(
                     name = updatedName,
