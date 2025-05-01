@@ -67,6 +67,7 @@ import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
 import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.UploadState
+import uk.ac.aber.dcs.souschefapp.firebase.UploadState.Success
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
@@ -78,6 +79,13 @@ import uk.ac.aber.dcs.souschefapp.ui.components.IngredientDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.InstructionDialogue
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.io.File
+
+private fun <T> MutableList<T>.move(fromIndex: Int, toIndex: Int) {
+    if (fromIndex == toIndex || fromIndex !in indices || toIndex !in indices) return
+    val item = this[fromIndex]
+    removeAt(fromIndex)
+    add(toIndex, item)
+}
 
 // Add Ingredient
 @Composable
@@ -151,13 +159,6 @@ fun TopRecipePageScreen(
     )
 }
 
-fun <T> MutableList<T>.move(fromIndex: Int, toIndex: Int) {
-    if (fromIndex == toIndex || fromIndex !in indices || toIndex !in indices) return
-    val item = this[fromIndex]
-    removeAt(fromIndex)
-    add(toIndex, item)
-}
-
 @Composable
 fun RecipePageScreen(
     navController: NavHostController,
@@ -195,6 +196,7 @@ fun RecipePageScreen(
     var isMediaChoiceDialog by remember { mutableStateOf(false) }
 
     var isBackConfirm by remember { mutableStateOf(false) }
+    var isLeave by remember { mutableStateOf(false) }
 
     var isModified by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -211,6 +213,14 @@ fun RecipePageScreen(
     ) { uri ->
         selectedImageUri = uri
         isModified = true
+    }
+
+    LaunchedEffect (uploadState){
+        if (uploadState is Success && isLeave){
+            navController.popBackStack()
+            isLeave = false
+            setMode(EditMode.View)
+        }
     }
 
     var editIngredient by remember { mutableStateOf<Ingredient?>(null) }
@@ -244,11 +254,12 @@ fun RecipePageScreen(
             )
             if (editMode == EditMode.Edit) {
                 updateRecipe(newRecipe, mutableIngredientList.toList(), selectedImageUri)
+                setMode(EditMode.View)
             } else {
                 addRecipe(newRecipe, mutableIngredientList, selectedImageUri)
-                navController.popBackStack()
+                isLeave = true
             }
-            setMode(EditMode.View)
+
         },
 
         // Cancel Edit
@@ -293,7 +304,7 @@ fun RecipePageScreen(
 
                     when (uploadState) {
                         is UploadState.Loading -> CircularProgressIndicator()
-                        is UploadState.Success -> Text(
+                        is Success -> Text(
                             text = "Recipe created!",
                             color = MaterialTheme.colorScheme.onSurface)
                         is UploadState.Error -> Text(

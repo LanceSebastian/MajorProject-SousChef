@@ -9,14 +9,17 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.ImageRepository
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.RecipeRepository
 import uk.ac.aber.dcs.souschefapp.firebase.SelectMode
 import uk.ac.aber.dcs.souschefapp.firebase.UploadState
+import kotlin.coroutines.cancellation.CancellationException
 
 class RecipeViewModel : ViewModel() {
     private val recipeRepository = RecipeRepository()
@@ -79,11 +82,20 @@ class RecipeViewModel : ViewModel() {
         }
 
         _uploadState.value = UploadState.Loading
-        val imageUrl = try {
-            imageUri?.let { imageRepository.uploadImage(it) }
-        } catch (e: Exception) {
-            android.util.Log.e("ProductViewModel", "Image upload failed: ${e.message}")
-            null // fall back to no image
+        val imageUrl = if (imageUri != null) {
+            try {
+                withContext(NonCancellable) {
+                    imageRepository.uploadImage(imageUri)
+                }
+            } catch (e: CancellationException) {
+                android.util.Log.e("Upload", "Cancelled!", e)
+                null
+            } catch (e: Exception) {
+                android.util.Log.e("Upload", "Image upload failed: ${e.localizedMessage}", e)
+                null
+            }
+        } else {
+            null
         }
 
         val standardRecipe = recipe?.copy(

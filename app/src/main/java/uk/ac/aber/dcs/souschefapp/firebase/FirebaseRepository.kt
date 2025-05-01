@@ -344,13 +344,12 @@ class RecipeRepository {
             val docRef = db.collection("users")
                 .document(userId)
                 .collection("recipes")
-                .add(recipe.copy(recipeId = ""))
-                .await()
+                .document()
 
             val recipeId = docRef.id
             val updatedRecipe = recipe.copy(recipeId = recipeId)
 
-            docRef.update("recipeId", recipeId).await()
+            docRef.set(updatedRecipe).await()
 
             android.util.Log.d("Firestore", "Recipe added successfully")
             updatedRecipe
@@ -837,10 +836,16 @@ class ImageRepository {
     private val storageRef = FirebaseStorage.getInstance().reference
 
     suspend fun uploadImage(uri: Uri): String {
-        val filename = UUID.randomUUID().toString()
-        val imageRef = storageRef.child("images/$filename")
-        imageRef.putFile(uri).await()
-        return imageRef.downloadUrl.await().toString()
+        return try {
+            val filename = UUID.randomUUID().toString()
+            val imageRef = storageRef.child("images/$filename")
+
+            imageRef.putFile(uri).await()
+            imageRef.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            android.util.Log.e("ImageRepository", "Image upload failed: ${e.localizedMessage}", e)
+            throw e // rethrow so caller can handle it
+        }
     }
 
     suspend fun updateImage(imageUrl: String?, uri: Uri): String {
