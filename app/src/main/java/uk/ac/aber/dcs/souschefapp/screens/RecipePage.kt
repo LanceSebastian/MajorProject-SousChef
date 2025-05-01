@@ -557,7 +557,7 @@ fun RecipePageScreen(
                     mainAction = { updatedIngredient ->
                         if (editIngredient == null) {
                             // Adding new ingredient
-                            mutableIngredientList = mutableIngredientList + updatedIngredient
+                            mutableIngredientList = listOf(updatedIngredient) + mutableIngredientList
                         } else {
                             // Editing existing ingredient
                             mutableIngredientList = mutableIngredientList.map {
