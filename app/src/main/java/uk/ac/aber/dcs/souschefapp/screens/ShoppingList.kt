@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -49,8 +50,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.launch
+import org.burnoutcrew.reorderable.ReorderableItem
+import org.burnoutcrew.reorderable.detectReorder
+import org.burnoutcrew.reorderable.detectReorderAfterLongPress
+import org.burnoutcrew.reorderable.rememberReorderableLazyListState
+import org.burnoutcrew.reorderable.reorderable
 import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.database.MainState
+import uk.ac.aber.dcs.souschefapp.firebase.EditMode
 import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
 import uk.ac.aber.dcs.souschefapp.firebase.Log
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
@@ -66,6 +73,13 @@ import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Date
+
+private fun <T> MutableList<T>.move(fromIndex: Int, toIndex: Int) {
+    if (fromIndex == toIndex || fromIndex !in indices || toIndex !in indices) return
+    val item = this[fromIndex]
+    removeAt(fromIndex)
+    add(toIndex, item)
+}
 
 @Composable
 fun TopShoppingListScreen(
@@ -127,13 +141,28 @@ fun ShoppingListScreen(
         localShoppingList.addAll(shoppingList)
     }
 
-
     val checkedList by remember {
         derivedStateOf { localShoppingList.filter { it.checked } }
     }
     val uncheckedList by remember {
         derivedStateOf { localShoppingList.filterNot { it.checked } }
     }
+
+    val reorderState = rememberReorderableLazyListState(
+        onMove = { from, to ->
+            val fromItem = uncheckedList.getOrNull(from.index)
+            val toItem = uncheckedList.getOrNull(to.index)
+
+            if (fromItem != null && toItem != null) {
+                val fromIndexInLocal = localShoppingList.indexOf(fromItem)
+                val toIndexInLocal = localShoppingList.indexOf(toItem)
+
+                if (fromIndexInLocal != -1 && toIndexInLocal != -1) {
+                    localShoppingList.move(fromIndexInLocal, toIndexInLocal)
+                }
+            }
+        }
+    )
 
     var isCalendar by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
@@ -152,49 +181,70 @@ fun ShoppingListScreen(
         }
     ) { innerPadding ->
         Surface(modifier = Modifier.padding(innerPadding)) {
-            LazyColumn {
-                items(uncheckedList) { item ->
-                    val index = localShoppingList.indexOfFirst { it.itemId == item.itemId }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        Checkbox(
-                            checked = item.checked,
-                            onCheckedChange = {
-                                if (index != -1) localShoppingList[index] = item.copy(checked = it)
-                            },
+            LazyColumn(
+                state = reorderState.listState,
+                modifier = Modifier
+                    .reorderable(reorderState)
+                    .detectReorderAfterLongPress(reorderState)
+            ) {
+                items(uncheckedList, key = { it.itemId }) { item ->
+                    ReorderableItem(reorderableState = reorderState, key = item.itemId) { isDragging ->
+                        val index = localShoppingList.indexOfFirst { it.itemId == item.itemId }
+                        val elevation = if (isDragging) 4.dp else 0.dp
+
+                        Surface(
+                            tonalElevation = elevation,
                             modifier = Modifier
-                                .weight(0.1f)
-                        )
-                        if (isEdit) {
-                            BasicTextField(
-                                value = item.content,
-                                onValueChange = {
-                                    if (index != -1) localShoppingList[index] =
-                                        item.copy(content = it)
-                                },
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
-                                    .weight(0.8f)
-                            )
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .clickable {
-                                        localShoppingList.remove(item)
-                                    }
-                                    .weight(0.1f)
-                            )
-                        } else {
-                            Text(
-                                text = item.content,
-                                modifier = Modifier.weight(0.9f)
-                            )
+                                    .fillMaxWidth()
+                                    .detectReorder(reorderState) // ✅ This makes the row draggable
+                            ) {
+                                if (isEdit)Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.draggable),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .weight(0.1f)
+
+                                )
+                                Checkbox(
+                                    checked = item.checked,
+                                    onCheckedChange = {
+                                        if (index != -1) localShoppingList[index] = item.copy(checked = it)
+                                    },
+                                    modifier = Modifier.weight(0.1f)
+                                )
+
+                                if (isEdit) {
+                                    BasicTextField(
+                                        value = item.content,
+                                        onValueChange = {
+                                            if (index != -1) localShoppingList[index] = item.copy(content = it)
+                                        },
+                                        modifier = Modifier.weight(0.8f)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .clickable { localShoppingList.remove(item) }
+                                            .weight(0.1f)
+                                    )
+                                } else {
+                                    Text(
+                                        text = item.content,
+                                        modifier = Modifier.weight(0.9f)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
+
                 item {
                     Row(
                         horizontalArrangement = Arrangement.Start,
