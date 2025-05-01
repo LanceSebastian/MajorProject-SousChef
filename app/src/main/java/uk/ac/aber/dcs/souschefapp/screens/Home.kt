@@ -610,7 +610,8 @@ fun HomeScreen(
                             navController.navigate(Screen.Recipes.route)
                         },
                         mainText = "Product",
-                        secondText = "Recipe"
+                        secondText = "Recipe",
+                        enableSecond = recipes.isNotEmpty()
                     )
                 }
             }
