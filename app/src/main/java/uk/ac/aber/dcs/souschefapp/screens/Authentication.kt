@@ -200,7 +200,7 @@ fun AuthScreenPreview(){
         AuthScreen(
             onLogin = {_,_ -> },
             onRegister = {_,_,_ -> },
-            isLoading = true
+            isLoading = false
         )
     }
 }
