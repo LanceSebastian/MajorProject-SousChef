@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -37,7 +38,8 @@ fun ChoiceDialogue(
     mainAction: () -> Unit,
     secondAction: () -> Unit,
     mainText: String = "main",
-    secondText: String = "second"
+    secondText: String = "second",
+    enableSecond: Boolean = true,
 ){
     var selectedIndex by remember { mutableIntStateOf(0) }
     val options = listOf(mainText, secondText)
@@ -67,6 +69,7 @@ fun ChoiceDialogue(
                         .fillMaxWidth()
                 ) {
                     options.forEachIndexed { index, label ->
+                        val isSecond = secondText == label
                         SegmentedButton(
                             shape = SegmentedButtonDefaults.itemShape(
                                 index = index,
@@ -74,10 +77,17 @@ fun ChoiceDialogue(
                             ),
                             onClick = { selectedIndex = index },
                             selected = index == selectedIndex,
-                            label = { Text(label) }
+                            label = { Text(label) },
+                            enabled = if (isSecond) enableSecond else true,
+                            modifier = Modifier
+                                .alpha(if(isSecond && !enableSecond) 0.2f else 1f)
                         )
                     }
                 }
+                if (!enableSecond) Text(
+                    "There are no ${secondText}s.",
+                    color = MaterialTheme.colorScheme.error
+                )
 
                 Row(
                     horizontalArrangement = Arrangement.End,
@@ -113,6 +123,7 @@ fun HomeAddDialoguePreview(){
             onDismissRequest = {},
             mainAction = {},
             secondAction = {},
+            enableSecond = false
 
             )
     }
