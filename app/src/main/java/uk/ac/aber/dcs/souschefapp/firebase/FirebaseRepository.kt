@@ -617,7 +617,7 @@ class NoteRepository {
                 .get()
                 .await()
 
-            val recipeName = recipeSnapshot.getString("recipeName") ?: "Unknown Recipe"  // Default if not found
+            val recipeName = recipeSnapshot.getString("name") ?: "Unknown Recipe"  // Default if not found
 
             // Create a new Note with recipeName
             val newNote = note.copy(recipeName = recipeName)
