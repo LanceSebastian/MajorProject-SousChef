@@ -653,8 +653,8 @@ fun HomeScreenEmptyView(){
             setRecipePageMode = {},
             shiftDate = {},
             setDate = {},
-            dayFormat = "",
-            monthFormat = ""
+            dayFormat = "Saturday 05",
+            monthFormat = "August 2025"
         )
     }
 }
@@ -784,8 +784,8 @@ fun HomeScreenView(){
             setRecipePageMode = {},
             shiftDate = {},
             setDate = {},
-            dayFormat = "",
-            monthFormat = ""
+            dayFormat = "Saturday 05",
+            monthFormat = "August 2025"
         )
     }
 }
