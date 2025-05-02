@@ -198,7 +198,8 @@ fun Navigation(
                 navController = navController,
                 authViewModel = authViewModel,
                 recipeViewModel = recipeViewModel,
-                ingredientViewModel = ingredientViewModel
+                ingredientViewModel = ingredientViewModel,
+                noteViewModel = noteViewModel
             )
         }
 

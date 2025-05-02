@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.launch
 import org.burnoutcrew.reorderable.*
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
@@ -65,11 +67,13 @@ import uk.ac.aber.dcs.souschefapp.R
 import uk.ac.aber.dcs.souschefapp.database.MainState
 import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
 import uk.ac.aber.dcs.souschefapp.firebase.EditMode
+import uk.ac.aber.dcs.souschefapp.firebase.Note
 import uk.ac.aber.dcs.souschefapp.firebase.Recipe
 import uk.ac.aber.dcs.souschefapp.firebase.UploadState
 import uk.ac.aber.dcs.souschefapp.firebase.UploadState.Success
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.AuthViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.IngredientViewModel
+import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.NoteViewModel
 import uk.ac.aber.dcs.souschefapp.firebase.viewmodel.RecipeViewModel
 import uk.ac.aber.dcs.souschefapp.ui.components.BareSecondaryScreen
 import uk.ac.aber.dcs.souschefapp.ui.components.CardRecipe
@@ -77,6 +81,8 @@ import uk.ac.aber.dcs.souschefapp.ui.components.ChoiceDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.ConfirmDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.IngredientDialogue
 import uk.ac.aber.dcs.souschefapp.ui.components.InstructionDialogue
+import uk.ac.aber.dcs.souschefapp.ui.components.NoteDialog
+import uk.ac.aber.dcs.souschefapp.ui.components.RecipeNote
 import uk.ac.aber.dcs.souschefapp.ui.theme.AppTheme
 import java.io.File
 
@@ -94,13 +100,15 @@ fun TopRecipePageScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel,
     recipeViewModel: RecipeViewModel,
-    ingredientViewModel: IngredientViewModel
+    ingredientViewModel: IngredientViewModel,
+    noteViewModel: NoteViewModel
 ){
     val user by authViewModel.user.observeAsState(null)
     val userId = user?.uid
 
     val recipe by recipeViewModel.selectRecipe.observeAsState()
     val ingredients by ingredientViewModel.recipeIngredients.observeAsState()
+    val notes by noteViewModel.notes.observeAsState()
     val editMode by recipeViewModel.editMode.observeAsState(EditMode.View)
     val uploadState by recipeViewModel.uploadState.observeAsState(UploadState.Idle)
     val coroutineScope = rememberCoroutineScope()
@@ -110,6 +118,7 @@ fun TopRecipePageScreen(
         val currentRecipe = recipe // This line allows for smart casting
         if (currentRecipe != null){
             ingredientViewModel.readIngredients(userId, currentRecipe.recipeId)
+            noteViewModel.readNotesFromRecipe(userId, currentRecipe.recipeId)
         }
 
         onDispose {
@@ -123,23 +132,26 @@ fun TopRecipePageScreen(
         uploadState = uploadState,
         recipe = recipe,
         ingredients = ingredients,
+        notes = notes,
         setMode = { newMode ->
             recipeViewModel.setEditMode(newMode)
         },
         clearSelectRecipe = {
             recipeViewModel.clearSelectRecipe()
         },
-        addRecipe = { newRecipe, newIngredients, imageUri ->
+        addRecipe = { newRecipe, newIngredients, imageUri, newNotes ->
             coroutineScope.launch {
                 val recipeId = recipeViewModel.createRecipeAndId(userId, newRecipe, imageUri, context)
                 if(recipeId != null){
                     ingredientViewModel.createIngredients(userId, recipeId, newIngredients)
+                    noteViewModel.createNotes(userId, recipeId, newNotes)
                 }
             }
         },
-        updateRecipe = { newRecipe, newIngredients, imageUri ->
+        updateRecipe = { newRecipe, newIngredients, imageUri, newNotes ->
             recipeViewModel.updateRecipe(userId, newRecipe, imageUri)
             ingredientViewModel.updateIngredients(userId, newRecipe.recipeId, newIngredients)
+            noteViewModel.updateNotes(userId, newRecipe.recipeId, newNotes)
         },
         archiveRecipe = { newRecipe ->
             recipeViewModel.archiveRecipe(userId, newRecipe.recipeId, context)
@@ -166,10 +178,11 @@ fun RecipePageScreen(
     uploadState: UploadState = UploadState.Idle,
     recipe: Recipe? = null,
     ingredients: List<Ingredient>? = null,
+    notes: List<Note>? = null,
     setMode: (EditMode) -> Unit,
     clearSelectRecipe: () -> Unit,
-    addRecipe: (Recipe, List<Ingredient>, Uri?) -> Unit,
-    updateRecipe: (Recipe, List<Ingredient>, Uri?) -> Unit,
+    addRecipe: (Recipe, List<Ingredient>, Uri?, List<Note>) -> Unit,
+    updateRecipe: (Recipe, List<Ingredient>, Uri?, List<Note>) -> Unit,
     archiveRecipe: (Recipe) -> Unit,
     prepareCamera: () -> Uri,
     ){
@@ -179,8 +192,12 @@ fun RecipePageScreen(
     var nameText by remember { mutableStateOf(recipe?.name ?: "") }
     var mutableInstructions by remember { mutableStateOf( mutableListOf<String>() ) }
     LaunchedEffect(recipe?.recipeId) { mutableInstructions = recipe?.instructions?.toMutableList() ?: mutableListOf() }
+
     var mutableIngredientList by remember { mutableStateOf(listOf<Ingredient>()) }
     LaunchedEffect(ingredients) { mutableIngredientList = ingredients?.toMutableList() ?: mutableListOf() }
+
+    var mutableNotesList by remember { mutableStateOf(listOf<Note>()) }
+    LaunchedEffect(notes) { mutableNotesList = notes?.toMutableList() ?: mutableListOf() }
 
     val state = rememberReorderableLazyListState(onMove = { from, to ->
         mutableInstructions = mutableInstructions.toMutableList().apply {
@@ -190,8 +207,10 @@ fun RecipePageScreen(
 
     var isIngredientDialog by remember { mutableStateOf(false) }
     var isInstructionDialog by remember { mutableStateOf(false) }
+    var isNoteDialog by remember { mutableStateOf(false) }
     var isIngredientDelete by remember { mutableStateOf(false) }
     var isInstructionDelete by remember { mutableStateOf(false) }
+    var isNoteDelete by remember { mutableStateOf(false) }
     var isCancelEditDialog by remember{ mutableStateOf(false) }
     var isMediaChoiceDialog by remember { mutableStateOf(false) }
 
@@ -225,6 +244,7 @@ fun RecipePageScreen(
 
     var editIngredient by remember { mutableStateOf<Ingredient?>(null) }
     var editInstruction by remember {mutableStateOf("")}
+    var editNote by remember {mutableStateOf<Note?>(null)}
 
     BareSecondaryScreen(
         navController = navController,
@@ -253,10 +273,10 @@ fun RecipePageScreen(
                 instructions = mutableInstructions
             )
             if (editMode == EditMode.Edit) {
-                updateRecipe(newRecipe, mutableIngredientList.toList(), selectedImageUri)
+                updateRecipe(newRecipe, mutableIngredientList.toList(), selectedImageUri, mutableNotesList)
                 setMode(EditMode.View)
             } else {
-                addRecipe(newRecipe, mutableIngredientList, selectedImageUri)
+                addRecipe(newRecipe, mutableIngredientList, selectedImageUri, mutableNotesList)
                 isLeave = true
             }
 
@@ -500,7 +520,8 @@ fun RecipePageScreen(
                                             )
                                             Box(modifier = Modifier
                                                 .wrapContentSize(Alignment.TopStart)
-                                                .weight(0.1f)) {
+                                                .weight(0.1f))
+                                            {
                                                 Icon(
                                                     imageVector = Icons.Default.ArrowDropDown,
                                                     contentDescription = null,
@@ -534,6 +555,86 @@ fun RecipePageScreen(
                         }
                     }
                 }
+
+                Spacer( modifier = Modifier.height(8.dp))
+
+                /*          Notes        */
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    shape = RoundedCornerShape(25.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .height(300.dp)
+
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ){
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Notes")
+                            if (editMode != EditMode.View) Icon(
+                                imageVector = Icons.Default.AddCircle,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .clickable { isNoteDialog = true }
+                            )
+                        }
+                        LazyColumn {
+                            items(mutableNotesList) { note ->
+                                var expanded by remember { mutableStateOf(false) }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RecipeNote(
+                                        note.recipeName.ifEmpty { nameText },
+                                        note.content,
+                                        note.createdAt.toDate().time,
+                                        modifier = Modifier
+                                            .weight(0.9f)
+                                    )
+                                    Box(modifier = Modifier
+                                        .wrapContentSize(Alignment.TopStart)
+                                        .weight(0.1f))
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .clickable { expanded = true }
+                                        )
+                                        DropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Edit") },
+                                                onClick = {
+                                                    editNote = note
+                                                    isNoteDialog = true
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("Delete") },
+                                                onClick = {
+                                                    editNote = note
+                                                    isNoteDelete = true
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             if (isMediaChoiceDialog){
@@ -548,6 +649,19 @@ fun RecipePageScreen(
                     },
                     mainText = "Gallery",
                     secondText = "Camera"
+                )
+            }
+
+            if (isNoteDialog){
+                NoteDialog(
+                    onDismissRequest = {isNoteDialog = false},
+                    mainAction = { newNote ->
+                        val recipeNote = newNote.copy(
+                            recipeName = nameText
+                        )
+                        mutableNotesList = listOf(recipeNote) + mutableNotesList
+                    },
+                    note = editNote
                 )
             }
 
@@ -654,8 +768,8 @@ fun RecipePageScreen(
                 ConfirmDialogue(
                     onDismissRequest = { isBackConfirm = false },
                     mainAction = {
-                        if (isRecipeExist) updateRecipe(newRecipe, mutableIngredientList, selectedImageUri)
-                        else addRecipe(newRecipe, mutableIngredientList, selectedImageUri)
+                        if (isRecipeExist) updateRecipe(newRecipe, mutableIngredientList, selectedImageUri, mutableNotesList)
+                        else addRecipe(newRecipe, mutableIngredientList, selectedImageUri,mutableNotesList)
                         navController.popBackStack()
                         setMode(EditMode.View)
                     },
@@ -683,8 +797,8 @@ fun CreateRecipePageScreenPreview(){
         RecipePageScreen(
             navController = navController,
             editMode = EditMode.Create,
-            addRecipe = {_,_,_ ->},
-            updateRecipe = {_,_,_ ->},
+            addRecipe = {_,_,_,_ ->},
+            updateRecipe = {_,_,_,_ ->},
             archiveRecipe = {},
             setMode = {},
             clearSelectRecipe = {},
@@ -715,6 +829,26 @@ fun EditRecipePageScreenPreview(){
         tags = listOf("Breakfast", "British", "Traditional"),
         isArchive = false
     )
+    val sampleNotes = listOf(
+        Note(
+            noteId = "1",
+            recipeName = "Spaghetti Bolognese",
+            content = "Used turkey mince instead of beef. Turned out great!",
+            createdAt = Timestamp.now()
+        ),
+        Note(
+            noteId = "2",
+            recipeName = "Pancakes",
+            content = "Fluffy and golden. Try with blueberries next time.",
+            createdAt = Timestamp.now()
+        ),
+        Note(
+            noteId = "3",
+            recipeName = "Guacamole",
+            content = "Added too much lime. Use half next time.",
+            createdAt = Timestamp.now()
+        )
+    )
     val englishBreakfastIngredients = listOf(
         Ingredient(ingredientId = "1", name = "Eggs", description = "Large eggs, preferably free-range", quantity = "2", unit = null),
         Ingredient(ingredientId = "2", name = "Bacon", description = "Thick-cut smoked back bacon", quantity = "3", unit = "slices"),
@@ -734,8 +868,9 @@ fun EditRecipePageScreenPreview(){
             editMode = EditMode.Edit,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,
-            addRecipe = {_,_,_ ->},
-            updateRecipe = {_,_,_ ->},
+            notes = sampleNotes,
+            addRecipe = {_,_,_,_ ->},
+            updateRecipe = {_,_,_,_ ->},
             archiveRecipe = {},
             setMode = {},
             clearSelectRecipe = {},
@@ -785,8 +920,8 @@ fun ViewRecipePageScreenPreview(){
             editMode = EditMode.View,
             recipe = englishBreakfastRecipe,
             ingredients = englishBreakfastIngredients,
-            addRecipe = {_,_,_ ->},
-            updateRecipe = {_,_,_ ->},
+            addRecipe = {_,_,_,_ ->},
+            updateRecipe = {_,_,_,_ ->},
             archiveRecipe = {},
             setMode = {},
             clearSelectRecipe = { },

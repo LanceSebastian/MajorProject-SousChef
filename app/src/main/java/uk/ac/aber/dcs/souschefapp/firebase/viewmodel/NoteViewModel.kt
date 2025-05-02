@@ -10,6 +10,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import uk.ac.aber.dcs.souschefapp.firebase.Ingredient
 import uk.ac.aber.dcs.souschefapp.firebase.Note
 import uk.ac.aber.dcs.souschefapp.firebase.NoteRepository
 
@@ -38,6 +39,56 @@ class NoteViewModel : ViewModel() {
             )
             val message = if (isSuccess) "Note added successfully!" else "Failed to add note."
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun createNotes(userId: String?, recipeId: String?, notes: List<Note>){
+        if (userId == null || recipeId == null) return
+
+        viewModelScope.launch {
+            notes.forEach{ note ->
+                val isSuccess = noteRepository.addNote(userId, recipeId, note)
+
+                if (!isSuccess) {
+                    android.util.Log.e("NoteViewModel", "Failed to create note: ${note.content}")
+                }
+            }
+        }
+    }
+
+    // Method updates existing and creates new ingredients, deleting old.
+    fun updateNotes(userId: String?, recipeId: String?, notes: List<Note>){
+        if (userId == null || recipeId == null) return
+
+        viewModelScope.launch {
+            val existingIngredients = _notes.value ?: emptyList()
+
+            // Delete
+            val toDelete = existingIngredients.filter{ existing ->
+                notes.none { it.noteId == existing.noteId }
+            }
+
+            toDelete.forEach{ note ->
+                val deleted = noteRepository.deleteNote(userId, recipeId, note.noteId)
+                if (!deleted) {
+                    android.util.Log.e("IngredientViewModel", "Failed to delete ingredient: ${note.content}")
+                }
+            }
+
+            // Create and Update
+            notes.forEach { note ->
+                val existing = _notes.value?.find { it.noteId == note.noteId }
+
+                val isSuccess = if (existing != null) {
+                    if (existing != note) noteRepository.updateNote(userId, recipeId, note) else true
+                } else {
+                    noteRepository.addNote(userId, recipeId, note)
+                }
+
+                if (!isSuccess) {
+                    android.util.Log.e("IngredientViewModel", "Failed to add/update ingredient: ${note.content}")
+                }
+            }
         }
     }
 
