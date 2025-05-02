@@ -665,6 +665,24 @@ fun RecipePageScreen(
                 )
             }
 
+            if (isNoteDelete){
+                ConfirmDialogue(
+                    onDismissRequest = { isNoteDelete = false },
+                    mainAction = {
+                        editNote?.let { noteToDelete ->
+                            mutableNotesList = mutableNotesList.filterNot {
+                                it.noteId == noteToDelete.noteId
+                            }.toMutableList()
+                        }
+
+                        isModified = true
+                        editIngredient = null
+                    },
+                    supportingText = "Deleting an note is permanent.",
+                    mainButtonText = "Delete",
+                )
+            }
+
             if (isIngredientDialog){
                 IngredientDialogue(
                     onDismissRequest = { isIngredientDialog = false },
