@@ -30,6 +30,9 @@ class LogViewModel: ViewModel() {
     private var _singleLog = MutableLiveData<Log>() // Single-view Log.
     var singleLog: LiveData<Log> = _singleLog
 
+    private var _copyLog = MutableLiveData<Log>()
+    var copyLog: LiveData<Log> = _copyLog
+
     private var _selectedLogs = MutableLiveData<List<Log>>() // For Shopping List
     var selectedLogs: LiveData<List<Log>> = _selectedLogs
 
@@ -115,6 +118,10 @@ class LogViewModel: ViewModel() {
     fun readLogFromDate(millis: Long){
         val date = standardDate(millis)
         _singleLog.postValue(_logs.value?.find{ it.logId == date.toString() })
+    }
+
+    fun copyLog(log: Log){
+        _copyLog.postValue(log)
     }
 
     fun stopListening(){

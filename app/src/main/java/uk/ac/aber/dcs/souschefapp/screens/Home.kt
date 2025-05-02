@@ -1,5 +1,6 @@
 package uk.ac.aber.dcs.souschefapp.screens
 
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
@@ -27,9 +30,12 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -111,6 +117,7 @@ fun TopHomeScreen(
     val isEverythingReady = !isLoadingLogs && !isLoadingProducts && !isLoadingRecipes
 
     val log by logViewModel.singleLog.observeAsState(null)
+    val copyLog by logViewModel.copyLog.observeAsState(null)
     val recipes by recipeViewModel.userRecipes.observeAsState(emptyList())
     val products by productViewModel.userProducts.observeAsState(emptyList())
     val compiledNotes by noteViewModel.compiledNotes.observeAsState(null)
@@ -144,6 +151,7 @@ fun TopHomeScreen(
             monthFormat = monthFormat,
             logs = logs,
             log = log,
+            copyLog = copyLog,
             recipes = recipes,
             products = products,
             compiledNotes = compiledNotes,
@@ -188,6 +196,12 @@ fun TopHomeScreen(
             },
             setDate = { date ->
                 dateViewModel.onDatePicked(date)
+            },
+            setCopyLog = { newLog ->
+                logViewModel.copyLog(newLog)
+            },
+            pasteLog = { millis ->
+                logViewModel.createLog(userId, millis, copyLog)
             }
         )
     }
@@ -202,6 +216,7 @@ fun HomeScreen(
     dayFormat: String,
     logs: List<Log>, // This will be used for the calendar
     log: Log? = null,
+    copyLog: Log? = null,
     recipes: List<Recipe>,
     products: List<Product>,
     compiledNotes: List<Note>?,
@@ -219,6 +234,8 @@ fun HomeScreen(
     updateRNotes: (List<String>?) -> Unit,
     shiftDate: (Long) -> Unit,
     setDate: (LocalDate) -> Unit,
+    setCopyLog: (Log) -> Unit,
+    pasteLog: (Long) -> Unit
 ){
     // Ratings
     val ratings = listOf(
@@ -263,6 +280,7 @@ fun HomeScreen(
     val isLogMenuEmpty = (isLogRecipesEmpty && log?.productIdList.isNullOrEmpty())
 
     val datePickedEpoch = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    var expanded by remember { mutableStateOf(false) }
 
     var logNote by remember { mutableStateOf("") }
     var logRating by remember { mutableStateOf(0) }
@@ -275,6 +293,7 @@ fun HomeScreen(
     // Update NoteViewModel: singleLog
     LaunchedEffect(datePickedEpoch) {
         readLogFromDate(datePickedEpoch)
+
     }
 
     // When new log, save previous log's rating.
@@ -340,12 +359,27 @@ fun HomeScreen(
                             style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Button(onClick = { createLog(datePickedEpoch) }) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null
-                            )
-                            Text("Create a Log")
+                        Row{
+                            Button(onClick = { createLog(datePickedEpoch) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null
+                                )
+                                Text("Create a Log")
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            if (copyLog != null)Button(
+                                onClick = { pasteLog(datePickedEpoch) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.tertiary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null
+                                )
+                                Text("Paste a Log")
+                            }
                         }
                         Spacer(modifier = Modifier.height(48.dp))
                     }
@@ -357,7 +391,31 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .padding(8.dp)
                     ) {
-                        Text(text = "Today's Menu", style = MaterialTheme.typography.titleLarge)
+                        Row{
+                            Text(text = "Today's Menu", style = MaterialTheme.typography.titleLarge)
+                            Box(modifier = Modifier
+                                .wrapContentSize(Alignment.TopStart)
+                                .weight(0.1f))
+                            {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .clickable { expanded = true }
+                                )
+                                DropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Copy") },
+                                        onClick = {
+                                            setCopyLog(log)
+                                        }
+                                    )
+                                }
+                            }
+                        }
                         Button(
                             onClick = { addSelected = true },
                             contentPadding = PaddingValues(
@@ -654,7 +712,9 @@ fun HomeScreenEmptyView(){
             shiftDate = {},
             setDate = {},
             dayFormat = "Saturday 05",
-            monthFormat = "August 2025"
+            monthFormat = "August 2025",
+            setCopyLog = {},
+            pasteLog = {}
         )
     }
 }
@@ -785,7 +845,9 @@ fun HomeScreenView(){
             shiftDate = {},
             setDate = {},
             dayFormat = "Saturday 05",
-            monthFormat = "August 2025"
+            monthFormat = "August 2025",
+            setCopyLog = {},
+            pasteLog = {}
         )
     }
 }
