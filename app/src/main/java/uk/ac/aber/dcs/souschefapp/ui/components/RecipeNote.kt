@@ -22,7 +22,8 @@ import java.time.format.DateTimeFormatter
 fun RecipeNote(
     recipeName: String,
     noteContent: String,
-    dateEpoch: Long
+    dateEpoch: Long,
+    modifier: Modifier = Modifier
 ){
     val localDate: LocalDate = Instant.ofEpochMilli(dateEpoch)
         .atZone(ZoneId.systemDefault())
@@ -37,7 +38,7 @@ fun RecipeNote(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
     ){
         Row(
